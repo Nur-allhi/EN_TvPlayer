@@ -1,0 +1,21 @@
+{
+  "name": "iptv-tv-mode",
+  "version": "1.0.0",
+  "description": "IPTV Player optimized for Samsung Smart TV browsers",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"node cors-proxy.mjs\" \"vite --port 5000 --host\"",
+    "proxy": "node cors-proxy.mjs",
+    "build": "vite build",
+    "preview": "vite preview --port 5000 --host"
+  },
+  "dependencies": {
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
+    "selfsigned": "^5.5.0",
+    "shaka-player": "^5.2.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0",
+    "vite": "^6.3.5"
+  }
+}

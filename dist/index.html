@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>IPTV Player</title>
+  <script type="module" crossorigin src="/assets/index-DRGchumq.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/shaka-DDZjezHu.js">
+  <link rel="stylesheet" crossorigin href="/assets/index-C38oodrp.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Channel List Sidebar -->
+    <div id="sidebar" class="sidebar open">
+      <div class="sidebar-header">
+        <span class="logo">IPTV</span>
+      </div>
+      <div id="channel-list" class="channel-list"></div>
+    </div>
+
+      <!-- Main Content -->
+      <div id="main" class="main">
+
+        <!-- Fullscreen left-edge hover zone to reveal the channel list -->
+        <div id="sidebar-hover-zone" class="sidebar-hover-zone"></div>
+
+        <!-- Fullscreen right-edge hover zone to reveal the resolution menu -->
+        <div id="resolution-hover-zone" class="resolution-hover-zone"></div>
+        <!-- Video Player -->
+        <div id="player-container" class="player-container">
+          <video id="video" autoplay></video>
+          <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <span>Loading...</span>
+          </div>
+          <div id="error" class="error hidden"></div>
+
+          <!-- Buffering percentage -->
+          <div id="buffering-indicator" class="buffering-indicator hidden">
+            <div class="spinner small"></div>
+            <span>Buffering <span id="buffering-percent">0%</span></span>
+          </div>
+
+          <!-- Play/Pause status overlay -->
+          <div id="play-state" class="play-state hidden">
+            <div class="play-state-icon"><span></span><span></span></div>
+          </div>
+        </div>
+
+        <!-- Now Playing Bar -->
+        <div id="now-playing" class="now-playing">
+          <span id="channel-name" class="channel-name">No Channel</span>
+          <span id="channel-info" class="channel-info"></span>
+          <button id="resolution-button" class="resolution-button" type="button">Auto</button>
+          <button id="playpause-button" class="playpause-button" type="button">&#10073;&#10073;</button>
+        </div>
+
+        <!-- Resolution Selector -->
+        <div id="resolution-menu" class="resolution-menu hidden">
+          <div class="resolution-header">Quality</div>
+          <div id="resolution-list" class="resolution-list"></div>
+        </div>
+      </div>
+  </div>
+
+</body>
+</html>
