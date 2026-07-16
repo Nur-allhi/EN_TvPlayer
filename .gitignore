@@ -1,2 +1,9 @@
 node_modules/
 dist/
+
+# Tizen build artifacts
+tizen/temp-wgt/
+tizen/*.p12
+tizen/*.pem
+tizen/*.wgt
+tizen/profile.xml

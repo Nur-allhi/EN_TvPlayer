@@ -78,8 +78,9 @@ export function initPlayer(videoEl) {
       if (currentChannel && currentChannel.useProxy === false) return;
       const url = request.uris && request.uris[0];
       if (!url || !url.startsWith('http')) return;
-      // Skip URLs already going through the proxy (live manifest refresh, etc.)
+      // Skip URLs already going through the proxy
       if (url.startsWith(self.location.origin)) return;
+      if (config.useProxy && url.startsWith(config.proxyUrl)) return;
       request.uris[0] = config.proxyUrl + url;
     });
   }

@@ -7,7 +7,9 @@
     "dev": "concurrently \"node cors-proxy.mjs\" \"vite --port 5000 --host\"",
     "proxy": "node cors-proxy.mjs",
     "build": "vite build",
-    "preview": "concurrently \"node cors-proxy.mjs\" \"vite preview --port 5000 --host\""
+    "preview": "concurrently \"node cors-proxy.mjs\" \"vite preview --port 5000 --host\"",
+    "tizen": "npm run build && node tizen/package.mjs",
+    "tizen:install": "node tizen/install.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-basic-ssl": "^2.3.0",
