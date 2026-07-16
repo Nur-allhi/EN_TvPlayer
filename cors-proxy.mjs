@@ -239,8 +239,10 @@ http.createServer(async (req, res) => {
       let filePath;
       if (rawPath === '/' || rawPath === '/index.html') {
         filePath = path.resolve('dist/index.html');
+      } else if (rawPath.startsWith('/assets/')) {
+        filePath = path.resolve('dist', rawPath.slice(1));
       } else {
-        filePath = path.resolve(rawPath.slice(1));  // strips leading /
+        filePath = path.resolve(rawPath.slice(1));
       }
       serveStatic(res, filePath);
       return;
