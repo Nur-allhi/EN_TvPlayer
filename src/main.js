@@ -67,12 +67,22 @@ async function init() {
   // Wire right sidebar buttons
   const refreshStreamBtn = document.getElementById('refresh-stream-btn');
   if (refreshStreamBtn) {
-    refreshStreamBtn.addEventListener('click', () => player.reloadChannel());
+    refreshStreamBtn.addEventListener('click', () => {
+      showProgress('Reloading');
+      player.reloadChannel();
+    });
   }
   const refreshChannelsBtn = document.getElementById('refresh-channels-btn');
   if (refreshChannelsBtn) {
-    refreshChannelsBtn.addEventListener('click', () => refreshChannels());
+    refreshChannelsBtn.addEventListener('click', async () => {
+      showProgress('Refreshing');
+      await refreshChannels();
+      hideProgress();
+    });
   }
+
+  // Hide progress toast once playback starts
+  videoEl.addEventListener('playing', () => hideProgress());
 
   // Click the video to toggle play/pause (handy in fullscreen)
   videoEl.addEventListener('click', () => player.togglePlay());
@@ -97,7 +107,9 @@ async function init() {
   player.onBuffering((buffering, percent) => {
     bufferingActive = buffering;
     if (buffering) {
-      ui.showBuffering(percent != null ? percent : player.getBufferingPercent());
+      const p = percent != null ? percent : player.getBufferingPercent();
+      ui.showBuffering(p);
+      updateProgressPercent(p);
     } else {
       ui.hideBuffering();
     }
@@ -132,7 +144,8 @@ let channels;
 // Handle channel selection from UI
 async function handleChannelSelect(channel) {
   currentIndex = channels.indexOf(channel);
-  await player.loadChannel(channel);
+  const ok = await player.loadChannel(channel);
+  if (!ok) hideProgress();
   ui.setSelectedResolution('auto');
   ui.setResolutions(player.getResolutions());
   const height = player.getActiveHeight();
@@ -168,6 +181,31 @@ function updateResolutionBadge(height) {
   const bw = formatBandwidth(player.getActiveBandwidth());
   el.textContent = label + bw;
   el.classList.remove('hidden');
+}
+
+/* Progress toast helpers */
+let progressActive = false;
+
+function showProgress(text) {
+  const el = document.getElementById('progress-toast');
+  if (!el) return;
+  progressActive = true;
+  el.classList.remove('hidden');
+  document.getElementById('progress-text').textContent = text;
+}
+
+function updateProgressPercent(percent) {
+  if (!progressActive) return;
+  const el = document.getElementById('progress-text');
+  if (el && typeof percent === 'number') {
+    el.textContent = 'Reloading ' + percent + '%';
+  }
+}
+
+function hideProgress() {
+  progressActive = false;
+  const el = document.getElementById('progress-toast');
+  if (el) el.classList.add('hidden');
 }
 
 // Handle remote control actions
