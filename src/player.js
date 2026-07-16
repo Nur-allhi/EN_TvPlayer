@@ -106,7 +106,7 @@ export function initPlayer(videoEl) {
   player.addEventListener('variantchanged', (event) => {
     const newTrack = event.detail && event.detail.newTrack;
     if (trackCallback && newTrack) {
-      trackCallback(newTrack.height);
+      trackCallback({ height: newTrack.height, bandwidth: newTrack.bandwidth });
     }
   });
 

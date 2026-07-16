@@ -121,7 +121,7 @@ async function init() {
   }, 500);
 
   // Track resolution changes (ABR or manual) to update the badge
-  player.onTrackChange((height) => updateResolutionBadge(height));
+  player.onTrackChange(({ height, bandwidth }) => updateResolutionBadge(height, bandwidth));
 
   // Auto-advance to next channel on persistent 403
   player.onChannelAdvance(() => {
@@ -174,12 +174,12 @@ function formatBandwidth(bps) {
   return ' \u2022 ' + mbps + ' Mbps';
 }
 
-function updateResolutionBadge(height) {
+function updateResolutionBadge(height, bandwidth) {
   const el = document.getElementById('resolution-badge');
   if (!el) return;
   const label = getResolutionLabel(height);
-  const bw = formatBandwidth(player.getActiveBandwidth());
-  el.textContent = label + bw;
+  const bw = bandwidth || player.getActiveBandwidth();
+  el.textContent = label + formatBandwidth(bw);
   el.classList.remove('hidden');
 }
 
