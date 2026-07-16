@@ -234,26 +234,12 @@ http.createServer(async (req, res) => {
       serveStatic(res, filePath);
       return;
     }
-    // Player app (built dist)
-    if (rawPath === '/' || rawPath.startsWith('/assets/') || rawPath.startsWith('/src/')) {
-      let filePath;
-      if (rawPath === '/' || rawPath === '/index.html') {
-        filePath = path.resolve('dist/index.html');
-      } else if (rawPath.startsWith('/assets/')) {
-        filePath = path.resolve('dist', rawPath.slice(1));
-      } else {
-        filePath = path.resolve(rawPath.slice(1));
-      }
-      serveStatic(res, filePath);
-      return;
-    }
-
     // ── CORS Proxy ──────────────────────────────────────────
     // Use req.url.slice(1) directly — must NOT go through URL.parse because
     // that collapses // in paths like /http://host/stream → /http:/host/stream
     const target = rawUrl.slice(1);
     if (!target.startsWith('http://') && !target.startsWith('https://')) {
-      // If nothing matched, show a helpful index
+      // If nothing matched, show a helpful landing page
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(`<!DOCTYPE html>
 <html><head><title>TV Server</title>
@@ -261,7 +247,6 @@ http.createServer(async (req, res) => {
 <body>
 <h1>TV Server Running</h1>
 <p><a href="/manage">Channel Manager</a></p>
-<p><a href="/">Player</a></p>
 </html>`);
       return;
     }
