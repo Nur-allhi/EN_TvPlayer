@@ -82,7 +82,7 @@ export function renderChannelList() {
   });
 }
 
-export function selectChannel(index) {
+export function selectChannel(index, skipFullscreen) {
   if (index < 0 || index >= channels.length) return;
 
   currentIndex = index;
@@ -94,8 +94,10 @@ export function selectChannel(index) {
     onChannelSelect(channels[index]);
   }
 
-  // Stream is now playing: go fullscreen
-  requestFullscreen();
+  // Stream is now playing: go fullscreen (skip on auto-load, only on user action)
+  if (!skipFullscreen) {
+    requestFullscreen();
+  }
 
   // Update now playing bar
   const nameEl = document.getElementById('channel-name');

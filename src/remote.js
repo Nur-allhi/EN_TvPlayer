@@ -22,7 +22,8 @@ function handleKeyDown(e) {
   const handled = [
     'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
     'Enter', 'Escape', 'Backspace', ' ',
-    37, 38, 39, 40, 13, 27, 32, // keyCodes
+    'r', 'R',
+    37, 38, 39, 40, 13, 27, 32, 82, // keyCodes
   ];
 
   if (handled.includes(key) || handled.includes(e.keyCode)) {
@@ -100,6 +101,12 @@ function handleKeyDown(e) {
   if (e.keyCode >= 48 && e.keyCode <= 57) {
     const num = e.keyCode - 48;
     handleNumberInput(String(num));
+    return;
+  }
+
+  // R / r — force-reload the current channel
+  if (key === 'r' || key === 'R' || e.keyCode === 82) {
+    onKeyAction('reload');
     return;
   }
 }

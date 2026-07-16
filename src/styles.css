@@ -364,6 +364,24 @@ html, body {
   background: #0d47a1;
 }
 
+/* Resolution badge (top-right corner, glass background) */
+.resolution-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 4px 12px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  z-index: 40;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 /* Error */
 .error {
   position: absolute;

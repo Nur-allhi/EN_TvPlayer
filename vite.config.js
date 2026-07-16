@@ -26,11 +26,26 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace('/proxy', ''), // /proxy/https://... -> /https://...
       },
+      '/log': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
     },
   },
   preview: {
     port: 5000,
     host: '0.0.0.0',
     https: true,
+    proxy: {
+      '/proxy': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace('/proxy', ''),
+      },
+      '/log': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
   },
 });

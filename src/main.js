@@ -18,7 +18,7 @@ function init() {
   }
 
   // Load channel list
-  const channels = channelsData;
+  channels = channelsData;
   if (!channels || channels.length === 0) {
     document.body.innerHTML =
       '<div style="text-align:center;padding:40px;color:#fff;">' +
@@ -34,8 +34,11 @@ function init() {
   // Init UI with channels
   ui.init(channels, handleChannelSelect);
 
-  // Wire resolution selection to the player
-  ui.setResolutionCallback((height) => player.selectResolution(height));
+    // Wire resolution selection to the player (also update badge on manual select)
+  ui.setResolutionCallback((height) => {
+    player.selectResolution(height);
+    updateResolutionBadge(height || player.getActiveHeight());
+  });
 
   // Open the resolution menu when the now-playing button is clicked
   const resButton = document.getElementById('resolution-button');
@@ -91,19 +94,58 @@ function init() {
     }
   }, 500);
 
+  // Track resolution changes (ABR or manual) to update the badge
+  player.onTrackChange((height) => updateResolutionBadge(height));
+
+  // Auto-advance to next channel on persistent 403
+  player.onChannelAdvance(() => {
+    const next = (currentIndex + 1) % channels.length;
+    ui.selectChannel(next);
+  });
+
   // Init remote control
   remote.init(handleRemoteAction);
 
-  // Auto-play first channel
-  ui.selectChannel(0);
+  // Auto-play first channel (skip fullscreen — user gesture will trigger it)
+  ui.selectChannel(0, true);
 
   console.log('IPTV TV Mode initialized with', channels.length, 'channels');
 }
 
+let currentIndex = 0;
+let channels;
+
 // Handle channel selection from UI
 async function handleChannelSelect(channel) {
+  currentIndex = channels.indexOf(channel);
   await player.loadChannel(channel);
   ui.setResolutions(player.getResolutions());
+  // Set initial resolution badge (fires variantchanged after load)
+  const height = player.getActiveHeight();
+  if (height) updateResolutionBadge(height);
+}
+
+const labelMap = [
+  [480, 'SD'],
+  [720, 'HD'],
+  [1080, 'FHD'],
+  [1440, '2K'],
+  [2160, '4K'],
+];
+
+function getResolutionLabel(height) {
+  if (!height) return 'Auto';
+  for (const [max, label] of labelMap) {
+    if (height <= max) return label;
+  }
+  return '8K';
+}
+
+function updateResolutionBadge(height) {
+  const el = document.getElementById('resolution-badge');
+  if (!el) return;
+  el.textContent = getResolutionLabel(height);
+  el.classList.remove('hidden');
 }
 
 // Handle remote control actions
@@ -155,6 +197,9 @@ function handleRemoteAction(action, value) {
       break;
     case 'right':
       ui.toggleResolutionMenu();
+      break;
+    case 'reload':
+      player.reloadChannel();
       break;
     default:
       break;

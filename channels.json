@@ -266,5 +266,12 @@
       "keyId": "290e09c837da78d5cd961978d390515c",
       "key": "b748836c71e6a4ca68ef5b5652db6247"
     }
+  },
+  {
+    "name": "Tam",
+    "url": "https://saseries.akamaized.net/hls/live/2110097/2356jkiL-tapmad/master.m3u8",
+    "channelNumber": 29,
+    "useProxy": true,
+    "drm": null
   }
 ]

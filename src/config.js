@@ -8,36 +8,36 @@ export default {
   // Default to using proxy (Samsung TV needs it for CORS)
   useProxy: true,
 
-  // Shaka Player config optimized for low-power TV
+  // Shaka Player config optimized for live streaming on low-power TV
   player: {
     streaming: {
-      bufferingGoal: 30,
-      rebufferingGoal: 3,
-      bufferBehind: 10,
+      bufferingGoal: 10,
+      rebufferingGoal: 4,
+      bufferBehind: 5,
       segmentPrefetchLimit: 5,
       startAtSegmentBoundary: true,
       retryParameters: {
-        maxAttempts: 3,
-        baseDelay: 1000,
+        maxAttempts: 8,
+        baseDelay: 500,
         backoffFactor: 2,
         fuzzFactor: 0.5,
-        timeout: 15000,
+        timeout: 10000,
       },
     },
     abr: {
       enabled: true,
-      switchInterval: 5,
+      switchInterval: 3,
       bandwidthUpgradeTarget: 0.6,
-      bandwidthDowngradeTarget: 0.9,
-      defaultBandwidthEstimate: 5000000,
+      bandwidthDowngradeTarget: 0.85,
+      defaultBandwidthEstimate: 1500000,
     },
     manifest: {
       retryParameters: {
-        maxAttempts: 4,
-        baseDelay: 1000,
+        maxAttempts: 8,
+        baseDelay: 500,
         backoffFactor: 2,
         fuzzFactor: 0.5,
-        timeout: 20000,
+        timeout: 10000,
       },
       hls: {
         ignoreManifestProgramDateTime: true,

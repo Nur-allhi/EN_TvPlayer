@@ -7,7 +7,7 @@
     "dev": "concurrently \"node cors-proxy.mjs\" \"vite --port 5000 --host\"",
     "proxy": "node cors-proxy.mjs",
     "build": "vite build",
-    "preview": "vite preview --port 5000 --host"
+    "preview": "concurrently \"node cors-proxy.mjs\" \"vite preview --port 5000 --host\""
   },
   "dependencies": {
     "@vitejs/plugin-basic-ssl": "^2.3.0",

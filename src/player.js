@@ -1,15 +1,43 @@
 import shaka from 'shaka-player';
 import config from './config.js';
 
+// Fire-and-forget log sender — posts events to the proxy's /log endpoint
+// which writes them to logs/proxy.log with timestamps.
+function logEvent(level, message) {
+  try {
+    fetch('/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ level, message }),
+    }).catch(() => {});
+  } catch (e) {
+    // ignore
+  }
+}
+
 let player = null;
 let videoElement = null;
 let bufferingCallback = null;
+let trackCallback = null;
 let isBuffering = false;
 let currentChannel = null;
 let loadToken = 0;
 let reconnectTimer = null;
 let reconnectPending = false;
 let reconnectAttempts = 0;
+let consecutiveErrors = 0;
+let stallWatchdogTimer = null;
+let lastStallTime = 0;
+let lastStallCheck = 0;
+// Last-resort retry for Amazon CDN 403
+let lastResortAttempts = 0;
+let advancePending = false;
+let channelAdvanceCallback = null;
+
+// Proactive MPD refresh — reloads the manifest every 5 minutes so segment
+// URLs never use stale ?m= tokens from the Amazon CDN.
+let mpdRefreshTimer = null;
+const MPD_REFRESH_INTERVAL = 5 * 60 * 1000;
 
 export function initPlayer(videoEl) {
   videoElement = videoEl;
@@ -36,8 +64,25 @@ export function initPlayer(videoEl) {
     return false;
   }
 
-  // Create player instance
-  player = new shaka.Player(videoEl);
+  // Create player instance (v5+ uses attach() instead of passing mediaElement)
+  player = new shaka.Player();
+
+  // Route ALL Shaka networking requests through the proxy when enabled.
+  // Without this, segment URLs inside the MPD (which are absolute CDN URLs
+  // like otte.cache.aiv-cdn.net/...) are fetched directly by the browser
+  // with the app's origin, which Amazon's CDN rejects as 403.
+  const networkingEngine = player.getNetworkingEngine();
+  if (networkingEngine) {
+    networkingEngine.registerRequestFilter((type, request) => {
+      if (!config.useProxy) return;
+      if (currentChannel && currentChannel.useProxy === false) return;
+      const url = request.uris && request.uris[0];
+      if (!url || !url.startsWith('http')) return;
+      // Skip URLs already going through the proxy (live manifest refresh, etc.)
+      if (url.startsWith(self.location.origin)) return;
+      request.uris[0] = config.proxyUrl + url;
+    });
+  }
 
   // Apply optimized config
   player.configure(config.player);
@@ -56,6 +101,14 @@ export function initPlayer(videoEl) {
     }
   });
 
+  // Listen for ABR or manual track switches (resolution changes)
+  player.addEventListener('variantchanged', (event) => {
+    const newTrack = event.detail && event.detail.newTrack;
+    if (trackCallback && newTrack) {
+      trackCallback(newTrack.height);
+    }
+  });
+
   // Keep the buffering percentage fresh as data arrives
   videoEl.addEventListener('progress', notifyBufferingProgress);
   videoEl.addEventListener('timeupdate', notifyBufferingProgress);
@@ -63,6 +116,9 @@ export function initPlayer(videoEl) {
   // Reflect play/pause state in the UI
   videoEl.addEventListener('play', () => showPlayState(false));
   videoEl.addEventListener('pause', () => showPlayState(true));
+
+  // Attach to the video element (v5+)
+  player.attach(videoEl).catch((e) => console.error('Player attach failed:', e));
 
   return true;
 }
@@ -77,6 +133,21 @@ export function onBuffering(callback) {
   bufferingCallback = callback;
 }
 
+export function onTrackChange(callback) {
+  trackCallback = callback;
+}
+
+export function onChannelAdvance(callback) {
+  channelAdvanceCallback = callback;
+}
+
+export function getActiveHeight() {
+  if (!player) return null;
+  const tracks = player.getVariantTracks();
+  const active = tracks.find((t) => t.active);
+  return active ? active.height : null;
+}
+
 export async function loadChannel(channel) {
   if (!player || !channel) return false;
 
@@ -86,12 +157,21 @@ export async function loadChannel(channel) {
   // A manual (user) load cancels any pending auto-reconnect
   clearTimeout(reconnectTimer);
   reconnectPending = false;
+  stopStallWatchdog();
+  stopMpdRefresh();
 
   hideError();
   showLoading(true);
+  advancePending = false;
+  lastResortAttempts = 0;
 
   // Build the URL (with or without proxy)
   let url = channel.url;
+  // Append cache-buster on retries to force a fresh CDN edge assignment
+  if (reconnectAttempts > 0) {
+    const sep = url.indexOf('?') >= 0 ? '&' : '?';
+    url += sep + '_t=' + Date.now();
+  }
   if (channel.useProxy !== false && config.useProxy) {
     url = config.proxyUrl + url;
   }
@@ -123,6 +203,10 @@ export async function loadChannel(channel) {
 
     showLoading(false);
     reconnectAttempts = 0;
+    consecutiveErrors = 0;
+    startStallWatchdog();
+    startMpdRefresh();
+    logEvent('INFO', 'Loaded channel: ' + (channel.name || channel.url.slice(0, 80)));
     return true;
   } catch (error) {
     // A newer load started; this failure is just an interruption
@@ -137,10 +221,12 @@ export async function loadChannel(channel) {
 
     // Network/offline errors: auto-reconnect instead of a stuck error
     if (isRecoverable(error)) {
+      logEvent('WARN', 'Load failed (recoverable ' + error.code + ') — will reconnect');
       scheduleReconnect();
       return false;
     }
 
+    logEvent('ERROR', 'Failed to load channel — ' + getErrorMessage(error));
     showError(getErrorMessage(error));
     console.error('Failed to load channel:', error);
     return false;
@@ -155,24 +241,78 @@ function handlePlayerError(error) {
 
   console.error('Shaka error:', error);
 
+  // Suppress errors while auto-advance is pending
+  if (advancePending) return;
+
+  consecutiveErrors++;
+
+  // 403 on segment: retry up to 3 times with 2s gap to get fresh ?m= tokens
+  if (error.code === 1002 && currentChannel) {
+    const status = error.data && error.data[0];
+    if (status === 403) {
+      lastResortAttempts++;
+      logEvent('WARN', '403 on segment — retry ' + lastResortAttempts + '/3');
+      if (lastResortAttempts <= 3) {
+        reconnectAttempts = Math.max(reconnectAttempts, 1);
+        showReconnectMessage('Refreshing session (' + lastResortAttempts + '/3)...');
+        setTimeout(() => {
+          logEvent('INFO', '403 retry ' + lastResortAttempts + '/3 — reloading MPD');
+          loadChannel(currentChannel);
+        }, 2000);
+        return;
+      }
+    }
+  }
+
   if (isRecoverable(error)) {
+    // After 3 consecutive errors, force a hard reload (cache-bust + fresh edge)
+    if (consecutiveErrors >= 3) {
+      consecutiveErrors = 0;
+      showReconnectMessage('reloading');
+      loadChannel(currentChannel);
+      return;
+    }
     scheduleReconnect();
     return;
   }
 
+  logEvent('ERROR', 'Unrecoverable error ' + error.code + ' — ' + getErrorMessage(error));
   showError(getErrorMessage(error));
+
+  // Auto-advance to next channel after 3 failed 403 retries
+  if (error.code === 1002 && channelAdvanceCallback) {
+    const status = error.data && error.data[0];
+    if (status === 403 && lastResortAttempts > 3) {
+      advancePending = true;
+      logEvent('INFO', '3 retries exhausted — advancing to next channel');
+      showError('Stream expired \u2014 advancing to next channel...');
+      setTimeout(() => {
+        advancePending = false;
+        logEvent('INFO', 'Advancing channel');
+        channelAdvanceCallback();
+      }, 4000);
+    }
+  }
 }
 
 function isRecoverable(error) {
   if (!error) return false;
-  if (error.code === 1000 || error.code === 1001) return true; // network/timeout
+  // Network request errors (timeout / offline) — always retry
+  if (error.code === 1000 || error.code === 1001) return true;
+  // HTTP_ERROR on segment fetch — retry server failures, timeouts, and 0 (no response)
   if (error.code === 1002) {
-    // HTTP_ERROR: only retry on transient server failures (5xx, 429).
-    // Client errors (401/403/404) are permanent and must not loop.
     const status = error.data && error.data[0];
     if (!status) return true;
     return status >= 500 || status === 429;
   }
+  // Manifest HTTP error — only retry transient server failures, same as HTTP_ERROR
+  if (error.code === 1004) {
+    const status = error.data && error.data[0];
+    if (!status) return true;
+    return status >= 500 || status === 429;
+  }
+  // Manifest request timeout — always retry (no response at all)
+  if (error.code === 1005) return true;
   return false;
 }
 
@@ -180,8 +320,10 @@ function scheduleReconnect() {
   if (reconnectPending || !currentChannel) return;
   reconnectPending = true;
   reconnectAttempts++;
-  const delay = Math.min(2000 * reconnectAttempts, 15000);
-  showReconnectMessage(reconnectAttempts);
+  logEvent('WARN', 'Reconnecting (attempt ' + reconnectAttempts + ')');
+  // Live recovery: fast initial retry, cap at 10s
+  const delay = Math.min(1000 * reconnectAttempts, 10000);
+  showReconnectMessage(String(reconnectAttempts));
 
   reconnectTimer = setTimeout(() => {
     reconnectPending = false;
@@ -194,12 +336,76 @@ function scheduleReconnect() {
 function showReconnectMessage(attempt) {
   const el = document.getElementById('error');
   if (el) {
-    el.textContent = 'Connection lost. Reconnecting… (attempt ' + attempt + ')';
+    el.textContent = 'Connection lost. Reconnecting\u2026 (attempt ' + attempt + ')';
     el.classList.remove('hidden');
   }
 }
 
+function startStallWatchdog() {
+  stopStallWatchdog();
+  lastStallTime = videoElement ? videoElement.currentTime : 0;
+  lastStallCheck = Date.now();
+  stallWatchdogTimer = setInterval(() => {
+    if (!videoElement || videoElement.paused) return;
+    const now = videoElement.currentTime;
+    if (now === lastStallTime && Date.now() - lastStallCheck > 15000) {
+      consecutiveErrors++;
+      logEvent('WARN', 'Stall detected (no progress for 15s)');
+      if (consecutiveErrors >= 3) {
+        consecutiveErrors = 0;
+        logEvent('INFO', '3 stalls — hard reloading channel');
+        showReconnectMessage('reloading');
+        loadChannel(currentChannel);
+      } else {
+        scheduleReconnect();
+      }
+      return;
+    }
+    if (now !== lastStallTime) {
+      lastStallTime = now;
+      lastStallCheck = Date.now();
+    }
+  }, 2000);
+}
+
+function stopStallWatchdog() {
+  if (stallWatchdogTimer) {
+    clearInterval(stallWatchdogTimer);
+    stallWatchdogTimer = null;
+  }
+}
+
+function startMpdRefresh() {
+  stopMpdRefresh();
+  mpdRefreshTimer = setInterval(() => {
+    if (currentChannel) {
+      logEvent('INFO', 'MPD refresh — reloading ' + (currentChannel.name || ''));
+      loadChannel(currentChannel);
+    }
+  }, MPD_REFRESH_INTERVAL);
+}
+
+function stopMpdRefresh() {
+  if (mpdRefreshTimer) {
+    clearInterval(mpdRefreshTimer);
+    mpdRefreshTimer = null;
+  }
+}
+
+// Force-reload the current channel (e.g. from R key or remote)
+export function reloadChannel() {
+  if (!currentChannel) return;
+  consecutiveErrors = 0;
+  advancePending = false;
+  lastResortAttempts = 0;
+  clearTimeout(reconnectTimer);
+  reconnectPending = false;
+  loadChannel(currentChannel);
+}
+
 export function stop() {
+  stopStallWatchdog();
+  stopMpdRefresh();
   if (player) {
     player.unload();
   }
@@ -320,10 +526,17 @@ function getErrorMessage(error) {
 
   if (code === 1002) {
     const status = error.data && error.data[0];
-    if (status === 403) return 'Stream blocked (403 Forbidden) — the source rejected the request';
+    if (status === 403) return 'Stream blocked (403 Forbidden) \u2014 the source rejected the request';
     if (status === 401) return 'Stream blocked (401 Unauthorized)';
+    if (status === 404) return 'Stream not found (404)';
     if (status) return 'Stream error (HTTP ' + status + ')';
     return 'Network connection lost';
+  }
+  if (code === 1004) {
+    return 'Manifest could not be loaded';
+  }
+  if (code === 1005) {
+    return 'Manifest request timed out';
   }
 
   if (messages[code]) {
