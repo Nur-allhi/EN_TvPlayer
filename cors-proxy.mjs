@@ -239,14 +239,34 @@ http.createServer(async (req, res) => {
     // that collapses // in paths like /http://host/stream → /http:/host/stream
     const target = rawUrl.slice(1);
     if (!target.startsWith('http://') && !target.startsWith('https://')) {
-      // If nothing matched, show a helpful landing page
+      // Show a helpful landing page with channel count
+      const channelCount = readChannels().length;
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(`<!DOCTYPE html>
-<html><head><title>TV Server</title>
-<style>body{font-family:sans-serif;background:#0d1117;color:#c9d1d9;padding:40px;text-align:center}a{color:#58a6ff}</style>
+<html lang="en">
+<head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TV Server</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0d1117;color:#c9d1d9;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}
+.card{text-align:center;max-width:400px}
+h1{font-size:28px;margin:0 0 8px 0;color:#ffffff}
+.count{font-size:64px;font-weight:700;color:#58a6ff;margin:20px 0}
+.count-label{font-size:16px;color:#8b949e}
+.btn{display:inline-block;margin-top:24px;padding:12px 32px;background:#238636;color:#fff;text-decoration:none;border-radius:8px;font-size:16px;font-weight:600;transition:background .15s}
+.btn:hover{background:#2ea043}
+.footer{margin-top:32px;font-size:13px;color:#484f58}
+</style>
+</head>
 <body>
-<h1>TV Server Running</h1>
-<p><a href="/manage">Channel Manager</a></p>
+<div class="card">
+<h1>TV Server</h1>
+<div class="count">${channelCount}</div>
+<div class="count-label">channels loaded</div>
+<a class="btn" href="/manage">Channel Manager</a>
+<div class="footer">CORS proxy &amp; channel API</div>
+</div>
+</body>
 </html>`);
       return;
     }
