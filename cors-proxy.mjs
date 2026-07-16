@@ -137,13 +137,18 @@ function corsHeaders(methods = 'GET, POST, PUT, DELETE, OPTIONS') {
 // ──────────────────────────────────────────────────────────────
 
 http.createServer(async (req, res) => {
-  const parsed = new URL(req.url, 'http://localhost');
-  const pathname = parsed.pathname;
+  const rawUrl = req.url;
+  // Use a trailing-slash trick so new URL doesn't collapse leading // in the path.
+  // Proxy URLs arrive as /http://host/path — we need the raw path for routing
+  // but must not mangle double-slashes that new URL would collapse.
+  const pathEnd = rawUrl.indexOf('?');
+  const rawPath = pathEnd >= 0 ? rawUrl.slice(0, pathEnd) : rawUrl;
+  const rawQuery = pathEnd >= 0 ? rawUrl.slice(pathEnd) : '';
   const method = req.method;
 
   try {
     // ── Log Endpoint ────────────────────────────────────────
-    if (pathname === '/log' && method === 'POST') {
+    if (rawPath === '/log' && method === 'POST') {
       let body = '';
       req.on('data', (chunk) => { body += chunk; });
       req.on('end', () => {
@@ -158,7 +163,7 @@ http.createServer(async (req, res) => {
       });
       return;
     }
-    if (pathname === '/log' && method === 'OPTIONS') {
+    if (rawPath === '/log' && method === 'OPTIONS') {
       res.writeHead(204, corsHeaders());
       res.end();
       return;
@@ -166,12 +171,12 @@ http.createServer(async (req, res) => {
 
     // ── Channels API ────────────────────────────────────────
     // GET /api/channels
-    if (pathname === '/api/channels' && method === 'GET') {
+    if (rawPath === '/api/channels' && method === 'GET') {
       serveJson(res, readChannels());
       return;
     }
     // POST /api/channels
-    if (pathname === '/api/channels' && method === 'POST') {
+    if (rawPath === '/api/channels' && method === 'POST') {
       const body = await readBody(req);
       const channel = JSON.parse(body);
       const channels = readChannels();
@@ -182,7 +187,7 @@ http.createServer(async (req, res) => {
       return;
     }
     // PUT /api/channels/:id
-    const putMatch = pathname.match(/^\/api\/channels\/(\d+)$/);
+    const putMatch = rawPath.match(/^\/api\/channels\/(\d+)$/);
     if (putMatch && method === 'PUT') {
       const id = parseInt(putMatch[1], 10);
       const body = await readBody(req);
@@ -199,7 +204,7 @@ http.createServer(async (req, res) => {
       return;
     }
     // DELETE /api/channels/:id
-    const delMatch = pathname.match(/^\/api\/channels\/(\d+)$/);
+    const delMatch = rawPath.match(/^\/api\/channels\/(\d+)$/);
     if (delMatch && method === 'DELETE') {
       const id = parseInt(delMatch[1], 10);
       const channels = readChannels();
@@ -215,7 +220,7 @@ http.createServer(async (req, res) => {
       return;
     }
     // OPTIONS for /api/channels/*
-    if (pathname.startsWith('/api/') && method === 'OPTIONS') {
+    if (rawPath.startsWith('/api/') && method === 'OPTIONS') {
       res.writeHead(204, corsHeaders());
       res.end();
       return;
@@ -223,26 +228,28 @@ http.createServer(async (req, res) => {
 
     // ── Static Files ────────────────────────────────────────
     // Management UI
-    if (pathname === '/manage' || pathname.startsWith('/manage/')) {
-      const sub = pathname.slice('/manage'.length) || '/';
+    if (rawPath === '/manage' || rawPath.startsWith('/manage/')) {
+      const sub = rawPath.slice('/manage'.length) || '/';
       const filePath = path.resolve('manage', sub.slice(1) || 'index.html');
       serveStatic(res, filePath);
       return;
     }
     // Player app (built dist)
-    if (pathname === '/' || pathname.startsWith('/assets/') || pathname.startsWith('/src/')) {
+    if (rawPath === '/' || rawPath.startsWith('/assets/') || rawPath.startsWith('/src/')) {
       let filePath;
-      if (pathname === '/' || pathname === '/index.html') {
+      if (rawPath === '/' || rawPath === '/index.html') {
         filePath = path.resolve('dist/index.html');
       } else {
-        filePath = path.resolve(pathname.slice(1));  // strips leading /
+        filePath = path.resolve(rawPath.slice(1));  // strips leading /
       }
       serveStatic(res, filePath);
       return;
     }
 
     // ── CORS Proxy ──────────────────────────────────────────
-    const target = pathname + parsed.search;
+    // Use req.url.slice(1) directly — must NOT go through URL.parse because
+    // that collapses // in paths like /http://host/stream → /http:/host/stream
+    const target = rawUrl.slice(1);
     if (!target.startsWith('http://') && !target.startsWith('https://')) {
       // If nothing matched, show a helpful index
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
