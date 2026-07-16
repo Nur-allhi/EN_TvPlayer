@@ -1,8 +1,6 @@
 import shaka from 'shaka-player';
 import config from './config.js';
 
-// Fire-and-forget log sender — posts events to the proxy's /log endpoint
-// which writes them to logs/proxy.log with timestamps.
 function logEvent(level, message) {
   try {
     fetch('/log', {
@@ -10,15 +8,14 @@ function logEvent(level, message) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ level, message }),
     }).catch(() => {});
-  } catch (e) {
-    // ignore
-  }
+  } catch (e) {}
 }
 
 let player = null;
 let videoElement = null;
 let bufferingCallback = null;
 let trackCallback = null;
+let channelAdvanceCallback = null;
 let isBuffering = false;
 let currentChannel = null;
 let loadToken = 0;
@@ -29,48 +26,32 @@ let consecutiveErrors = 0;
 let stallWatchdogTimer = null;
 let lastStallTime = 0;
 let lastStallCheck = 0;
-// Last-resort retry for Amazon CDN 403
 let lastResortAttempts = 0;
 let advancePending = false;
-let channelAdvanceCallback = null;
-
-// Proactive MPD refresh — reloads the manifest every 5 minutes so segment
-// URLs never use stale ?m= tokens from the Amazon CDN.
 let mpdRefreshTimer = null;
 const MPD_REFRESH_INTERVAL = 5 * 60 * 1000;
 
-export function initPlayer(videoEl) {
+let loadingTimeout = null;
+
+export async function initPlayer(videoEl) {
   videoElement = videoEl;
 
-  // Some TV browsers falsely report navigator.onLine === false, which makes
-  // Shaka throw NETWORK_OFFLINE (1002) and skip ABR switches even when the
-  // network is actually available. Force it to report online so our own
-  // reconnect logic handles real outages.
   try {
     Object.defineProperty(navigator, 'onLine', {
       configurable: true,
       get: () => true,
     });
-  } catch (e) {
-    /* ignore if the property is not overridable */
-  }
+  } catch (e) {}
 
-  // Install polyfills for older TV browsers
   shaka.polyfill.installAll();
 
-  // Check browser support
   if (!shaka.Player.isBrowserSupported()) {
     console.error('Shaka Player not supported in this browser');
     return false;
   }
 
-  // Create player instance (v5+ uses attach() instead of passing mediaElement)
   player = new shaka.Player();
 
-  // Route ALL Shaka networking requests through the proxy when enabled.
-  // Without this, segment URLs inside the MPD (which are absolute CDN URLs
-  // like otte.cache.aiv-cdn.net/...) are fetched directly by the browser
-  // with the app's origin, which Amazon's CDN rejects as 403.
   const networkingEngine = player.getNetworkingEngine();
   if (networkingEngine) {
     networkingEngine.registerRequestFilter((type, request) => {
@@ -78,31 +59,24 @@ export function initPlayer(videoEl) {
       if (currentChannel && currentChannel.useProxy === false) return;
       const url = request.uris && request.uris[0];
       if (!url || !url.startsWith('http')) return;
-      // Skip URLs already going through the proxy
       if (url.startsWith(self.location.origin)) return;
       if (config.useProxy && url.startsWith(config.proxyUrl)) return;
       request.uris[0] = config.proxyUrl + url;
     });
   }
 
-  // Apply optimized config
   player.configure(config.player);
 
-  // Listen for errors
   player.addEventListener('error', (event) => {
     handlePlayerError(event.detail);
   });
 
-  // Listen for buffering state changes
   player.addEventListener('buffering', (event) => {
     isBuffering = event.buffering;
     showLoading(event.buffering);
-    if (bufferingCallback) {
-      bufferingCallback(event.buffering);
-    }
+    if (bufferingCallback) bufferingCallback(event.buffering);
   });
 
-  // Listen for ABR or manual track switches (resolution changes)
   player.addEventListener('variantchanged', (event) => {
     const newTrack = event.detail && event.detail.newTrack;
     if (trackCallback && newTrack) {
@@ -110,17 +84,12 @@ export function initPlayer(videoEl) {
     }
   });
 
-  // Keep the buffering percentage fresh as data arrives
   videoEl.addEventListener('progress', notifyBufferingProgress);
   videoEl.addEventListener('timeupdate', notifyBufferingProgress);
-
-  // Reflect play/pause state in the UI
   videoEl.addEventListener('play', () => showPlayState(false));
   videoEl.addEventListener('pause', () => showPlayState(true));
 
-  // Attach to the video element (v5+)
-  player.attach(videoEl).catch((e) => console.error('Player attach failed:', e));
-
+  await player.attach(videoEl).catch((e) => console.error('Player attach failed:', e));
   return true;
 }
 
@@ -159,25 +128,22 @@ export function getActiveBandwidth() {
 }
 
 export async function loadChannel(channel) {
-  if (!player || !channel) return false;
+  if (!channel) return false;
 
   const myToken = ++loadToken;
   currentChannel = channel;
 
-  // A manual (user) load cancels any pending auto-reconnect
   clearTimeout(reconnectTimer);
+  clearTimeout(loadingTimeout);
   reconnectPending = false;
   stopStallWatchdog();
   stopMpdRefresh();
-
   hideError();
   showLoading(true);
   advancePending = false;
   lastResortAttempts = 0;
 
-  // Build the URL (with or without proxy)
   let url = channel.url;
-  // Append cache-buster on retries to force a fresh CDN edge assignment
   if (reconnectAttempts > 0) {
     const sep = url.indexOf('?') >= 0 ? '&' : '?';
     url += sep + '_t=' + Date.now();
@@ -187,7 +153,19 @@ export async function loadChannel(channel) {
   }
 
   try {
-    // Set DRM if present
+    // Always destroy and recreate the player on every channel switch.
+    // On Tizen, Shaka's unload/load can hang forever when stuck on a failed
+    // network request. Destroy+recreate guarantees a clean slate.
+    const el = videoElement;
+    await destroyPlayer(el);
+    if (myToken !== loadToken) return false;
+
+    if (el) {
+      const ok = await initPlayer(el);
+      if (!ok) return false;
+    }
+    if (myToken !== loadToken) return false;
+
     if (channel.drm) {
       player.configure({
         drm: {
@@ -197,18 +175,20 @@ export async function loadChannel(channel) {
         },
       });
     } else {
-      // Clear any previous DRM config
-      player.configure({
-        drm: {
-          clearKeys: {},
-        },
-      });
+      player.configure({ drm: { clearKeys: {} } });
     }
 
-    // Load the stream
-    await player.load(url);
+    // Timeout: if player.load hangs for 30s, destroy the player so the
+    // pending load() promise rejects, unblocking the catch path below.
+    loadingTimeout = setTimeout(() => {
+      logEvent('WARN', 'Load timed out — destroying stuck player');
+      if (player) player.destroy().catch(() => {});
+    }, 30000);
 
-    // A newer load started while this one was in flight; ignore the result
+    await player.load(url);
+    clearTimeout(loadingTimeout);
+    loadingTimeout = null;
+
     if (myToken !== loadToken) return false;
 
     showLoading(false);
@@ -216,30 +196,56 @@ export async function loadChannel(channel) {
     consecutiveErrors = 0;
     startStallWatchdog();
     startMpdRefresh();
-    logEvent('INFO', 'Loaded channel: ' + (channel.name || channel.url.slice(0, 80)));
+    logEvent('INFO', 'Loaded: ' + (channel.name || channel.url.slice(0, 60)));
     return true;
   } catch (error) {
-    // A newer load started; this failure is just an interruption
+    clearTimeout(loadingTimeout);
+    loadingTimeout = null;
     if (myToken !== loadToken) return false;
 
     showLoading(false);
 
-    // LOAD_INTERRUPTED (7000): caused by switching channels quickly. Ignore.
-    if (error && error.code === 7000) {
-      return false;
-    }
+    if (error && error.code === 7000) return false;
 
-    // Network/offline errors: auto-reconnect instead of a stuck error
-    if (isRecoverable(error)) {
-      logEvent('WARN', 'Load failed (recoverable ' + error.code + ') — will reconnect');
+    // After a timeout, the player was destroyed above. Recreate it so the
+    // next channel switch works.
+    if (error && (error.message === 'Load timed out' || error.name === 'DestroyedError')) {
+      logEvent('WARN', 'Load abandoned — recreating player for next attempt');
+      const el = videoElement;
+      await destroyPlayer(el);
+      if (el && myToken === loadToken) {
+        await initPlayer(el);
+      }
       scheduleReconnect();
       return false;
     }
 
-    logEvent('ERROR', 'Failed to load channel — ' + getErrorMessage(error));
+    if (isRecoverable(error)) {
+      logEvent('WARN', 'Load failed (recoverable ' + error.code + ')');
+      scheduleReconnect();
+      return false;
+    }
+
+    logEvent('ERROR', 'Failed to load — ' + getErrorMessage(error));
     showError(getErrorMessage(error));
-    console.error('Failed to load channel:', error);
     return false;
+  }
+}
+
+async function destroyPlayer(keepElement) {
+  stopStallWatchdog();
+  stopMpdRefresh();
+  clearTimeout(reconnectTimer);
+  clearTimeout(loadingTimeout);
+  reconnectPending = false;
+  if (player) {
+    try { await player.destroy(); } catch {}
+    player = null;
+  }
+  currentChannel = null;
+  isBuffering = false;
+  if (!keepElement) {
+    videoElement = null;
   }
 }
 
@@ -414,11 +420,7 @@ export function reloadChannel() {
 }
 
 export function stop() {
-  stopStallWatchdog();
-  stopMpdRefresh();
-  if (player) {
-    player.unload();
-  }
+  destroyPlayer().catch(() => {});
   showLoading(false);
   hideError();
 }

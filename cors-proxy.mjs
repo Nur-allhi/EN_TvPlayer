@@ -136,6 +136,14 @@ function corsHeaders(methods = 'GET, POST, PUT, DELETE, OPTIONS') {
 }
 // ──────────────────────────────────────────────────────────────
 
+process.on('uncaughtException', (err) => {
+  log(`UNCAUGHT EXCEPTION: ${err.message}`);
+  log(`  ${err.stack?.split('\n').slice(1, 3).join(' ')}`);
+});
+process.on('unhandledRejection', (err) => {
+  log(`UNHANDLED REJECTION: ${err?.message || err}`);
+});
+
 http.createServer(async (req, res) => {
   const rawUrl = req.url;
   // Use a trailing-slash trick so new URL doesn't collapse leading // in the path.
@@ -312,14 +320,16 @@ h1{font-size:28px;margin:0 0 8px 0;color:#ffffff}
           Object.entries(proxyRes.headers).filter(([k]) => !/^access-control-allow-origin$/i.test(k))
         ),
       });
-      proxyRes.on('error', (e) => { if (e.message === 'aborted') return; log(`PROXY response error: ${e.message}`); res.destroy(); });
+      const cleanup = () => { proxyRes.destroy(); res.destroy(); };
+      res.on('error', (e) => { if (e.message === 'aborted') return; log(`RES error: ${e.message}`); cleanup(); });
+      proxyRes.on('error', (e) => { if (e.message === 'aborted') return; log(`PROXY response error: ${e.message}`); cleanup(); });
       proxyRes.pipe(res);
     });
 
     proxyReq.on('error', (e) => { if (e.message.includes('certificate')) return; log(`PROXY error: ${e.message}`); if (!responded) { responded = true; res.writeHead(502); res.end('Proxy error: ' + e.message); } });
-    proxyReq.on('timeout', () => { proxyReq.destroy(); if (!responded) { responded = true; res.writeHead(504); res.end('Proxy timeout'); } });
+    proxyReq.on('timeout', () => { if (!responded) { proxyReq.destroy(); responded = true; res.writeHead(504); res.end('Proxy timeout'); } });
     req.on('error', (e) => { log(`REQ error: ${e.message}`); proxyReq.destroy(); });
-    req.pipe(proxyReq);
+    req.pipe(proxyReq, { end: true });
   } catch (e) {
     log(`SERVER error: ${e.message}`);
     if (!res.headersSent) {

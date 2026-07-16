@@ -5,14 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>IPTV Player</title>
-  <script src="/assets/index.BelqR2X6.js"></script>
+  <script src="/assets/index.CBGTCgnb.js"></script>
 </head>
 <body>
   <div id="app">
     <!-- Channel List Sidebar -->
     <div id="sidebar" class="sidebar open">
       <div class="sidebar-header">
-        <span class="logo">IPTV</span>
+        <span class="logo">
+          <svg class="logo-icon" viewBox="0 0 24 24" width="28" height="28" fill="none">
+            <rect x="2" y="4" width="20" height="16" rx="2" stroke="#4fc3f7" stroke-width="1.8"/>
+            <polygon points="10,8 10,16 17,12" fill="#4fc3f7"/>
+          </svg>
+          IPTV
+        </span>
       </div>
       <div id="channel-list" class="channel-list"></div>
     </div>
@@ -23,8 +29,12 @@
         <!-- Fullscreen left-edge hover zone to reveal the channel list -->
         <div id="sidebar-hover-zone" class="sidebar-hover-zone"></div>
 
-        <!-- Fullscreen right-edge hover zone to reveal the resolution menu -->
-        <div id="resolution-hover-zone" class="resolution-hover-zone"></div>
+        <!-- Fullscreen right-edge hover zone -->
+        <div id="right-hover-zone" class="right-hover-zone"></div>
+
+        <!-- Channel OSD (brief overlay when switching channels) -->
+        <div id="channel-osd" class="channel-osd hidden"></div>
+
         <!-- Video Player -->
         <div id="player-container" class="player-container">
           <video id="video" autoplay></video>
@@ -45,20 +55,34 @@
           <div id="play-state" class="play-state hidden">
             <div class="play-state-icon"><span></span><span></span></div>
           </div>
+
+          <!-- Progress toast for right sidebar actions -->
+          <div id="progress-toast" class="progress-toast hidden">
+            <div class="progress-spinner"></div>
+            <span id="progress-text">Loading</span>
+          </div>
         </div>
 
         <!-- Now Playing Bar -->
         <div id="now-playing" class="now-playing">
           <span id="channel-name" class="channel-name">No Channel</span>
           <span id="channel-info" class="channel-info"></span>
-          <button id="resolution-button" class="resolution-button" type="button">Auto</button>
           <button id="playpause-button" class="playpause-button" type="button">&#10073;&#10073;</button>
         </div>
 
-        <!-- Resolution Selector -->
-        <div id="resolution-menu" class="resolution-menu hidden">
-          <div class="resolution-header">Quality</div>
-          <div id="resolution-list" class="resolution-list"></div>
+      </div>
+
+      <!-- Right Sidebar -->
+      <div id="right-sidebar" class="right-sidebar closed">
+        <div class="right-sidebar-header">
+          <span class="right-sidebar-title">Menu</span>
+        </div>
+        <div class="right-sidebar-content">
+          <div class="section-label">Quality</div>
+          <div id="resolution-list-right" class="resolution-list-right"></div>
+          <div class="section-label">Actions</div>
+          <button id="refresh-stream-btn" class="right-sidebar-btn" type="button">&#8635; Reload Stream</button>
+          <button id="refresh-channels-btn" class="right-sidebar-btn" type="button">&#8634; Refresh Channels</button>
         </div>
       </div>
   </div>

@@ -3,7 +3,7 @@
     "name": "Bein 1",
     "url": "https://1nyaler.streamhostingcdn.top/stream/23/index.m3u8",
     "channelNumber": 1,
-    "useProxy": true,
+    "useProxy": false,
     "drm": null
   },
   {
@@ -273,5 +273,11 @@
     "channelNumber": 29,
     "useProxy": true,
     "drm": null
+  },
+  {
+    "name": "Sky Sports",
+    "url": "http://193.47.62.48/hls/ZAZAZAQQ.m3u8?%7Creferer=http://www.fawanews.sc/",
+    "channelNumber": 30,
+    "useProxy": false
   }
 ]
