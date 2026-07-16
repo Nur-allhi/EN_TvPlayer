@@ -5,11 +5,13 @@ let sidebarOpen = true;
 let isFullscreen = false;
 let onChannelSelect = null;
 
-let resolutionMenuOpen = false;
-let resolutions = [];
-let resolutionFocus = 0;
-let selectedResolution = 'auto';
-let resolutionCallback = null;
+/* Right sidebar state */
+let rightSidebarOpen = false;
+let rightResolutions = [];
+let rightFocus = 0;
+let rightSelectedResolution = 'auto';
+let rightResolutionCallback = null;
+let rightItems = [];
 
 export function init(channelList, callback) {
   channels = channelList;
@@ -28,33 +30,38 @@ export function init(channelList, callback) {
       if (isFullscreen) {
         sidebarOpen = true;
         applySidebar();
+        resetInactivity();
       }
     });
   }
   if (sidebar) {
     sidebar.addEventListener('mouseleave', () => {
-      if (isFullscreen && !resolutionMenuOpen) {
+      if (isFullscreen && !rightSidebarOpen) {
         sidebarOpen = false;
         applySidebar();
       }
     });
   }
 
-  // In fullscreen, reveal the resolution menu when the mouse enters the right edge
-  const resZone = document.getElementById('resolution-hover-zone');
-  const resMenu = document.getElementById('resolution-menu');
-  if (resZone) {
-    resZone.addEventListener('mouseenter', () => {
+  // In fullscreen, reveal the right sidebar when the mouse enters the right edge
+  const rightZone = document.getElementById('right-hover-zone');
+  const rightSidebarEl = document.getElementById('right-sidebar');
+  if (rightZone) {
+    rightZone.addEventListener('mouseenter', () => {
       if (isFullscreen) {
-        showResolutionMenu();
+        rightSidebarOpen = true;
+        applyRightSidebar();
+        resetInactivity();
       }
     });
   }
-  if (resMenu) {
-    resMenu.addEventListener('mouseleave', (e) => {
+  if (rightSidebarEl) {
+    rightSidebarEl.addEventListener('mouseleave', (e) => {
+      if (!isFullscreen) return;
       const to = e.relatedTarget;
-      if (to && resZone && resZone.contains(to)) return;
-      hideResolutionMenu();
+      if (to && rightZone && rightZone.contains(to)) return;
+      rightSidebarOpen = false;
+      applyRightSidebar();
     });
   }
 }
@@ -94,12 +101,10 @@ export function selectChannel(index, skipFullscreen) {
     onChannelSelect(channels[index]);
   }
 
-  // Stream is now playing: go fullscreen (skip on auto-load, only on user action)
   if (!skipFullscreen) {
     requestFullscreen();
   }
 
-  // Update now playing bar
   const nameEl = document.getElementById('channel-name');
   const infoEl = document.getElementById('channel-info');
 
@@ -134,7 +139,6 @@ export function selectFocused() {
 }
 
 export function jumpToNumber(num) {
-  // Find channel by number
   const index = channels.findIndex((ch) => ch.channelNumber === num);
   if (index !== -1) {
     selectChannel(index);
@@ -160,9 +164,10 @@ export function requestFullscreen() {
     app.classList.add('fullscreen');
   }
   isFullscreen = true;
-  // Hide the channel list while in fullscreen; it can be shown with the left arrow
   sidebarOpen = false;
   applySidebar();
+  rightSidebarOpen = false;
+  applyRightSidebar();
 
   startCursorAutoHide();
   startInactivityTimer();
@@ -179,6 +184,7 @@ export function requestFullscreen() {
 export function exitFullscreenMode() {
   isFullscreen = false;
   sidebarOpen = true;
+  rightSidebarOpen = false;
   const app = document.getElementById('app');
   if (app) {
     app.classList.remove('fullscreen');
@@ -187,6 +193,7 @@ export function exitFullscreenMode() {
   stopCursorAutoHide();
   stopInactivityTimer();
   applySidebar();
+  applyRightSidebar();
 }
 
 let cursorHideTimer = null;
@@ -215,7 +222,6 @@ function revealCursor() {
   }, 1700);
 }
 
-/* Fullscreen: auto-close overlays after a period of no activity */
 let inactivityTimer = null;
 const INACTIVITY_MS = 1700;
 
@@ -244,9 +250,14 @@ function autoCloseOverlays() {
     sidebarOpen = false;
     applySidebar();
   }
-  if (resolutionMenuOpen) {
-    hideResolutionMenu();
+  if (rightSidebarOpen) {
+    rightSidebarOpen = false;
+    applyRightSidebar();
   }
+}
+
+export function resetInactivityTimer() {
+  resetInactivity();
 }
 
 function applySidebar() {
@@ -254,6 +265,159 @@ function applySidebar() {
   if (sidebar) {
     sidebar.classList.toggle('closed', !sidebarOpen);
   }
+}
+
+/* Right sidebar */
+export function applyRightSidebar() {
+  const el = document.getElementById('right-sidebar');
+  if (el) {
+    el.classList.toggle('closed', !rightSidebarOpen);
+  }
+}
+
+export function toggleRightSidebar() {
+  rightSidebarOpen = !rightSidebarOpen;
+  applyRightSidebar();
+  if (rightSidebarOpen) {
+    buildRightItems();
+    rightFocus = 0;
+    updateRightFocus();
+    resetInactivity();
+  }
+}
+
+export function isRightSidebarOpen() {
+  return rightSidebarOpen;
+}
+
+export function setResolutionCallback(cb) {
+  rightResolutionCallback = cb;
+}
+
+export function setResolutions(heights) {
+  rightResolutions = ['auto'].concat(heights || []);
+  renderRightResolutionList();
+  if (rightSidebarOpen) {
+    buildRightItems();
+    updateRightFocus();
+  }
+}
+
+export function setSelectedResolution(value) {
+  rightSelectedResolution = value;
+  renderRightResolutionList();
+}
+
+function renderRightResolutionList() {
+  const list = document.getElementById('resolution-list-right');
+  if (!list) return;
+  list.innerHTML = '';
+  rightResolutions.forEach((res, index) => {
+    const item = document.createElement('div');
+    item.className = 'resolution-item-right';
+    if (res === rightSelectedResolution) {
+      item.classList.add('active');
+    }
+    item.dataset.index = index;
+    item.textContent = res === 'auto' ? 'Auto' : res + 'p';
+    item.addEventListener('click', () => {
+      rightFocus = index;
+      doRightSelect();
+    });
+    list.appendChild(item);
+  });
+}
+
+function buildRightItems() {
+  rightItems = [];
+  // Resolution items (indices 0 .. N-1)
+  const list = document.getElementById('resolution-list-right');
+  if (list) {
+    const resItems = list.querySelectorAll('.resolution-item-right');
+    resItems.forEach((item) => {
+      rightItems.push({ type: 'resolution', element: item });
+    });
+  }
+  // Button IDs
+  const btnIds = ['refresh-stream-btn', 'refresh-channels-btn'];
+  btnIds.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      rightItems.push({ type: 'button', element: el, id: id });
+    }
+  });
+}
+
+export function rightSidebarNavigateUp() {
+  if (!rightSidebarOpen || rightItems.length === 0) return;
+  rightFocus = (rightFocus - 1 + rightItems.length) % rightItems.length;
+  updateRightFocus();
+}
+
+export function rightSidebarNavigateDown() {
+  if (!rightSidebarOpen || rightItems.length === 0) return;
+  rightFocus = (rightFocus + 1) % rightItems.length;
+  updateRightFocus();
+}
+
+export function rightSidebarSelect() {
+  if (!rightSidebarOpen || rightItems.length === 0) return;
+  const item = rightItems[rightFocus];
+  if (!item) return;
+  if (item.type === 'resolution') {
+    doRightSelect();
+  } else if (item.type === 'button') {
+    const el = document.getElementById(item.id);
+    if (el) el.click();
+  }
+}
+
+function doRightSelect() {
+  const items = document.querySelectorAll('.resolution-item-right');
+  const idx = rightFocus;
+  if (idx < 0 || idx >= items.length) {
+    // Focus is on a button, not a resolution item - do nothing
+    return;
+  }
+  const value = rightResolutions[idx];
+  rightSelectedResolution = value;
+  renderRightResolutionList();
+  if (rightResolutionCallback) {
+    rightResolutionCallback(value === 'auto' ? null : value);
+  }
+  rightSidebarOpen = false;
+  applyRightSidebar();
+}
+
+function updateRightFocus() {
+  rightItems.forEach((item, index) => {
+    const focused = index === rightFocus;
+    if (item.element) {
+      item.element.classList.toggle('focused', focused);
+    }
+  });
+  if (rightItems[rightFocus] && rightItems[rightFocus].element) {
+    rightItems[rightFocus].element.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+/* Channel OSD */
+let osdTimer = null;
+
+export function showChannelOsd(channel) {
+  if (!channel) return;
+  const el = document.getElementById('channel-osd');
+  if (!el) return;
+  clearTimeout(osdTimer);
+  el.classList.remove('fade');
+  el.classList.remove('hidden');
+  el.innerHTML = '<span class="osd-number">' + (channel.channelNumber || '') + '</span>' + escapeHtml(channel.name);
+  osdTimer = setTimeout(() => {
+    el.classList.add('fade');
+    setTimeout(() => {
+      el.classList.add('hidden');
+    }, 300);
+  }, 2000);
 }
 
 export function getChannels() {
@@ -274,6 +438,11 @@ export function refreshChannelList(newChannels) {
   renderChannelList();
   updateFocus();
   updateActiveChannel();
+  // Close right sidebar since channel list may have changed
+  if (rightSidebarOpen) {
+    rightSidebarOpen = false;
+    applyRightSidebar();
+  }
 }
 
 function updateActiveChannel() {
@@ -326,111 +495,4 @@ export function hideBuffering() {
 function setBufferingPercent(percent) {
   const p = document.getElementById('buffering-percent');
   if (p) p.textContent = (typeof percent === 'number' ? percent : 0) + '%';
-}
-
-/* Resolution selector */
-export function setResolutionCallback(cb) {
-  resolutionCallback = cb;
-}
-
-export function setResolutions(heights) {
-  resolutions = ['auto'].concat(heights || []);
-  renderResolutionMenu();
-  if (resolutionMenuOpen) updateResolutionFocus();
-}
-
-export function showResolutionMenu() {
-  if (resolutions.length === 0) return;
-  resolutionMenuOpen = true;
-  resolutionFocus = Math.max(0, resolutions.indexOf(selectedResolution));
-  renderResolutionMenu();
-  updateResolutionFocus();
-  const menu = document.getElementById('resolution-menu');
-  if (menu) menu.classList.remove('hidden');
-}
-
-export function hideResolutionMenu() {
-  resolutionMenuOpen = false;
-  const menu = document.getElementById('resolution-menu');
-  if (menu) menu.classList.add('hidden');
-}
-
-export function toggleResolutionMenu() {
-  if (resolutionMenuOpen) hideResolutionMenu();
-  else showResolutionMenu();
-}
-
-export function isResolutionMenuOpen() {
-  return resolutionMenuOpen;
-}
-
-export function resolutionNavigateUp() {
-  if (!resolutionMenuOpen) return;
-  if (resolutionFocus > 0) {
-    resolutionFocus--;
-    updateResolutionFocus();
-  }
-}
-
-export function resolutionNavigateDown() {
-  if (!resolutionMenuOpen) return;
-  if (resolutionFocus < resolutions.length - 1) {
-    resolutionFocus++;
-    updateResolutionFocus();
-  }
-}
-
-export function resolutionSelect() {
-  if (!resolutionMenuOpen) return;
-  const value = resolutions[resolutionFocus];
-  selectedResolution = value;
-  updateResolutionButton(value);
-  renderResolutionMenu();
-  if (resolutionCallback) {
-    resolutionCallback(value === 'auto' ? null : value);
-  }
-  hideResolutionMenu();
-}
-
-export function setResolutionLabel(label) {
-  updateResolutionButton(label);
-}
-
-function renderResolutionMenu() {
-  const list = document.getElementById('resolution-list');
-  if (!list) return;
-
-  list.innerHTML = '';
-
-  resolutions.forEach((res, index) => {
-    const item = document.createElement('div');
-    item.className = 'resolution-item';
-    if (res === selectedResolution) {
-      item.classList.add('active');
-    }
-    item.dataset.index = index;
-    item.textContent = res === 'auto' ? 'Auto' : res + 'p';
-    item.addEventListener('click', () => {
-      resolutionFocus = index;
-      resolutionSelect();
-    });
-    list.appendChild(item);
-  });
-}
-
-function updateResolutionFocus() {
-  const items = document.querySelectorAll('.resolution-item');
-  items.forEach((item, index) => {
-    item.classList.toggle('focused', index === resolutionFocus);
-  });
-  if (items[resolutionFocus]) {
-    items[resolutionFocus].scrollIntoView({ block: 'nearest' });
-  }
-}
-
-function updateResolutionButton(value) {
-  const btn = document.getElementById('resolution-button');
-  if (btn) {
-    btn.textContent = value === 'auto' || value == null ? 'Auto' : value + 'p';
-  }
 }

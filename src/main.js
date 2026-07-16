@@ -55,12 +55,6 @@ async function init() {
     updateResolutionBadge(height || player.getActiveHeight());
   });
 
-  // Open the resolution menu when the now-playing button is clicked
-  const resButton = document.getElementById('resolution-button');
-  if (resButton) {
-    resButton.addEventListener('click', () => ui.toggleResolutionMenu());
-  }
-
   // Play/Pause controls
   const playPauseButton = document.getElementById('playpause-button');
   if (playPauseButton) {
@@ -68,6 +62,16 @@ async function init() {
       e.stopPropagation();
       player.togglePlay();
     });
+  }
+
+  // Wire right sidebar buttons
+  const refreshStreamBtn = document.getElementById('refresh-stream-btn');
+  if (refreshStreamBtn) {
+    refreshStreamBtn.addEventListener('click', () => player.reloadChannel());
+  }
+  const refreshChannelsBtn = document.getElementById('refresh-channels-btn');
+  if (refreshChannelsBtn) {
+    refreshChannelsBtn.addEventListener('click', () => refreshChannels());
   }
 
   // Click the video to toggle play/pause (handy in fullscreen)
@@ -79,11 +83,6 @@ async function init() {
   });
   videoEl.addEventListener('pause', () => {
     if (playPauseButton) playPauseButton.innerHTML = '&#9654;';
-  });
-
-  // Auto-close the resolution menu once the stream starts playing
-  videoEl.addEventListener('playing', () => {
-    ui.hideResolutionMenu();
   });
 
   // Keep UI state in sync when the browser leaves fullscreen (e.g. ESC)
@@ -134,8 +133,8 @@ let channels;
 async function handleChannelSelect(channel) {
   currentIndex = channels.indexOf(channel);
   await player.loadChannel(channel);
+  ui.setSelectedResolution('auto');
   ui.setResolutions(player.getResolutions());
-  // Set initial resolution badge (fires variantchanged after load)
   const height = player.getActiveHeight();
   if (height) updateResolutionBadge(height);
 }
@@ -156,30 +155,38 @@ function getResolutionLabel(height) {
   return '8K';
 }
 
+function formatBandwidth(bps) {
+  if (!bps || bps <= 0) return '';
+  const mbps = (bps / 1000000).toFixed(1);
+  return ' \u2022 ' + mbps + ' Mbps';
+}
+
 function updateResolutionBadge(height) {
   const el = document.getElementById('resolution-badge');
   if (!el) return;
-  el.textContent = getResolutionLabel(height);
+  const label = getResolutionLabel(height);
+  const bw = formatBandwidth(player.getActiveBandwidth());
+  el.textContent = label + bw;
   el.classList.remove('hidden');
 }
 
 // Handle remote control actions
 function handleRemoteAction(action, value) {
-  // While the resolution menu is open, navigation is scoped to it
-  if (ui.isResolutionMenuOpen()) {
+  // While the right sidebar is open, navigation is scoped to it
+  if (ui.isRightSidebarOpen()) {
     switch (action) {
       case 'up':
-        ui.resolutionNavigateUp();
+        ui.rightSidebarNavigateUp();
         break;
       case 'down':
-        ui.resolutionNavigateDown();
+        ui.rightSidebarNavigateDown();
         break;
       case 'select':
-        ui.resolutionSelect();
+        ui.rightSidebarSelect();
         break;
       case 'back':
       case 'right':
-        ui.hideResolutionMenu();
+        ui.toggleRightSidebar();
         break;
       default:
         break;
@@ -187,17 +194,63 @@ function handleRemoteAction(action, value) {
     return;
   }
 
+  // While the left sidebar is open, navigate channel list
+  if (ui.isSidebarOpen()) {
+    switch (action) {
+      case 'up':
+        ui.navigateUp();
+        break;
+      case 'down':
+        ui.navigateDown();
+        break;
+      case 'select':
+        ui.selectFocused();
+        break;
+      case 'left':
+        ui.toggleSidebar();
+        break;
+      case 'right':
+        ui.toggleRightSidebar();
+        break;
+      case 'back':
+        ui.toggleSidebar();
+        break;
+      case 'playpause':
+        player.togglePlay();
+        break;
+      case 'number':
+        ui.jumpToNumber(value);
+        break;
+      case 'reload':
+        player.reloadChannel();
+        break;
+      default:
+        break;
+    }
+    return;
+  }
+
+  // No overlays open — fullscreen remote control
   switch (action) {
-    case 'up':
-      ui.navigateUp();
+    case 'up': {
+      const prev = (currentIndex - 1 + channels.length) % channels.length;
+      ui.selectChannel(prev);
+      ui.showChannelOsd(channels[prev]);
       break;
-    case 'down':
-      ui.navigateDown();
+    }
+    case 'down': {
+      const next = (currentIndex + 1) % channels.length;
+      ui.selectChannel(next);
+      ui.showChannelOsd(channels[next]);
+      break;
+    }
+    case 'left':
+      ui.toggleSidebar();
+      break;
+    case 'right':
+      ui.toggleRightSidebar();
       break;
     case 'select':
-      ui.selectFocused();
-      break;
-    case 'back':
       ui.toggleSidebar();
       break;
     case 'playpause':
@@ -205,13 +258,6 @@ function handleRemoteAction(action, value) {
       break;
     case 'number':
       ui.jumpToNumber(value);
-      break;
-    case 'left':
-      // Could be used for sidebar toggle on some remotes
-      ui.toggleSidebar();
-      break;
-    case 'right':
-      ui.toggleResolutionMenu();
       break;
     case 'reload':
       player.reloadChannel();

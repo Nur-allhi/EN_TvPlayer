@@ -142,11 +142,20 @@ export function onChannelAdvance(callback) {
   channelAdvanceCallback = callback;
 }
 
-export function getActiveHeight() {
+export function getActiveTrack() {
   if (!player) return null;
   const tracks = player.getVariantTracks();
-  const active = tracks.find((t) => t.active);
-  return active ? active.height : null;
+  return tracks.find((t) => t.active) || null;
+}
+
+export function getActiveHeight() {
+  const t = getActiveTrack();
+  return t ? t.height : null;
+}
+
+export function getActiveBandwidth() {
+  const t = getActiveTrack();
+  return t ? t.bandwidth : null;
 }
 
 export async function loadChannel(channel) {
