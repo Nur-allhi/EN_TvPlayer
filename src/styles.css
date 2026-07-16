@@ -435,22 +435,17 @@ html, body {
   margin-right: 12px;
 }
 
-/* Resolution badge (top-right corner, glass background) */
+/* Resolution badge (top-right corner) */
 .resolution-badge {
   position: absolute;
   top: 20px;
   right: 20px;
-  padding: 6px 14px;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: 8px;
+  padding: 4px 12px;
   font-size: 15px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.7);
   z-index: 40;
   pointer-events: none;
-  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* Error */
