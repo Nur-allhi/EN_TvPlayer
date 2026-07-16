@@ -107,10 +107,17 @@ html, body {
 }
 
 .logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 26px;
   font-weight: 700;
   color: #4fc3f7;
   letter-spacing: 2px;
+}
+
+.logo-icon {
+  flex-shrink: 0;
 }
 
 .channel-list {

@@ -137,6 +137,9 @@ writeFileSync(join(TEMP, 'config.xml'), configXml);
 // Copy app files
 cpSync(DIST, TEMP, { recursive: true });
 
+// Copy app icon
+cpSync(join(TIZEN, 'icons', 'icon_128.png'), join(TEMP, 'icon.png'));
+
 // Create unsigned ZIP via Python helper
 const ZIP_HELPER = join(TIZEN, 'ziphelper.py');
 execSync(`python "${ZIP_HELPER}" unsigned "${TEMP}" "${UNSIGNED}"`, { stdio: 'inherit' });
