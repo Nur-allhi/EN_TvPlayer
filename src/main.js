@@ -4,8 +4,22 @@ import * as ui from './ui.js';
 import * as remote from './remote.js';
 import channelsData from '../channels.json';
 
+async function fetchChannelsFromApi() {
+  try {
+    const base = config.apiUrl || '';
+    const resp = await fetch(base + '/api/channels');
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data && data.length > 0) return data;
+    }
+  } catch (e) {
+    console.warn('Failed to fetch channels from API, using fallback:', e.message);
+  }
+  return null;
+}
+
 // Initialize the app
-function init() {
+async function init() {
   // Check Shaka support
   const videoEl = document.getElementById('video');
   if (!player.initPlayer(videoEl)) {
@@ -17,13 +31,14 @@ function init() {
     return;
   }
 
-  // Load channel list
-  channels = channelsData;
+  // Load channel list from API, fall back to bundled channels.json
+  const apiChannels = await fetchChannelsFromApi();
+  channels = apiChannels || channelsData;
   if (!channels || channels.length === 0) {
     document.body.innerHTML =
       '<div style="text-align:center;padding:40px;color:#fff;">' +
       '<h2>No Channels</h2>' +
-      '<p>Edit channels.json to add channels.</p>' +
+      '<p>Add channels via the Channel Manager or edit channels.json.</p>' +
       '</div>';
     return;
   }
@@ -203,6 +218,17 @@ function handleRemoteAction(action, value) {
       break;
     default:
       break;
+  }
+}
+
+// Refresh channels from API and update UI (e.g. after channel manager edit)
+export async function refreshChannels() {
+  const apiChannels = await fetchChannelsFromApi();
+  if (apiChannels && apiChannels.length > 0) {
+    apiChannels.sort((a, b) => (a.channelNumber || 0) - (b.channelNumber || 0));
+    channels = apiChannels;
+    ui.refreshChannelList(channels);
+    console.log('Channels refreshed:', channels.length);
   }
 }
 

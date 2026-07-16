@@ -21,8 +21,6 @@ function log(message) {
 }
 
 // ── Header Rules ───────────────────────────────────────────────
-// Load header-rules.json — an array of { name, match (regex), headers }.
-// First matching rule wins; if none matches, fall back to default behavior.
 const headerRulesFile = path.resolve('header-rules.json');
 let headerRules = [];
 try {
@@ -47,7 +45,6 @@ function applyHeaderRules(hostname, cleanHeaders, url) {
       return rule.name;
     }
   }
-  // fallback: set origin/referer to the target domain
   if (!cleanHeaders['origin']) cleanHeaders['origin'] = url.protocol + '//' + url.hostname;
   if (!cleanHeaders['referer']) cleanHeaders['referer'] = url.protocol + '//' + url.hostname + '/';
   log('  └─ no rule matched, using fallback headers');
@@ -55,82 +52,265 @@ function applyHeaderRules(hostname, cleanHeaders, url) {
 }
 // ──────────────────────────────────────────────────────────────
 
-// Accept self-signed certs (common for CDNs behind MITM proxies and dev setups)
 const httpsAgent = new https.Agent({ rejectUnauthorized: false, keepAlive: true, maxSockets: 50 });
 
-http.createServer((req, res) => {
-  // Player log endpoint — receives JSON log events from the browser
-  if (req.url === '/log' && req.method === 'POST') {
-    let body = '';
-    req.on('data', (chunk) => { body += chunk; });
-    req.on('end', () => {
-      try {
-        const data = JSON.parse(body);
-        log(`PLAYER ${data.level || 'INFO'} ${data.message}`);
-      } catch {
-        log(`PLAYER RAW ${body}`);
-      }
-      res.writeHead(200, { 'Access-Control-Allow-Origin': '*' });
-      res.end('ok');
-    });
-    return;
+// ── Channels Data ─────────────────────────────────────────────
+const CHANNELS_FILE = path.resolve('channels.json');
+
+function readChannels() {
+  try {
+    const raw = fs.readFileSync(CHANNELS_FILE, 'utf8');
+    const data = JSON.parse(raw);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
   }
-  if (req.url === '/log' && req.method === 'OPTIONS') {
-    res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'content-type' });
-    res.end();
-    return;
-  }
+}
 
-  const target = req.url.slice(1);
-  if (!target.startsWith('http://') && !target.startsWith('https://')) {
-    res.writeHead(400);
-    res.end('Usage: GET /<target-url>');
-    log(`BAD_REQUEST ${req.url}`);
-    return;
-  }
+function writeChannels(channels) {
+  channels.sort((a, b) => (a.channelNumber || 999) - (b.channelNumber || 999));
+  fs.writeFileSync(CHANNELS_FILE, JSON.stringify(channels, null, 2) + '\n', 'utf8');
+}
+// ──────────────────────────────────────────────────────────────
 
-  const url = new URL(target);
-  const mod = url.protocol === 'https:' ? https : http;
+// ── MIME Types ────────────────────────────────────────────────
+const MIME = {
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+};
 
-  const blockedHeaders = ['host', 'connection', 'keep-alive'];
-  const cleanHeaders = Object.fromEntries(
-    Object.entries(req.headers).filter(([k]) => !blockedHeaders.includes(k.toLowerCase()))
-  );
-  const ruleName = applyHeaderRules(url.hostname, cleanHeaders, url);
-  if (!cleanHeaders['user-agent']) {
-    cleanHeaders['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
-  }
-
-  log(`PROXY ${req.method} ${url.hostname}${url.pathname.slice(0, 80)} → Origin: ${cleanHeaders['origin']} Referer: ${cleanHeaders['referer']}`);
-
-  let responded = false;
-
-  req.setTimeout(30000, () => { log(`TIMEOUT request ${url.hostname}`); req.destroy(); });
-  const proxyReq = mod.request(target, { method: req.method, agent: url.protocol === 'https:' ? httpsAgent : undefined, headers: { ...cleanHeaders, host: url.hostname }, timeout: 15000 }, (proxyRes) => {
-    responded = true;
-    if (proxyRes.statusCode === 403) {
-      const respHeaders = {};
-      for (const [k, v] of Object.entries(proxyRes.headers)) {
-        if (/^(x-cache|x-served-by|x-amz|www-authenticate|content-type|server)/i.test(k)) {
-          respHeaders[k] = v;
-        }
-      }
-      log(`PROXY 403 on ${url.hostname}${url.pathname.slice(0, 60)} → ${JSON.stringify(respHeaders)}`);
-    } else if (proxyRes.statusCode >= 500) {
-      log(`PROXY ${proxyRes.statusCode} on ${url.hostname}${url.pathname.slice(0, 60)}`);
-    }
-    res.writeHead(proxyRes.statusCode, {
+function serveStatic(res, filePath) {
+  try {
+    const data = fs.readFileSync(filePath);
+    const ext = path.extname(filePath).toLowerCase();
+    res.writeHead(200, {
+      'Content-Type': MIME[ext] || 'application/octet-stream',
       'Access-Control-Allow-Origin': '*',
-      ...Object.fromEntries(
-        Object.entries(proxyRes.headers).filter(([k]) => !/^access-control-allow-origin$/i.test(k))
-      ),
+      'Cache-Control': ext === '.html' ? 'no-cache' : 'max-age=31536000',
     });
-    proxyRes.on('error', (e) => { if (e.message === 'aborted') return; log(`PROXY response error: ${e.message}`); res.destroy(); });
-    proxyRes.pipe(res);
-  });
+    res.end(data);
+  } catch (e) {
+    if (e.code === 'ENOENT') {
+      res.writeHead(404);
+      res.end('Not found');
+    } else {
+      res.writeHead(500);
+      res.end('Internal error');
+    }
+  }
+}
 
-  proxyReq.on('error', (e) => { if (e.message.includes('certificate')) return; log(`PROXY error: ${e.message}`); if (!responded) { responded = true; res.writeHead(502); res.end('Proxy error: ' + e.message); } });
-  proxyReq.on('timeout', () => { proxyReq.destroy(); if (!responded) { responded = true; res.writeHead(504); res.end('Proxy timeout'); } });
-  req.on('error', (e) => { log(`REQ error: ${e.message}`); proxyReq.destroy(); });
-  req.pipe(proxyReq);
-}).listen(PORT, () => log(`CORS proxy running on http://localhost:${PORT}`));
+function serveJson(res, data, status = 200) {
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+  });
+  res.end(JSON.stringify(data));
+}
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => resolve(body));
+    req.on('error', reject);
+  });
+}
+
+function corsHeaders(methods = 'GET, POST, PUT, DELETE, OPTIONS') {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': methods,
+    'Access-Control-Allow-Headers': 'content-type',
+  };
+}
+// ──────────────────────────────────────────────────────────────
+
+http.createServer(async (req, res) => {
+  const parsed = new URL(req.url, 'http://localhost');
+  const pathname = parsed.pathname;
+  const method = req.method;
+
+  try {
+    // ── Log Endpoint ────────────────────────────────────────
+    if (pathname === '/log' && method === 'POST') {
+      let body = '';
+      req.on('data', (chunk) => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const data = JSON.parse(body);
+          log(`PLAYER ${data.level || 'INFO'} ${data.message}`);
+        } catch {
+          log(`PLAYER RAW ${body}`);
+        }
+        res.writeHead(200, { 'Access-Control-Allow-Origin': '*' });
+        res.end('ok');
+      });
+      return;
+    }
+    if (pathname === '/log' && method === 'OPTIONS') {
+      res.writeHead(204, corsHeaders());
+      res.end();
+      return;
+    }
+
+    // ── Channels API ────────────────────────────────────────
+    // GET /api/channels
+    if (pathname === '/api/channels' && method === 'GET') {
+      serveJson(res, readChannels());
+      return;
+    }
+    // POST /api/channels
+    if (pathname === '/api/channels' && method === 'POST') {
+      const body = await readBody(req);
+      const channel = JSON.parse(body);
+      const channels = readChannels();
+      channels.push(channel);
+      writeChannels(channels);
+      log(`CHANNELS added "${channel.name}" (${channels.length} total)`);
+      serveJson(res, channel, 201);
+      return;
+    }
+    // PUT /api/channels/:id
+    const putMatch = pathname.match(/^\/api\/channels\/(\d+)$/);
+    if (putMatch && method === 'PUT') {
+      const id = parseInt(putMatch[1], 10);
+      const body = await readBody(req);
+      const update = JSON.parse(body);
+      const channels = readChannels();
+      if (id < 0 || id >= channels.length) {
+        res.writeHead(404); res.end('Not found');
+        return;
+      }
+      channels[id] = { ...channels[id], ...update };
+      writeChannels(channels);
+      log(`CHANNELS updated #${id} "${update.name}"`);
+      serveJson(res, channels[id]);
+      return;
+    }
+    // DELETE /api/channels/:id
+    const delMatch = pathname.match(/^\/api\/channels\/(\d+)$/);
+    if (delMatch && method === 'DELETE') {
+      const id = parseInt(delMatch[1], 10);
+      const channels = readChannels();
+      if (id < 0 || id >= channels.length) {
+        res.writeHead(404); res.end('Not found');
+        return;
+      }
+      const removed = channels.splice(id, 1)[0];
+      writeChannels(channels);
+      log(`CHANNELS deleted #${id} "${removed.name}"`);
+      res.writeHead(204, corsHeaders());
+      res.end();
+      return;
+    }
+    // OPTIONS for /api/channels/*
+    if (pathname.startsWith('/api/') && method === 'OPTIONS') {
+      res.writeHead(204, corsHeaders());
+      res.end();
+      return;
+    }
+
+    // ── Static Files ────────────────────────────────────────
+    // Management UI
+    if (pathname === '/manage' || pathname.startsWith('/manage/')) {
+      const sub = pathname.slice('/manage'.length) || '/';
+      const filePath = path.resolve('manage', sub.slice(1) || 'index.html');
+      serveStatic(res, filePath);
+      return;
+    }
+    // Player app (built dist)
+    if (pathname === '/' || pathname.startsWith('/assets/') || pathname.startsWith('/src/')) {
+      let filePath;
+      if (pathname === '/' || pathname === '/index.html') {
+        filePath = path.resolve('dist/index.html');
+      } else {
+        filePath = path.resolve(pathname.slice(1));  // strips leading /
+      }
+      serveStatic(res, filePath);
+      return;
+    }
+
+    // ── CORS Proxy ──────────────────────────────────────────
+    const target = pathname + parsed.search;
+    if (!target.startsWith('http://') && !target.startsWith('https://')) {
+      // If nothing matched, show a helpful index
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(`<!DOCTYPE html>
+<html><head><title>TV Server</title>
+<style>body{font-family:sans-serif;background:#0d1117;color:#c9d1d9;padding:40px;text-align:center}a{color:#58a6ff}</style>
+<body>
+<h1>TV Server Running</h1>
+<p><a href="/manage">Channel Manager</a></p>
+<p><a href="/">Player</a></p>
+</html>`);
+      return;
+    }
+
+    const url = new URL(target);
+    const mod = url.protocol === 'https:' ? https : http;
+
+    const blockedHeaders = ['host', 'connection', 'keep-alive'];
+    const cleanHeaders = Object.fromEntries(
+      Object.entries(req.headers).filter(([k]) => !blockedHeaders.includes(k.toLowerCase()))
+    );
+    const ruleName = applyHeaderRules(url.hostname, cleanHeaders, url);
+    if (!cleanHeaders['user-agent']) {
+      cleanHeaders['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+    }
+
+    log(`PROXY ${method} ${url.hostname}${url.pathname.slice(0, 80)} → Origin: ${cleanHeaders['origin']} Referer: ${cleanHeaders['referer']}`);
+
+    let responded = false;
+
+    req.setTimeout(30000, () => { log(`TIMEOUT request ${url.hostname}`); req.destroy(); });
+    const proxyReq = mod.request(target, {
+      method,
+      agent: url.protocol === 'https:' ? httpsAgent : undefined,
+      headers: { ...cleanHeaders, host: url.hostname },
+      timeout: 15000,
+    }, (proxyRes) => {
+      responded = true;
+      if (proxyRes.statusCode === 403) {
+        const respHeaders = {};
+        for (const [k, v] of Object.entries(proxyRes.headers)) {
+          if (/^(x-cache|x-served-by|x-amz|www-authenticate|content-type|server)/i.test(k)) {
+            respHeaders[k] = v;
+          }
+        }
+        log(`PROXY 403 on ${url.hostname}${url.pathname.slice(0, 60)} → ${JSON.stringify(respHeaders)}`);
+      } else if (proxyRes.statusCode >= 500) {
+        log(`PROXY ${proxyRes.statusCode} on ${url.hostname}${url.pathname.slice(0, 60)}`);
+      }
+      res.writeHead(proxyRes.statusCode, {
+        'Access-Control-Allow-Origin': '*',
+        ...Object.fromEntries(
+          Object.entries(proxyRes.headers).filter(([k]) => !/^access-control-allow-origin$/i.test(k))
+        ),
+      });
+      proxyRes.on('error', (e) => { if (e.message === 'aborted') return; log(`PROXY response error: ${e.message}`); res.destroy(); });
+      proxyRes.pipe(res);
+    });
+
+    proxyReq.on('error', (e) => { if (e.message.includes('certificate')) return; log(`PROXY error: ${e.message}`); if (!responded) { responded = true; res.writeHead(502); res.end('Proxy error: ' + e.message); } });
+    proxyReq.on('timeout', () => { proxyReq.destroy(); if (!responded) { responded = true; res.writeHead(504); res.end('Proxy timeout'); } });
+    req.on('error', (e) => { log(`REQ error: ${e.message}`); proxyReq.destroy(); });
+    req.pipe(proxyReq);
+  } catch (e) {
+    log(`SERVER error: ${e.message}`);
+    if (!res.headersSent) {
+      res.writeHead(500);
+      res.end('Server error');
+    }
+  }
+}).listen(PORT, () => log(`TV Server running on http://localhost:${PORT}`));

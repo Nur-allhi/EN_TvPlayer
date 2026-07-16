@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Channel Manager</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0d1117; color: #c9d1d9; padding: 20px; min-height: 100vh;
+    }
+    h1 { font-size: 24px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+    h1 small { font-size: 14px; color: #8b949e; font-weight: normal; }
+    .toolbar { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
+    .btn {
+      padding: 8px 16px; border: 1px solid #30363d; border-radius: 6px;
+      background: #21262d; color: #c9d1d9; cursor: pointer; font-size: 14px;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: #30363d; }
+    .btn-primary { background: #238636; border-color: #2ea043; color: #fff; }
+    .btn-primary:hover { background: #2ea043; }
+    .btn-danger { background: #da3633; border-color: #f85149; color: #fff; }
+    .btn-danger:hover { background: #f85149; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #21262d; }
+    th { background: #161b22; color: #8b949e; font-weight: 600; position: sticky; top: 0; }
+    tr:hover { background: #161b22; }
+    .actions { display: flex; gap: 6px; }
+    .tag {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 600;
+    }
+    .tag-proxy { background: #1f6feb33; color: #58a6ff; }
+    .tag-drm { background: #da363333; color: #f85149; }
+    .tag-none { background: #21262d; color: #8b949e; }
+    .url-cell { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .empty { text-align: center; padding: 40px; color: #8b949e; }
+    .toast {
+      position: fixed; bottom: 20px; right: 20px; padding: 12px 20px;
+      border-radius: 8px; color: #fff; font-size: 14px; z-index: 1000;
+      transform: translateY(100px); opacity: 0; transition: all 0.3s;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast-success { background: #238636; }
+    .toast-error { background: #da3633; }
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 500; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+      padding: 24px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+    }
+    .modal h2 { margin-bottom: 20px; font-size: 18px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 13px; color: #8b949e; margin-bottom: 4px; }
+    .form-group input, .form-group textarea {
+      width: 100%; padding: 8px 12px; border: 1px solid #30363d; border-radius: 6px;
+      background: #0d1117; color: #c9d1d9; font-size: 14px;
+    }
+    .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #58a6ff; }
+    .form-group textarea { font-family: monospace; font-size: 12px; }
+    .form-row { display: flex; gap: 12px; }
+    .form-row .form-group { flex: 1; }
+    .form-group.checkbox { display: flex; align-items: center; gap: 8px; }
+    .form-group.checkbox input { width: auto; }
+    .form-group.checkbox label { margin-bottom: 0; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+    .inline-form { display: flex; gap: 8px; align-items: center; }
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+    .status-dot.online { background: #3fb950; }
+    .status-dot.offline { background: #f85149; }
+    .status-dot.unknown { background: #8b949e; }
+    td.drm-cell { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 768px) {
+      table { font-size: 12px; }
+      th, td { padding: 6px 8px; }
+      .url-cell { max-width: 120px; }
+      .drm-cell { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Channel Manager <small id="channel-count"></small></h1>
+
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="openAddModal()">+ Add Channel</button>
+    <button class="btn" onclick="loadChannels()" id="refresh-btn">Refresh</button>
+    <span style="color:#8b949e;font-size:13px" id="status-text"></span>
+  </div>
+
+  <div id="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>URL</th>
+          <th>Proxy</th>
+          <th>DRM</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="channels-tbody"></tbody>
+    </table>
+    <div class="empty" id="empty-state" style="display:none">No channels yet. Click "+ Add Channel" to get started.</div>
+  </div>
+
+  <!-- Channel Form Modal -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <h2 id="modal-title">Add Channel</h2>
+      <div class="form-group">
+        <label>Channel Name</label>
+        <input id="field-name" placeholder="e.g. Bein 1" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Channel Number</label>
+          <input id="field-number" type="number" placeholder="1" />
+        </div>
+        <div class="form-group checkbox">
+          <input id="field-proxy" type="checkbox" checked />
+          <label for="field-proxy">Use Proxy</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Stream URL</label>
+        <textarea id="field-url" rows="2" placeholder="https://example.com/stream.m3u8"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>DRM Key ID (optional)</label>
+          <input id="field-drm-keyid" placeholder="34475edab991ad5e92548aebd710410a" />
+        </div>
+        <div class="form-group">
+          <label>DRM Key (optional)</label>
+          <input id="field-drm-key" placeholder="501b209cccd323ac00bf5ac15b406cb4" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveChannel()" id="save-btn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let channels = [];
+    let editingIndex = -1;
+
+    function $(id) { return document.getElementById(id); }
+
+    async function api(url, options) {
+      const resp = await fetch(url, {
+        ...options,
+        headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) },
+      });
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => '');
+        throw new Error(text || `HTTP ${resp.status}`);
+      }
+      return resp.status === 204 ? null : resp.json();
+    }
+
+    async function loadChannels() {
+      try {
+        channels = await api('/api/channels');
+        renderTable();
+        $('channel-count').textContent = channels.length + ' channel' + (channels.length !== 1 ? 's' : '');
+        $('status-text').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+      } catch (e) {
+        showToast('Failed to load channels: ' + e.message, 'error');
+      }
+    }
+
+    function renderTable() {
+      const tbody = $('channels-tbody');
+      const empty = $('empty-state');
+      tbody.innerHTML = '';
+
+      if (!channels || channels.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+
+      channels.forEach((ch, i) => {
+        const drmTag = ch.drm && ch.drm.keyId
+          ? '<span class="tag tag-drm">ClearKey</span>'
+          : '<span class="tag tag-none">None</span>';
+        const proxyTag = ch.useProxy !== false
+          ? '<span class="tag tag-proxy">Proxy</span>'
+          : '<span class="tag tag-none">Direct</span>';
+        const urlDisplay = ch.url.length > 50 ? ch.url.slice(0, 50) + '...' : ch.url;
+        const drmDisplay = ch.drm && ch.drm.keyId ? ch.drm.keyId.slice(0, 16) + '...' : '—';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${ch.channelNumber || '—'}</td>
+          <td><strong>${esc(ch.name)}</strong></td>
+          <td class="url-cell" title="${esc(ch.url)}">${esc(urlDisplay)}</td>
+          <td>${proxyTag}</td>
+          <td class="drm-cell" title="${esc(ch.drm?.keyId || '')}">${drmDisplay}</td>
+          <td>
+            <div class="actions">
+              <button class="btn btn-sm" onclick="openEditModal(${i})">Edit</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteChannel(${i})">Del</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    function openAddModal() {
+      editingIndex = -1;
+      $('modal-title').textContent = 'Add Channel';
+      $('save-btn').textContent = 'Add';
+      $('field-name').value = '';
+      $('field-number').value = '';
+      $('field-url').value = '';
+      $('field-proxy').checked = true;
+      $('field-drm-keyid').value = '';
+      $('field-drm-key').value = '';
+      $('modal').classList.add('open');
+      $('field-name').focus();
+    }
+
+    function openEditModal(index) {
+      const ch = channels[index];
+      editingIndex = index;
+      $('modal-title').textContent = 'Edit Channel';
+      $('save-btn').textContent = 'Save';
+      $('field-name').value = ch.name || '';
+      $('field-number').value = ch.channelNumber || '';
+      $('field-url').value = ch.url || '';
+      $('field-proxy').checked = ch.useProxy !== false;
+      $('field-drm-keyid').value = (ch.drm && ch.drm.keyId) || '';
+      $('field-drm-key').value = (ch.drm && ch.drm.key) || '';
+      $('modal').classList.add('open');
+      $('field-name').focus();
+    }
+
+    function closeModal() {
+      $('modal').classList.remove('open');
+    }
+
+    async function saveChannel() {
+      const name = $('field-name').value.trim();
+      const url = $('field-url').value.trim();
+      const channelNumber = parseInt($('field-number').value, 10) || 0;
+      const useProxy = $('field-proxy').checked;
+      const drmKeyId = $('field-drm-keyid').value.trim();
+      const drmKey = $('field-drm-key').value.trim();
+
+      if (!name) { showToast('Channel name is required', 'error'); return; }
+      if (!url) { showToast('Stream URL is required', 'error'); return; }
+
+      const channel = { name, url, channelNumber, useProxy };
+      if (drmKeyId && drmKey) {
+        channel.drm = { keyId: drmKeyId, key: drmKey };
+      }
+
+      try {
+        if (editingIndex === -1) {
+          await api('/api/channels', {
+            method: 'POST',
+            body: JSON.stringify(channel),
+          });
+          showToast('Channel added', 'success');
+        } else {
+          await api('/api/channels/' + editingIndex, {
+            method: 'PUT',
+            body: JSON.stringify(channel),
+          });
+          showToast('Channel updated', 'success');
+        }
+        closeModal();
+        await loadChannels();
+      } catch (e) {
+        showToast('Save failed: ' + e.message, 'error');
+      }
+    }
+
+    async function deleteChannel(index) {
+      const ch = channels[index];
+      if (!confirm('Delete "' + ch.name + '"?')) return;
+      try {
+        await api('/api/channels/' + index, { method: 'DELETE' });
+        showToast('Channel deleted', 'success');
+        await loadChannels();
+      } catch (e) {
+        showToast('Delete failed: ' + e.message, 'error');
+      }
+    }
+
+    function showToast(message, type) {
+      const toast = $('toast');
+      toast.textContent = message;
+      toast.className = 'toast toast-' + type + ' show';
+      clearTimeout(toast._hide);
+      toast._hide = setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // Close modal on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // Load on start
+    loadChannels();
+  </script>
+</body>
+</html>

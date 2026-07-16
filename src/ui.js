@@ -267,6 +267,15 @@ export function getCurrentChannel() {
   return null;
 }
 
+export function refreshChannelList(newChannels) {
+  channels = newChannels;
+  currentIndex = -1;
+  focusedIndex = 0;
+  renderChannelList();
+  updateFocus();
+  updateActiveChannel();
+}
+
 function updateActiveChannel() {
   const items = document.querySelectorAll('.channel-item');
   items.forEach((item, index) => {

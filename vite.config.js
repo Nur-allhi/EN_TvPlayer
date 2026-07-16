@@ -44,6 +44,10 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace('/proxy', ''),
       },
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
       '/log': {
         target: 'http://localhost:8080',
         changeOrigin: true,
@@ -59,6 +63,10 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace('/proxy', ''),
+      },
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
       },
       '/log': {
         target: 'http://localhost:8080',
