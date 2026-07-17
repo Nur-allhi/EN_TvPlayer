@@ -7,3 +7,5 @@ tizen/*.p12
 tizen/*.pem
 tizen/*.wgt
 tizen/profile.xml
+.playwright-mcp/
+logs/
