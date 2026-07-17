@@ -60,8 +60,10 @@ export async function initPlayer(videoEl) {
       const url = request.uris && request.uris[0];
       if (!url || !url.startsWith('http')) return;
       if (url.startsWith(self.location.origin)) return;
-      if (config.useProxy && url.startsWith(config.proxyUrl)) return;
-      request.uris[0] = config.proxyUrl + url;
+      const proxyUrl = (currentChannel && currentChannel.proxyUrl) || config.proxyUrl;
+      if (!proxyUrl) return;
+      if (url.startsWith(proxyUrl)) return;
+      request.uris[0] = proxyUrl + url;
     });
   }
 

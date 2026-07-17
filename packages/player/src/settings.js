@@ -68,6 +68,9 @@ function render() {
           '<p class="settings-desc">Play a single channel URL without a playlist.</p>' +
           '<input id="settings-single-url" class="settings-input" type="text" placeholder="https://stream.example.com/playlist.m3u8" value="' + escapeHtml(s.singleChannelUrl || '') + '" />' +
           '<label class="settings-checkbox-label"><input type="checkbox" id="settings-single-proxy"' + (s.singleUseProxy ? ' checked' : '') + ' /> Use Proxy</label>' +
+          '<div id="settings-single-proxy-group" style="display:' + (s.singleUseProxy ? 'block' : 'none') + '">' +
+            '<input id="settings-single-proxy-url" class="settings-input" type="text" placeholder="http://192.168.0.136:5001/" value="' + escapeHtml(s.singleProxyUrl || '') + '" />' +
+          '</div>' +
           '<button id="settings-play-single-btn" class="settings-btn-primary">Play</button>' +
         '</div>' +
 
@@ -89,6 +92,11 @@ function render() {
   });
   document.getElementById('settings-single-proxy').addEventListener('change', (e) => {
     saveSettings({ singleUseProxy: e.target.checked });
+    const group = document.getElementById('settings-single-proxy-group');
+    if (group) group.style.display = e.target.checked ? 'block' : 'none';
+  });
+  document.getElementById('settings-single-proxy-url').addEventListener('change', (e) => {
+    saveSettings({ singleProxyUrl: normalizeProxyUrl(e.target.value) });
   });
   document.getElementById('settings-single-url').addEventListener('change', (e) => {
     saveSettings({ singleChannelUrl: e.target.value });
@@ -142,15 +150,22 @@ async function handleRefresh() {
 function handlePlaySingle() {
   const url = document.getElementById('settings-single-url').value.trim();
   const useProxy = document.getElementById('settings-single-proxy').checked;
+  const proxyUrl = useProxy ? normalizeProxyUrl(document.getElementById('settings-single-proxy-url').value.trim()) : '';
   if (!url) return;
+  if (useProxy && !proxyUrl) {
+    alert('Enter a proxy server URL');
+    document.getElementById('settings-single-proxy-url').focus();
+    return;
+  }
 
-  saveSettings({ singleChannelUrl: url, singleUseProxy: useProxy });
+  saveSettings({ singleChannelUrl: url, singleUseProxy: useProxy, singleProxyUrl: proxyUrl });
 
   const channel = {
     name: url.split('/').pop() || 'Single Channel',
     url: url,
     channelNumber: 0,
     useProxy: useProxy,
+    proxyUrl: proxyUrl,
     drm: null,
   };
 
@@ -185,16 +200,35 @@ function parseM3u(text) {
     if (line.startsWith('#EXTINF:')) {
       const nameMatch = line.match(/,(.+)$/);
       const name = nameMatch ? nameMatch[1].trim() : 'Channel ' + (index + 1);
-      const url = lines[i + 1] ? lines[i + 1].trim() : '';
+      let drm = null;
+      let urlIdx = i + 1;
+      while (urlIdx < lines.length) {
+        const next = lines[urlIdx].trim();
+        if (next.startsWith('#KODIPROP:')) {
+          if (next.includes('license_key=')) {
+            const keyMatch = next.match(/license_key=([a-fA-F0-9]+):([a-fA-F0-9]+)/);
+            if (keyMatch) {
+              drm = { keyId: keyMatch[1], key: keyMatch[2] };
+            }
+          }
+          urlIdx++;
+        } else if (next.startsWith('#EXTSYS')) {
+          urlIdx++;
+        } else {
+          break;
+        }
+      }
+      const url = lines[urlIdx] ? lines[urlIdx].trim() : '';
       if (url && !url.startsWith('#')) {
         channels.push({
           name: name,
           url: url,
           channelNumber: index + 1,
           useProxy: true,
-          drm: null,
+          drm: drm,
         });
         index++;
+        i = urlIdx;
       }
     }
   }

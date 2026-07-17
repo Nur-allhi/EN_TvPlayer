@@ -23,7 +23,13 @@ export function exportM3u() {
   let m3u = '#EXTM3U\n';
   for (const ch of channels) {
     const num = ch.channelNumber || '';
-    m3u += `#EXTINF:-1 tvg-name="${escapeM3u(ch.name)}" channel-number="${num}"${ch.useProxy !== false && ch.proxyUrl ? ` proxy="${escapeM3u(ch.proxyUrl)}"` : ''},${escapeM3u(ch.name)}\n`;
+    m3u += `#EXTINF:-1 tvg-name="${escapeM3u(ch.name)}" channel-number="${num}" group-title="${escapeM3u(ch.group || '')}",${escapeM3u(ch.name)}\n`;
+    if (ch.drm && ch.drm.keyId && ch.drm.key) {
+      m3u += '#KODIPROP:inputstream=inputstream.adaptive\n';
+      m3u += '#KODIPROP:inputstream.adaptive.manifest_type=mpd\n';
+      m3u += '#KODIPROP:inputstream.adaptive.license_type=clearkey\n';
+      m3u += `#KODIPROP:inputstream.adaptive.license_key=${escapeM3u(ch.drm.keyId)}:${escapeM3u(ch.drm.key)}\n`;
+    }
     m3u += ch.url + '\n';
   }
   return m3u;

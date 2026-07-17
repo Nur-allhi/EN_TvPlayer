@@ -3,6 +3,7 @@ const SETTINGS_KEY = 'en_settings';
 const settingsDefaults = {
   playlistUrl: '',
   proxyUrl: '',
+  singleProxyUrl: '',
   channels: [],
   channelsFetched: null,
   singleChannelUrl: '',

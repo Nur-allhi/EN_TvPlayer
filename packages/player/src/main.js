@@ -240,10 +240,29 @@ function parseM3u(text) {
     if (line.startsWith('#EXTINF:')) {
       const nameMatch = line.match(/,(.+)$/);
       const name = nameMatch ? nameMatch[1].trim() : 'Channel ' + (index + 1);
-      const url = lines[i + 1] ? lines[i + 1].trim() : '';
+      let drm = null;
+      let urlIdx = i + 1;
+      while (urlIdx < lines.length) {
+        const next = lines[urlIdx].trim();
+        if (next.startsWith('#KODIPROP:')) {
+          if (next.includes('license_key=')) {
+            const keyMatch = next.match(/license_key=([a-fA-F0-9]+):([a-fA-F0-9]+)/);
+            if (keyMatch) {
+              drm = { keyId: keyMatch[1], key: keyMatch[2] };
+            }
+          }
+          urlIdx++;
+        } else if (next.startsWith('#EXTSYS')) {
+          urlIdx++;
+        } else {
+          break;
+        }
+      }
+      const url = lines[urlIdx] ? lines[urlIdx].trim() : '';
       if (url && !url.startsWith('#')) {
-        result.push({ name, url, channelNumber: index + 1, useProxy: true, drm: null });
+        result.push({ name, url, channelNumber: index + 1, useProxy: true, drm });
         index++;
+        i = urlIdx;
       }
     }
   }
