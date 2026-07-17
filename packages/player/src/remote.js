@@ -18,6 +18,17 @@ function handleKeyDown(e) {
 
   const key = e.key || e.keyCode;
 
+  // If a form input is focused, let browser handle keys naturally
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+    // Only intercept back/escape to close settings
+    if (key === 'Escape' || key === 'Backspace' || e.keyCode === 27) {
+      e.preventDefault();
+      onKeyAction('back');
+    }
+    return;
+  }
+
   // Prevent default for handled keys
   const handled = [
     'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
