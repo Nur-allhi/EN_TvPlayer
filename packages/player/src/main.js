@@ -70,20 +70,31 @@ function startPlayer() {
       channels = newChannels;
       ui.refreshChannelList(channels);
       settings.hide();
+      ui.stopInactivityTimer();
       showPlayer();
     },
     onPlaySingle: (channel) => {
       settings.hide();
+      ui.stopInactivityTimer();
       showPlayer();
       handleChannelSelect(channel);
     },
     onClose: () => {
       settings.hide();
+      ui.stopInactivityTimer();
       showPlayer();
     },
   });
 
   ui.init(channels, handleChannelSelect);
+
+  ui.setAutoCloseCallback(() => {
+    if (settings.isVisible()) {
+      settings.hide();
+      showPlayer();
+      ui.stopInactivityTimer();
+    }
+  });
 
   ui.setResolutionCallback((height) => {
     player.selectResolution(height);
@@ -177,18 +188,21 @@ function showFirstLaunch() {
       newChannels.sort((a, b) => (a.channelNumber || 0) - (b.channelNumber || 0));
       channels = newChannels;
       settings.hide();
+      ui.stopInactivityTimer();
       showPlayer();
       startPlayer();
     },
     onPlaySingle: (channel) => {
       channels = [channel];
       settings.hide();
+      ui.stopInactivityTimer();
       showPlayer();
       startPlayer();
     },
     onClose: () => {
       if (channels && channels.length > 0) {
         settings.hide();
+        ui.stopInactivityTimer();
         showPlayer();
       }
     },
@@ -223,6 +237,9 @@ function showSettingsPage() {
   if (ui.isFullscreenMode()) {
     ui.exitFullscreenMode();
   }
+  ui.closeAllOverlays();
+  ui.stopCursorAutoHide();
+  ui.startInactivityTimer();
   settings.show();
 }
 

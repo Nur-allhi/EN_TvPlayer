@@ -147,7 +147,22 @@ export function jumpToNumber(num, skipFullscreen) {
 
 export function toggleSidebar() {
   sidebarOpen = !sidebarOpen;
+  if (sidebarOpen && rightSidebarOpen) {
+    rightSidebarOpen = false;
+    applyRightSidebar();
+  }
   applySidebar();
+}
+
+export function closeAllOverlays() {
+  if (sidebarOpen) {
+    sidebarOpen = false;
+    applySidebar();
+  }
+  if (rightSidebarOpen) {
+    rightSidebarOpen = false;
+    applyRightSidebar();
+  }
 }
 
 export function isSidebarOpen() {
@@ -203,7 +218,7 @@ function startCursorAutoHide() {
   revealCursor();
 }
 
-function stopCursorAutoHide() {
+export function stopCursorAutoHide() {
   document.removeEventListener('mousemove', onFullscreenMouseMove);
   clearTimeout(cursorHideTimer);
 }
@@ -223,16 +238,17 @@ function revealCursor() {
 }
 
 let inactivityTimer = null;
-const INACTIVITY_MS = 4000;
+let autoCloseCallback = null;
+const INACTIVITY_MS = 3000;
 
-function startInactivityTimer() {
+export function startInactivityTimer() {
   document.addEventListener('mousemove', resetInactivity);
   document.addEventListener('keydown', resetInactivity);
   document.addEventListener('click', resetInactivity);
   resetInactivity();
 }
 
-function stopInactivityTimer() {
+export function stopInactivityTimer() {
   document.removeEventListener('mousemove', resetInactivity);
   document.removeEventListener('keydown', resetInactivity);
   document.removeEventListener('click', resetInactivity);
@@ -245,7 +261,9 @@ function resetInactivity() {
 }
 
 function autoCloseOverlays() {
-  if (!isFullscreen) return;
+  if (autoCloseCallback) {
+    autoCloseCallback();
+  }
   if (sidebarOpen) {
     sidebarOpen = false;
     applySidebar();
@@ -275,8 +293,16 @@ export function applyRightSidebar() {
   }
 }
 
+export function setAutoCloseCallback(callback) {
+  autoCloseCallback = callback;
+}
+
 export function toggleRightSidebar() {
   rightSidebarOpen = !rightSidebarOpen;
+  if (rightSidebarOpen && sidebarOpen) {
+    sidebarOpen = false;
+    applySidebar();
+  }
   applyRightSidebar();
   if (rightSidebarOpen) {
     buildRightItems();
