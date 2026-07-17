@@ -373,20 +373,11 @@ function hideProgress() {
 }
 
 function handleRemoteAction(action, value) {
-  // When settings is visible, only allow back/playpause/reload
   if (settings.isVisible()) {
-    switch (action) {
-      case 'back':
-        settings.hide();
-        showPlayer();
-        ui.stopInactivityTimer();
-        break;
-      case 'playpause':
-        player.togglePlay();
-        break;
-      case 'reload':
-        player.reloadChannel();
-        break;
+    if (action === 'back') {
+      settings.hide();
+      showPlayer();
+      ui.stopInactivityTimer();
     }
     return;
   }

@@ -18,10 +18,10 @@ function handleKeyDown(e) {
 
   const key = e.key || e.keyCode;
 
-  // If a form input is focused, let browser handle keys naturally
-  const tag = document.activeElement?.tagName;
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
-    // Only intercept back/escape to close settings
+  // When settings page is visible, only intercept back/Escape
+  const settingsPage = document.getElementById('settings-page');
+  const isSettingsVisible = settingsPage && !settingsPage.classList.contains('hidden');
+  if (isSettingsVisible) {
     if (key === 'Escape' || key === 'Backspace' || e.keyCode === 27) {
       e.preventDefault();
       onKeyAction('back');
