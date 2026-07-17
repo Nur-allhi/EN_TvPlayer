@@ -30,6 +30,8 @@ export function isVisible() {
 function render() {
   const s = getSettings();
   const lastFetched = s.channelsFetched ? timeAgo(s.channelsFetched) : 'Never';
+  const proxyPlaceholder = import.meta.env.VITE_PROXY_URL || 'http://localhost:5001/';
+  const proxyValue = s.proxyUrl || proxyPlaceholder;
 
   container.innerHTML =
     '<div class="settings-page">' +
@@ -56,7 +58,13 @@ function render() {
         '</div>' +
 
         '<div class="settings-section">' +
-          '<h3 class="settings-section-title">3. Play Single Channel</h3>' +
+          '<h3 class="settings-section-title">3. Proxy Server</h3>' +
+          '<p class="settings-desc">CORS proxy URL for channel streaming.</p>' +
+          '<input id="settings-proxy-url" class="settings-input" type="text" placeholder="' + escapeHtml(proxyPlaceholder) + '" value="' + escapeHtml(proxyValue) + '" />' +
+        '</div>' +
+
+        '<div class="settings-section">' +
+          '<h3 class="settings-section-title">4. Play Single Channel</h3>' +
           '<p class="settings-desc">Play a single channel URL without a playlist.</p>' +
           '<input id="settings-single-url" class="settings-input" type="text" placeholder="https://stream.example.com/playlist.m3u8" value="' + escapeHtml(s.singleChannelUrl || '') + '" />' +
           '<label class="settings-checkbox-label"><input type="checkbox" id="settings-single-proxy"' + (s.singleUseProxy ? ' checked' : '') + ' /> Use Proxy</label>' +
@@ -76,6 +84,9 @@ function render() {
   });
 
   document.getElementById('settings-refresh-btn').addEventListener('click', handleRefresh);
+  document.getElementById('settings-proxy-url').addEventListener('change', (e) => {
+    saveSettings({ proxyUrl: normalizeProxyUrl(e.target.value) });
+  });
   document.getElementById('settings-single-proxy').addEventListener('change', (e) => {
     saveSettings({ singleUseProxy: e.target.checked });
   });
@@ -180,7 +191,7 @@ function parseM3u(text) {
           name: name,
           url: url,
           channelNumber: index + 1,
-          useProxy: false,
+          useProxy: true,
           drm: null,
         });
         index++;
@@ -214,4 +225,11 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+function normalizeProxyUrl(url) {
+  if (!url) return '';
+  url = url.trim();
+  if (url && !url.endsWith('/')) url += '/';
+  return url;
 }

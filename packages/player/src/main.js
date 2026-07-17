@@ -242,7 +242,7 @@ function parseM3u(text) {
       const name = nameMatch ? nameMatch[1].trim() : 'Channel ' + (index + 1);
       const url = lines[i + 1] ? lines[i + 1].trim() : '';
       if (url && !url.startsWith('#')) {
-        result.push({ name, url, channelNumber: index + 1, useProxy: false, drm: null });
+        result.push({ name, url, channelNumber: index + 1, useProxy: true, drm: null });
         index++;
       }
     }

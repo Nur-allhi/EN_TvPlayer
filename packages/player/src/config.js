@@ -2,6 +2,7 @@ const SETTINGS_KEY = 'en_settings';
 
 const settingsDefaults = {
   playlistUrl: '',
+  proxyUrl: '',
   channels: [],
   channelsFetched: null,
   singleChannelUrl: '',
@@ -28,16 +29,28 @@ export function saveSettings(partial) {
   return merged;
 }
 
-function computeApiUrl(proxyUrl) {
-  if (proxyUrl.startsWith('http')) {
-    return new URL(proxyUrl).origin;
-  }
-  return '';
+const envProxyUrl = import.meta.env.VITE_PROXY_URL || '/proxy/';
+
+function getEffectiveProxyUrl() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s && s.proxyUrl) return s.proxyUrl;
+    }
+  } catch {}
+  return envProxyUrl;
 }
 
 export default {
-  proxyUrl: import.meta.env.VITE_PROXY_URL || '/proxy/',
-  apiUrl: computeApiUrl(import.meta.env.VITE_PROXY_URL || '/proxy/'),
+  get proxyUrl() { return getEffectiveProxyUrl(); },
+  get apiUrl() {
+    const p = getEffectiveProxyUrl();
+    if (p.startsWith('http')) {
+      return new URL(p).origin;
+    }
+    return '';
+  },
   useProxy: true,
   player: {
     streaming: {
