@@ -8,6 +8,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   root: '.',
   base: '',
+  resolve: {
+    alias: {
+      '@root': path.resolve(__dirname, '..', '..'),
+    },
+  },
   build: {
     outDir: 'dist',
     minify: 'esbuild',

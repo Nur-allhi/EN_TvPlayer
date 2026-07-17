@@ -339,7 +339,7 @@ function buildRightItems() {
     });
   }
   // Button IDs
-  const btnIds = ['refresh-stream-btn', 'refresh-channels-btn'];
+  const btnIds = ['refresh-stream-btn', 'refresh-channels-btn', 'settings-btn'];
   btnIds.forEach((id) => {
     const el = document.getElementById(id);
     if (el) {

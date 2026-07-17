@@ -1,5 +1,8 @@
 # IPTV Player — TV Mode Build
 
+> **Superseded by `IMPLEMENTATION_PLAN.md` in this folder for the v0.1 architecture.**
+> This file is kept for reference of the original Tizen TV Mode build.
+
 ## Goal
 A lightweight, optimized version of the IPTV player designed for Samsung Smart TV browsers (Tizen). Minimal footprint, low CPU/RAM usage, remote control friendly.
 

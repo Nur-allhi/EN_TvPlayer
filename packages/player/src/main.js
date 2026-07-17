@@ -1,26 +1,14 @@
-import config from './config.js';
+import config, { getSettings, saveSettings } from './config.js';
 import * as player from './player.js';
 import * as ui from './ui.js';
 import * as remote from './remote.js';
-import channelsData from '../channels.json';
+import * as settings from './settings.js';
+import channelsData from '@root/channels.json';
 
-async function fetchChannelsFromApi() {
-  try {
-    const base = config.apiUrl || '';
-    const resp = await fetch(base + '/api/channels');
-    if (resp.ok) {
-      const data = await resp.json();
-      if (data && data.length > 0) return data;
-    }
-  } catch (e) {
-    console.warn('Failed to fetch channels from API, using fallback:', e.message);
-  }
-  return null;
-}
+let currentIndex = 0;
+let channels;
 
-// Initialize the app
 async function init() {
-  // Check Shaka support
   const videoEl = document.getElementById('video');
   if (!player.initPlayer(videoEl)) {
     document.body.innerHTML =
@@ -31,32 +19,69 @@ async function init() {
     return;
   }
 
-  // Load channel list from API, fall back to bundled channels.json
-  const apiChannels = await fetchChannelsFromApi();
-  channels = apiChannels || channelsData;
+  const s = getSettings();
+
+  if (s.channels && s.channels.length > 0 && !s.playlistUrl) {
+    channels = s.channels;
+    startPlayer();
+  } else if (s.channels && s.channels.length > 0 && s.playlistUrl) {
+    channels = s.channels;
+    startPlayer();
+    settings.refreshLastFetched();
+  } else if (s.playlistUrl) {
+    try {
+      channels = await fetchFromPlaylistUrl(s.playlistUrl);
+      saveSettings({ channels, channelsFetched: new Date().toISOString() });
+      startPlayer();
+    } catch (e) {
+      showFirstLaunch();
+    }
+  } else {
+    showFirstLaunch();
+  }
+
+  console.log('IPTV TV Mode initialized with', channels ? channels.length : 0, 'channels');
+}
+
+function startPlayer() {
   if (!channels || channels.length === 0) {
     document.body.innerHTML =
       '<div style="text-align:center;padding:40px;color:#fff;">' +
       '<h2>No Channels</h2>' +
-      '<p>Add channels via the Channel Manager or edit channels.json.</p>' +
+      '<p>Add channels via Settings or edit channels.json.</p>' +
       '</div>';
     return;
   }
 
-  // Sort by channel number
   channels.sort((a, b) => (a.channelNumber || 0) - (b.channelNumber || 0));
 
-  // Init UI with channels
+  settings.init(document.getElementById('settings-page'), {
+    onPlaylistFetched: (newChannels) => {
+      newChannels.sort((a, b) => (a.channelNumber || 0) - (b.channelNumber || 0));
+      channels = newChannels;
+      ui.refreshChannelList(channels);
+      settings.hide();
+      showPlayer();
+    },
+    onPlaySingle: (channel) => {
+      settings.hide();
+      showPlayer();
+      handleChannelSelect(channel);
+    },
+    onClose: () => {
+      settings.hide();
+      showPlayer();
+    },
+  });
+
   ui.init(channels, handleChannelSelect);
 
-    // Wire resolution selection to the player (also update badge on manual select)
   ui.setResolutionCallback((height) => {
     player.selectResolution(height);
     updateResolutionBadge(height || player.getActiveHeight());
   });
 
-  // Play/Pause controls
-  const playPauseButton = document.getElementById('playpause-button');
+  let playPauseButton = document.getElementById('playpause-button');
   if (playPauseButton) {
     playPauseButton.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -64,15 +89,14 @@ async function init() {
     });
   }
 
-  // Wire right sidebar buttons
-  const refreshStreamBtn = document.getElementById('refresh-stream-btn');
+  let refreshStreamBtn = document.getElementById('refresh-stream-btn');
   if (refreshStreamBtn) {
     refreshStreamBtn.addEventListener('click', () => {
       showProgress('Reloading');
       player.reloadChannel();
     });
   }
-  const refreshChannelsBtn = document.getElementById('refresh-channels-btn');
+  let refreshChannelsBtn = document.getElementById('refresh-channels-btn');
   if (refreshChannelsBtn) {
     refreshChannelsBtn.addEventListener('click', async () => {
       showProgress('Refreshing');
@@ -81,28 +105,32 @@ async function init() {
     });
   }
 
-  // Hide progress toast once playback starts
-  videoEl.addEventListener('playing', () => hideProgress());
+  let settingsBtn = document.getElementById('settings-btn');
+  if (settingsBtn) {
+    settingsBtn.addEventListener('click', () => {
+      showSettingsPage();
+    });
+  }
 
-  // Click the video to toggle play/pause (handy in fullscreen)
+  let videoEl = document.getElementById('video');
+  videoEl.addEventListener('playing', () => hideProgress());
   videoEl.addEventListener('click', () => player.togglePlay());
 
-  // Keep the play/pause button icon in sync with the actual state
   videoEl.addEventListener('play', () => {
-    if (playPauseButton) playPauseButton.innerHTML = '&#10073;&#10073;';
+    let btn = document.getElementById('playpause-button');
+    if (btn) btn.innerHTML = '&#10073;&#10073;';
   });
   videoEl.addEventListener('pause', () => {
-    if (playPauseButton) playPauseButton.innerHTML = '&#9654;';
+    let btn = document.getElementById('playpause-button');
+    if (btn) btn.innerHTML = '&#9654;';
   });
 
-  // Keep UI state in sync when the browser leaves fullscreen (e.g. ESC)
   document.addEventListener('fullscreenchange', () => {
     if (!document.fullscreenElement && ui.isFullscreenMode()) {
       ui.exitFullscreenMode();
     }
   });
 
-  // Buffering indicator (with live percentage updates)
   let bufferingActive = false;
   player.onBuffering((buffering, percent) => {
     bufferingActive = buffering;
@@ -120,28 +148,96 @@ async function init() {
     }
   }, 500);
 
-  // Track resolution changes (ABR or manual) to update the badge
   player.onTrackChange(({ height, bandwidth }) => updateResolutionBadge(height, bandwidth));
 
-  // Auto-advance to next channel on persistent 403
   player.onChannelAdvance(() => {
     const next = (currentIndex + 1) % channels.length;
     ui.selectChannel(next);
   });
 
-  // Init remote control
   remote.init(handleRemoteAction);
 
-  // Auto-play first channel (skip fullscreen — user gesture will trigger it)
   ui.selectChannel(0, true);
-
-  console.log('IPTV TV Mode initialized with', channels.length, 'channels');
 }
 
-let currentIndex = 0;
-let channels;
+function showFirstLaunch() {
+  settings.init(document.getElementById('settings-page'), {
+    onPlaylistFetched: (newChannels) => {
+      newChannels.sort((a, b) => (a.channelNumber || 0) - (b.channelNumber || 0));
+      channels = newChannels;
+      settings.hide();
+      showPlayer();
+      startPlayer();
+    },
+    onPlaySingle: (channel) => {
+      channels = [channel];
+      settings.hide();
+      showPlayer();
+      startPlayer();
+      handleChannelSelect(channel);
+    },
+    onClose: () => {
+      if (channels && channels.length > 0) {
+        settings.hide();
+        showPlayer();
+      }
+    },
+  });
 
-// Handle channel selection from UI
+  settings.show();
+}
+
+function showPlayer() {
+  const playerContainer = document.getElementById('player-container');
+  const nowPlaying = document.getElementById('now-playing');
+  if (playerContainer) playerContainer.classList.remove('hidden');
+  if (nowPlaying) nowPlaying.classList.remove('hidden');
+}
+
+function showSettingsPage() {
+  const playerContainer = document.getElementById('player-container');
+  const nowPlaying = document.getElementById('now-playing');
+  if (playerContainer) playerContainer.classList.add('hidden');
+  if (nowPlaying) nowPlaying.classList.add('hidden');
+  if (ui.isFullscreenMode()) {
+    ui.exitFullscreenMode();
+  }
+  settings.show();
+}
+
+async function fetchFromPlaylistUrl(url) {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  const contentType = resp.headers.get('content-type') || '';
+  const text = await resp.text();
+  if (contentType.includes('json') || text.trim().startsWith('[')) {
+    return JSON.parse(text);
+  }
+  if (text.startsWith('#EXTM3U')) {
+    return parseM3u(text);
+  }
+  throw new Error('Unknown playlist format');
+}
+
+function parseM3u(text) {
+  const lines = text.split('\n');
+  const result = [];
+  let index = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.startsWith('#EXTINF:')) {
+      const nameMatch = line.match(/,(.+)$/);
+      const name = nameMatch ? nameMatch[1].trim() : 'Channel ' + (index + 1);
+      const url = lines[i + 1] ? lines[i + 1].trim() : '';
+      if (url && !url.startsWith('#')) {
+        result.push({ name, url, channelNumber: index + 1, useProxy: false, drm: null });
+        index++;
+      }
+    }
+  }
+  return result;
+}
+
 async function handleChannelSelect(channel) {
   currentIndex = channels.indexOf(channel);
   const ok = await player.loadChannel(channel);
@@ -183,7 +279,6 @@ function updateResolutionBadge(height, bandwidth) {
   el.classList.remove('hidden');
 }
 
-/* Progress toast helpers */
 let progressActive = false;
 
 function showProgress(text) {
@@ -208,9 +303,7 @@ function hideProgress() {
   if (el) el.classList.add('hidden');
 }
 
-// Handle remote control actions
 function handleRemoteAction(action, value) {
-  // While the right sidebar is open, navigation is scoped to it
   if (ui.isRightSidebarOpen()) {
     switch (action) {
       case 'up':
@@ -232,7 +325,6 @@ function handleRemoteAction(action, value) {
     return;
   }
 
-  // While the left sidebar is open, navigate channel list
   if (ui.isSidebarOpen()) {
     switch (action) {
       case 'up':
@@ -268,7 +360,6 @@ function handleRemoteAction(action, value) {
     return;
   }
 
-  // No overlays open — fullscreen remote control
   switch (action) {
     case 'up': {
       const prev = (currentIndex - 1 + channels.length) % channels.length;
@@ -305,18 +396,43 @@ function handleRemoteAction(action, value) {
   }
 }
 
-// Refresh channels from API and update UI (e.g. after channel manager edit)
 export async function refreshChannels() {
-  const apiChannels = await fetchChannelsFromApi();
-  if (apiChannels && apiChannels.length > 0) {
-    apiChannels.sort((a, b) => (a.channelNumber || 0) - (b.channelNumber || 0));
-    channels = apiChannels;
-    ui.refreshChannelList(channels);
-    console.log('Channels refreshed:', channels.length);
+  const s = getSettings();
+  if (s.playlistUrl) {
+    try {
+      const newChannels = await fetchFromPlaylistUrl(s.playlistUrl);
+      saveSettings({ channels: newChannels, channelsFetched: new Date().toISOString() });
+      newChannels.sort((a, b) => (a.channelNumber || 0) - (b.channelNumber || 0));
+      channels = newChannels;
+      ui.refreshChannelList(channels);
+      console.log('Channels refreshed from playlist:', channels.length);
+    } catch (e) {
+      console.warn('Failed to refresh from playlist, falling back to API:', e.message);
+      await refreshFromApi();
+    }
+  } else {
+    await refreshFromApi();
   }
 }
 
-// Start app when DOM is ready
+async function refreshFromApi() {
+  const base = config.apiUrl || '';
+  try {
+    const resp = await fetch(base + '/api/channels');
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data && data.length > 0) {
+        data.sort((a, b) => (a.channelNumber || 0) - (b.channelNumber || 0));
+        channels = data;
+        ui.refreshChannelList(channels);
+        console.log('Channels refreshed from API:', channels.length);
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to refresh from API:', e.message);
+  }
+}
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
