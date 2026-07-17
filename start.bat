@@ -10,13 +10,15 @@ for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /i "IPv4"') do set "IP=%
 set "IP=%IP: =%"
 
 echo.
-echo  Starting EN IPTV...
+echo  Starting EN IPTV (HTTPS)...
 echo.
-echo  Server:  http://localhost:5000
-echo  Player:  http://localhost:5000/enplayer
-echo  Manage:  http://localhost:5000/manage
-echo  Proxy:   http://localhost:5001
-if defined IP echo  Network: http://!IP!:5000
+echo  Server:  https://localhost:5000
+echo  Player:  https://localhost:5000/enplayer
+echo  Manage:  https://localhost:5000/manage
+echo  Proxy:   https://localhost:5001
+if defined IP echo  Network: https://!IP!:5000
+echo.
+echo  Note: Accept self-signed certificate warning in browser (Advanced > Proceed).
 echo.
 
 start "EN IPTV Server" cmd /c node packages\server\server.mjs

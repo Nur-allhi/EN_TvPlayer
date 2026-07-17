@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.argv[2], 10) || 5001;
 
-const logsDir = path.resolve('logs');
+const logsDir = path.resolve(__dirname, '..', '..', 'logs');
 if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
 const logFile = path.join(logsDir, 'proxy.log');
 const logStream = fs.createWriteStream(logFile, { flags: 'a' });
@@ -45,12 +45,12 @@ function showBanner(ip, ruleCount) {
   console.log(`\n${ANSI.bold}╔${sep}╗${ANSI.reset}`);
   console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.cyan}${ANSI.bold}EN IPTV — Proxy Server${ANSI.reset}             ${ANSI.bold}║${ANSI.reset}`);
   console.log(`${ANSI.bold}╠${sep}╣${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Local:${ANSI.reset}   http://localhost:${PORT}              ${ANSI.bold}║${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Network:${ANSI.reset} http://${ip}:${PORT}              ${ANSI.bold}║${ANSI.reset}`);
+  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Local:${ANSI.reset}   https://localhost:${PORT}             ${ANSI.bold}║${ANSI.reset}`);
+  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Network:${ANSI.reset} https://${ip}:${PORT}             ${ANSI.bold}║${ANSI.reset}`);
   if (ruleCount > 0) console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.dim}Rules:${ANSI.reset}    ${ruleCount}                              ${ANSI.bold}║${ANSI.reset}`);
   console.log(`${ANSI.bold}╚${sep}╝${ANSI.reset}\n`);
-  log(`Listening on http://0.0.0.0:${PORT}`, 'INFO');
-  log(`Network: http://${ip}:${PORT}`, 'INFO');
+  log(`HTTPS → 0.0.0.0:${PORT}`, 'INFO');
+  log(`Network: https://${ip}:${PORT}`, 'INFO');
 }
 
 // ── Header Rules ───────────────────────────────────────────────
@@ -92,14 +92,42 @@ process.on('unhandledRejection', (err) => {
   log(`UNHANDLED REJECTION: ${err?.message || err}`, 'ERROR');
 });
 
-http.createServer(async (req, res) => {
-  const rawUrl = req.url;
-  const method = req.method;
+// ── Self-signed certificate for HTTPS ──────────────────────────
+async function ensureCert() {
+  const certDir = path.resolve(__dirname, '..', '..', 'certs');
+  if (!fs.existsSync(certDir)) fs.mkdirSync(certDir, { recursive: true });
+  const keyPath = path.join(certDir, 'proxy.key');
+  const certPath = path.join(certDir, 'proxy.cert');
+  if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+    return { key: fs.readFileSync(keyPath, 'utf8'), cert: fs.readFileSync(certPath, 'utf8') };
+  }
+  log('Generating self-signed certificate for HTTPS...', 'INFO');
+  const selfsigned = await import('selfsigned');
+  const s = selfsigned.default || selfsigned;
+  const ip = getNetworkIp();
+  const altNames = [{ type: 2, value: 'localhost' }, { type: 7, ip: '127.0.0.1' }];
+  if (ip !== '127.0.0.1' && ip !== 'localhost') altNames.push({ type: 7, ip });
+  const pems = await s.generate(
+    [{ name: 'commonName', value: 'localhost' }, { name: 'organizationName', value: 'EN IPTV Proxy' }],
+    { days: 3650, keySize: 2048, extensions: [{ name: 'subjectAltName', altNames }] }
+  );
+  fs.writeFileSync(keyPath, pems.private);
+  fs.writeFileSync(certPath, pems.cert);
+  log('Certificate generated: ' + certPath, 'INFO');
+  return { key: pems.private, cert: pems.cert };
+}
 
-  if (rawUrl === '/' || rawUrl === '') {
-    const ip = getNetworkIp();
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end(`<!DOCTYPE html>
+// ── Start ──────────────────────────────────────────────────────
+async function start() {
+  const tls = await ensureCert();
+  const handler = createHandler();
+
+  // Status page handler
+  function statusHandler(req, res) {
+    const rawUrl = req.url;
+    if (rawUrl === '/' || rawUrl === '') {
+      const ip = getNetworkIp();
+      const html = `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>EN Proxy</title>
@@ -113,68 +141,83 @@ h1{font-size:24px;margin:0 0 8px 0;color:#fff}
 <body><div class="card">
 <h1>🔌 Proxy Server</h1>
 <div class="status">● Running</div>
-<div class="url">http://${ip}:${PORT}</div>
+<div class="url">https://${ip}:${PORT}</div>
 <div class="hint">Configure this URL in the Player or Channel Manager settings.</div>
-</div></body></html>`);
-    return;
-  }
-
-  try {
-    const target = rawUrl.slice(1);
-    if (!target.startsWith('http://') && !target.startsWith('https://')) {
-      res.writeHead(400); res.end('Invalid proxy URL. Usage: http://proxy:PORT/http://target.url/stream');
+</div></body></html>`;
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': Buffer.byteLength(html) });
+      res.end(html);
       return;
     }
-
-    const url = new URL(target);
-    const mod = url.protocol === 'https:' ? https : http;
-    const blockedHeaders = ['host', 'connection', 'keep-alive'];
-    const cleanHeaders = Object.fromEntries(
-      Object.entries(req.headers).filter(([k]) => !blockedHeaders.includes(k.toLowerCase()))
-    );
-    applyHeaderRules(url.hostname, cleanHeaders, url);
-    if (!cleanHeaders['user-agent']) {
-      cleanHeaders['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
-    }
-
-    log(`${method} ${url.hostname}${url.pathname.slice(0, 80)}`, 'PROXY');
-
-    let responded = false;
-    req.setTimeout(30000, () => { if (!responded) { log(`Timeout ${url.hostname}`, 'WARN'); req.destroy(); } });
-
-    const proxyReq = mod.request(target, {
-      method,
-      agent: url.protocol === 'https:' ? httpsAgent : undefined,
-      headers: { ...cleanHeaders, host: url.hostname },
-      timeout: 15000,
-    }, (proxyRes) => {
-      responded = true;
-      if (proxyRes.statusCode === 403) {
-        log(`403 ${url.hostname}${url.pathname.slice(0, 60)}`, 'WARN');
-      } else if (proxyRes.statusCode >= 500) {
-        log(`${proxyRes.statusCode} ${url.hostname}${url.pathname.slice(0, 60)}`, 'WARN');
-      }
-      res.writeHead(proxyRes.statusCode, {
-        'Access-Control-Allow-Origin': '*',
-        ...Object.fromEntries(
-          Object.entries(proxyRes.headers).filter(([k]) => !/^access-control-allow-origin$/i.test(k))
-        ),
-      });
-      const cleanup = () => { proxyRes.destroy(); res.destroy(); };
-      res.on('error', (e) => { if (e.message === 'aborted') return; log(`Response error: ${e.message}`, 'ERROR'); cleanup(); });
-      proxyRes.on('error', (e) => { if (e.message === 'aborted') return; log(`Upstream error: ${e.message}`, 'ERROR'); cleanup(); });
-      proxyRes.pipe(res);
-    });
-
-    proxyReq.on('error', (e) => { if (e.message.includes('certificate')) return; log(`Request error: ${e.message}`, 'ERROR'); if (!responded) { responded = true; res.writeHead(502); res.end('Proxy error: ' + e.message); } });
-    proxyReq.on('timeout', () => { if (!responded) { proxyReq.destroy(); responded = true; res.writeHead(504); res.end('Proxy timeout'); } });
-    req.on('error', (e) => { log(`Client error: ${e.message}`, 'ERROR'); proxyReq.destroy(); });
-    req.pipe(proxyReq, { end: true });
-  } catch (e) {
-    log(`Server error: ${e.message}`, 'ERROR');
-    if (!res.headersSent) { res.writeHead(500); res.end('Server error'); }
+    handler(req, res);
   }
-}).listen(PORT, () => {
-  const ip = getNetworkIp();
-  showBanner(ip, headerRules.length);
-});
+
+  https.createServer(tls, statusHandler).listen(PORT, () => {
+    const ip = getNetworkIp();
+    showBanner(ip, headerRules.length);
+  });
+}
+
+function createHandler() {
+  return async (req, res) => {
+    const rawUrl = req.url;
+    const method = req.method;
+
+    try {
+      const target = rawUrl.slice(1);
+      if (!target.startsWith('http://') && !target.startsWith('https://')) {
+        res.writeHead(400); res.end('Invalid proxy URL. Usage: http://proxy:PORT/http://target.url/stream');
+        return;
+      }
+
+      const url = new URL(target);
+      const mod = url.protocol === 'https:' ? https : http;
+      const blockedHeaders = ['host', 'connection', 'keep-alive'];
+      const cleanHeaders = Object.fromEntries(
+        Object.entries(req.headers).filter(([k]) => !blockedHeaders.includes(k.toLowerCase()))
+      );
+      applyHeaderRules(url.hostname, cleanHeaders, url);
+      if (!cleanHeaders['user-agent']) {
+        cleanHeaders['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+      }
+
+      log(`${method} ${url.hostname}${url.pathname.slice(0, 80)}`, 'PROXY');
+
+      let responded = false;
+      req.setTimeout(30000, () => { if (!responded) { log(`Timeout ${url.hostname}`, 'WARN'); req.destroy(); } });
+
+      const proxyReq = mod.request(target, {
+        method,
+        agent: url.protocol === 'https:' ? httpsAgent : undefined,
+        headers: { ...cleanHeaders, host: url.hostname },
+        timeout: 15000,
+      }, (proxyRes) => {
+        responded = true;
+        if (proxyRes.statusCode === 403) {
+          log(`403 ${url.hostname}${url.pathname.slice(0, 60)}`, 'WARN');
+        } else if (proxyRes.statusCode >= 500) {
+          log(`${proxyRes.statusCode} ${url.hostname}${url.pathname.slice(0, 60)}`, 'WARN');
+        }
+        res.writeHead(proxyRes.statusCode, {
+          'Access-Control-Allow-Origin': '*',
+          ...Object.fromEntries(
+            Object.entries(proxyRes.headers).filter(([k]) => !/^access-control-allow-origin$/i.test(k))
+          ),
+        });
+        const cleanup = () => { proxyRes.destroy(); res.destroy(); };
+        res.on('error', (e) => { if (e.message === 'aborted') return; log(`Response error: ${e.message}`, 'ERROR'); cleanup(); });
+        proxyRes.on('error', (e) => { if (e.message === 'aborted') return; log(`Upstream error: ${e.message}`, 'ERROR'); cleanup(); });
+        proxyRes.pipe(res);
+      });
+
+      proxyReq.on('error', (e) => { if (e.message.includes('certificate')) return; log(`Request error: ${e.message}`, 'ERROR'); if (!responded) { responded = true; res.writeHead(502); res.end('Proxy error: ' + e.message); } });
+      proxyReq.on('timeout', () => { if (!responded) { proxyReq.destroy(); responded = true; res.writeHead(504); res.end('Proxy timeout'); } });
+      req.on('error', (e) => { log(`Client error: ${e.message}`, 'ERROR'); proxyReq.destroy(); });
+      req.pipe(proxyReq, { end: true });
+    } catch (e) {
+      log(`Server error: ${e.message}`, 'ERROR');
+      if (!res.headersSent) { res.writeHead(500); res.end('Server error'); }
+    }
+  };
+}
+
+start().catch(e => { console.error('Proxy startup failed:', e); process.exit(1); });

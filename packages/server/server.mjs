@@ -8,7 +8,6 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const PORT = parseInt(process.argv[2], 10) || 5000;
-const HTTPS_PORT = parseInt(process.argv[3], 10) || 5443;
 
 // ── Logging ────────────────────────────────────────────────────
 const logsDir = path.resolve(__dirname, '..', '..', 'logs');
@@ -132,25 +131,6 @@ function getNetworkIp() {
   return '127.0.0.1';
 }
 
-function showBanner(ip, channelCount) {
-  const sep = '─'.repeat(50);
-  console.log(`\n${ANSI.bold}╔${sep}╗${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.cyan}${ANSI.bold}EN IPTV — Channel Server${ANSI.reset}           ${ANSI.bold}║${ANSI.reset}`);
-  console.log(`${ANSI.bold}╠${sep}╣${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Local:${ANSI.reset}   http://localhost:${PORT}              ${ANSI.bold}║${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Network:${ANSI.reset} http://${ip}:${PORT}              ${ANSI.bold}║${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Player:${ANSI.reset}  http://${ip}:${PORT}/enplayer      ${ANSI.bold}║${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Manage:${ANSI.reset}  http://${ip}:${PORT}/manage        ${ANSI.bold}║${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}M3U:${ANSI.reset}     http://${ip}:${PORT}/api/playlist.m3u ${ANSI.bold}║${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}                                            ${ANSI.bold}║${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.dim}Channels:${ANSI.reset} ${channelCount}                          ${ANSI.bold}║${ANSI.reset}`);
-  console.log(`${ANSI.bold}╚${sep}╝${ANSI.reset}\n`);
-  log(`Listening on http://0.0.0.0:${PORT}`, 'INFO');
-  log(`Network: http://${ip}:${PORT}`, 'INFO');
-  log(`Player:  http://${ip}:${PORT}/enplayer`, 'INFO');
-  log(`Manage:  http://${ip}:${PORT}/manage`, 'INFO');
-}
-
 process.on('uncaughtException', (err) => {
   log(`UNCAUGHT EXCEPTION: ${err.message}`, 'ERROR');
   log(`  ${err.stack?.split('\n').slice(1, 3).join(' ')}`, 'ERROR');
@@ -179,11 +159,14 @@ async function ensureCert() {
   log('Generating self-signed certificate for HTTPS...', 'INFO');
   const selfsigned = await import('selfsigned');
   const s = selfsigned.default || selfsigned;
+  const ip = getNetworkIp();
   const attrs = [{ name: 'commonName', value: 'localhost' }, { name: 'organizationName', value: 'EN IPTV' }];
-  const pems = await s.generate(attrs, { days: 3650, keySize: 2048, extensions: [{ name: 'subjectAltName', altNames: [{ type: 2, value: 'localhost' }, { type: 7, ip: '127.0.0.1' }] }] });
+  const altNames = [{ type: 2, value: 'localhost' }, { type: 7, ip: '127.0.0.1' }];
+  if (ip !== '127.0.0.1' && ip !== 'localhost') altNames.push({ type: 7, ip });
+  const pems = await s.generate(attrs, { days: 3650, keySize: 2048, extensions: [{ name: 'subjectAltName', altNames }] });
   fs.writeFileSync(keyPath, pems.private);
   fs.writeFileSync(certPath, pems.cert);
-  log('Certificate generated: ' + certPath, 'INFO');
+  log('Certificate generated: ' + certPath + ' (covers ' + altNames.map(a => a.value || a.ip).join(', ') + ')', 'INFO');
   return { key: pems.private, cert: pems.cert };
 }
 
@@ -209,7 +192,8 @@ async function createHandler() {
     });
   });
 
-  const PROXY_TARGET = process.env.PROXY_TARGET || 'http://127.0.0.1:5001';
+  const PROXY_TARGET = process.env.PROXY_TARGET || 'https://127.0.0.1:5001';
+  const proxyMod = PROXY_TARGET.startsWith('https') ? https : http;
 
   return async (req, res) => {
     const rawPath = req.url.indexOf('?') >= 0 ? req.url.slice(0, req.url.indexOf('?')) : req.url;
@@ -227,7 +211,9 @@ async function createHandler() {
         if (!targetUrl) { res.writeHead(400); res.end('Missing target URL'); return; }
         const fullUrl = PROXY_TARGET + '/' + targetUrl;
         log(`Proxy: ${targetUrl.slice(0, 80)}...`, 'INFO');
-        http.get(fullUrl, (proxyRes) => {
+        const opts = new URL(fullUrl);
+        opts.rejectUnauthorized = false;
+        proxyMod.get(opts, (proxyRes) => {
           const headers = { 'Access-Control-Allow-Origin': '*' };
           for (const [k, v] of Object.entries(proxyRes.headers)) {
             if (!['access-control-allow-origin', 'connection', 'keep-alive', 'transfer-encoding'].includes(k)) {
@@ -264,29 +250,24 @@ async function startServer() {
   const tls = await ensureCert();
   const handler = await createHandler();
 
-  http.createServer(handler).listen(PORT);
-  https.createServer(tls, handler).listen(HTTPS_PORT);
+  https.createServer(tls, handler).listen(PORT);
 
   const ip = getNetworkIp();
   const sep = '─'.repeat(50);
   console.log(`\n${ANSI.bold}╔${sep}╗${ANSI.reset}`);
   console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.cyan}${ANSI.bold}EN IPTV — Channel Server${ANSI.reset}           ${ANSI.bold}║${ANSI.reset}`);
   console.log(`${ANSI.bold}╠${sep}╣${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Local:${ANSI.reset}   http://localhost:${PORT}               ${ANSI.bold}║${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}               https://localhost:${HTTPS_PORT}             ${ANSI.bold}║${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Network:${ANSI.reset} http://${ip}:${PORT}               ${ANSI.bold}║${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}               https://${ip}:${HTTPS_PORT}             ${ANSI.bold}║${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Player:${ANSI.reset}  http://${ip}:${PORT}/enplayer       ${ANSI.bold}║${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}               https://${ip}:${HTTPS_PORT}/enplayer   ${ANSI.bold}║${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Manage:${ANSI.reset}  http://${ip}:${PORT}/manage         ${ANSI.bold}║${ANSI.reset}`);
+  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Local:${ANSI.reset}   https://localhost:${PORT}              ${ANSI.bold}║${ANSI.reset}`);
+  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Network:${ANSI.reset} https://${ip}:${PORT}              ${ANSI.bold}║${ANSI.reset}`);
+  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Player:${ANSI.reset}  https://${ip}:${PORT}/enplayer      ${ANSI.bold}║${ANSI.reset}`);
+  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Manage:${ANSI.reset}  https://${ip}:${PORT}/manage        ${ANSI.bold}║${ANSI.reset}`);
+  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}M3U:${ANSI.reset}     https://${ip}:${PORT}/api/playlist.m3u ${ANSI.bold}║${ANSI.reset}`);
   console.log(`${ANSI.bold}║${ANSI.reset}                                            ${ANSI.bold}║${ANSI.reset}`);
   console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.dim}Channels:${ANSI.reset} ${channelCount()}                          ${ANSI.bold}║${ANSI.reset}`);
   console.log(`${ANSI.bold}╚${sep}╝${ANSI.reset}\n`);
-  log(`HTTP  → 0.0.0.0:${PORT}`, 'INFO');
-  log(`HTTPS → 0.0.0.0:${HTTPS_PORT}`, 'INFO');
-  log(`Network: http://${ip}:${PORT}/enplayer`, 'INFO');
-  log(`Network: https://${ip}:${HTTPS_PORT}/enplayer`, 'INFO');
-  log(`Manage:  http://${ip}:${PORT}/manage`, 'INFO');
+  log(`HTTPS → 0.0.0.0:${PORT}`, 'INFO');
+  log(`Network: https://${ip}:${PORT}/enplayer`, 'INFO');
+  log(`Manage:  https://${ip}:${PORT}/manage`, 'INFO');
 }
 
 startServer().catch(e => { console.error('Server startup failed:', e); process.exit(1); });
