@@ -368,6 +368,7 @@ function handleRemoteAction(action, value) {
         ui.rightSidebarSelect();
         break;
       case 'back':
+      case 'left':
       case 'right':
         ui.toggleRightSidebar();
         break;
@@ -392,6 +393,7 @@ function handleRemoteAction(action, value) {
         ui.toggleSidebar();
         break;
       case 'right':
+        ui.toggleSidebar();
         ui.toggleRightSidebar();
         break;
       case 'back':
@@ -415,13 +417,13 @@ function handleRemoteAction(action, value) {
   switch (action) {
     case 'up': {
       const prev = (currentIndex - 1 + channels.length) % channels.length;
-      ui.selectChannel(prev);
+      ui.selectChannel(prev, true);
       ui.showChannelOsd(channels[prev]);
       break;
     }
     case 'down': {
       const next = (currentIndex + 1) % channels.length;
-      ui.selectChannel(next);
+      ui.selectChannel(next, true);
       ui.showChannelOsd(channels[next]);
       break;
     }
@@ -434,11 +436,14 @@ function handleRemoteAction(action, value) {
     case 'select':
       ui.toggleSidebar();
       break;
+    case 'back':
+      ui.toggleSidebar();
+      break;
     case 'playpause':
       player.togglePlay();
       break;
     case 'number':
-      ui.jumpToNumber(value);
+      ui.jumpToNumber(value, true);
       break;
     case 'reload':
       player.reloadChannel();

@@ -23,6 +23,10 @@ function handleKeyDown(e) {
     'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
     'Enter', 'Escape', 'Backspace', ' ',
     'r', 'R',
+    'ChUp', 'ChDown', 'MediaPlayPause', 'MediaStop',
+    'MediaTrackPrevious', 'MediaTrackNext', 'VolumeUp', 'VolumeDown', 'VolumeMute',
+    'ColorRed', 'ColorGreen', 'ColorYellow', 'ColorBlue',
+    'MediaPlay', 'MediaPause',
     37, 38, 39, 40, 13, 27, 32, 82, // keyCodes
   ];
 

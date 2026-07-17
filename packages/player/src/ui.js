@@ -138,10 +138,10 @@ export function selectFocused() {
   selectChannel(focusedIndex);
 }
 
-export function jumpToNumber(num) {
+export function jumpToNumber(num, skipFullscreen) {
   const index = channels.findIndex((ch) => ch.channelNumber === num);
   if (index !== -1) {
-    selectChannel(index);
+    selectChannel(index, skipFullscreen);
   }
 }
 
@@ -223,7 +223,7 @@ function revealCursor() {
 }
 
 let inactivityTimer = null;
-const INACTIVITY_MS = 1700;
+const INACTIVITY_MS = 4000;
 
 function startInactivityTimer() {
   document.addEventListener('mousemove', resetInactivity);
