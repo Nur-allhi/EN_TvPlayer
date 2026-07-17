@@ -161,6 +161,8 @@ function startPlayer() {
 }
 
 function showFirstLaunch() {
+  hidePlayer();
+
   settings.init(document.getElementById('settings-page'), {
     onPlaylistFetched: (newChannels) => {
       newChannels.sort((a, b) => (a.channelNumber || 0) - (b.channelNumber || 0));
@@ -174,7 +176,6 @@ function showFirstLaunch() {
       settings.hide();
       showPlayer();
       startPlayer();
-      handleChannelSelect(channel);
     },
     onClose: () => {
       if (channels && channels.length > 0) {
@@ -190,8 +191,19 @@ function showFirstLaunch() {
 function showPlayer() {
   const playerContainer = document.getElementById('player-container');
   const nowPlaying = document.getElementById('now-playing');
+  const sidebar = document.getElementById('sidebar');
   if (playerContainer) playerContainer.classList.remove('hidden');
   if (nowPlaying) nowPlaying.classList.remove('hidden');
+  if (sidebar) sidebar.classList.remove('closed');
+}
+
+function hidePlayer() {
+  const playerContainer = document.getElementById('player-container');
+  const nowPlaying = document.getElementById('now-playing');
+  const sidebar = document.getElementById('sidebar');
+  if (playerContainer) playerContainer.classList.add('hidden');
+  if (nowPlaying) nowPlaying.classList.add('hidden');
+  if (sidebar) sidebar.classList.add('closed');
 }
 
 function showSettingsPage() {
@@ -243,9 +255,12 @@ async function handleChannelSelect(channel) {
   const ok = await player.loadChannel(channel);
   if (!ok) hideProgress();
   ui.setSelectedResolution('auto');
-  ui.setResolutions(player.getResolutions());
-  const height = player.getActiveHeight();
-  if (height) updateResolutionBadge(height);
+  const p = player.getPlayer();
+  if (p) {
+    ui.setResolutions(player.getResolutions());
+    const height = player.getActiveHeight();
+    if (height) updateResolutionBadge(height);
+  }
 }
 
 const labelMap = [
