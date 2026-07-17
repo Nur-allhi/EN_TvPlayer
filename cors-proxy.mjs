@@ -1,5 +1,6 @@
 import http from 'http';
 import https from 'https';
+import os from 'os';
 import { URL } from 'url';
 import fs from 'fs';
 import path from 'path';
@@ -13,11 +14,54 @@ if (!fs.existsSync(logsDir)) {
 const logFile = path.join(logsDir, 'proxy.log');
 const logStream = fs.createWriteStream(logFile, { flags: 'a' });
 
-function log(message) {
+const ANSI = { reset: '\x1b[0m', dim: '\x1b[2m', cyan: '\x1b[36m', green: '\x1b[32m', yellow: '\x1b[33m', red: '\x1b[31m', blue: '\x1b[34m', magenta: '\x1b[35m', bold: '\x1b[1m' };
+const CAT = {
+  INFO:    { label: ' INFO ', ansi: ANSI.blue },
+  START:   { label: ' START', ansi: ANSI.green },
+  PROXY:   { label: 'PROXY ', ansi: ANSI.cyan },
+  CHANNEL: { label: 'CHANNL', ansi: ANSI.magenta },
+  WARN:    { label: ' WARN ', ansi: ANSI.yellow },
+  ERROR:   { label: 'ERROR ', ansi: ANSI.red },
+};
+
+function log(message, category = 'INFO') {
   const ts = new Date().toISOString().replace('T', ' ').substring(0, 19);
-  const line = `[${ts}] ${message}`;
-  console.log(line);
+  const cat = CAT[category] || CAT.INFO;
+  const line = `${ts} ${cat.label} │ ${message}`;
+  const colorLine = `${ANSI.dim}${ts}${ANSI.reset} ${cat.ansi}${cat.label}${ANSI.reset} │ ${message}`;
+  console.log(colorLine);
   logStream.write(line + '\n');
+}
+
+function getNetworkIp() {
+  const ifaces = os.networkInterfaces();
+  for (const name of Object.keys(ifaces)) {
+    for (const iface of ifaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return '127.0.0.1';
+}
+
+function showBanner(ip, channelCount, ruleCount) {
+  const sep = '─'.repeat(50);
+  console.log(`\n${ANSI.bold}╔${sep}╗${ANSI.reset}`);
+  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.cyan}${ANSI.bold}TV SERVER — CORS Proxy & Channel API${ANSI.reset}      ${ANSI.bold}║${ANSI.reset}`);
+  console.log(`${ANSI.bold}╠${sep}╣${ANSI.reset}`);
+  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Local:${ANSI.reset}   http://localhost:${PORT}              ${ANSI.bold}║${ANSI.reset}`);
+  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Network:${ANSI.reset} http://${ip}:${PORT}              ${ANSI.bold}║${ANSI.reset}`);
+  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Manage:${ANSI.reset}  http://${ip}:${PORT}/manage        ${ANSI.bold}║${ANSI.reset}`);
+  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}TV API:${ANSI.reset}  http://${ip}:${PORT}/api/          ${ANSI.bold}║${ANSI.reset}`);
+  console.log(`${ANSI.bold}║${ANSI.reset}                                            ${ANSI.bold}║${ANSI.reset}`);
+  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.dim}Channels:${ANSI.reset} ${channelCount}                          ${ANSI.bold}║${ANSI.reset}`);
+  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.dim}Rules:${ANSI.reset}    ${ruleCount}                              ${ANSI.bold}║${ANSI.reset}`);
+  console.log(`${ANSI.bold}╚${sep}╝${ANSI.reset}\n`);
+  log(`Listening on http://0.0.0.0:${PORT}`, 'START');
+  log(`Network URL: http://${ip}:${PORT}`, 'START');
+  log(`Manage UI:  http://${ip}:${PORT}/manage`, 'START');
+  log(`Channels:   ${channelCount} loaded`, 'START');
 }
 
 // ── Header Rules ───────────────────────────────────────────────
@@ -27,12 +71,12 @@ try {
   if (fs.existsSync(headerRulesFile)) {
     const raw = fs.readFileSync(headerRulesFile, 'utf8');
     headerRules = JSON.parse(raw).map(r => ({ ...r, _re: new RegExp(r.match, 'i') }));
-    log(`Loaded ${headerRules.length} header rule(s) from header-rules.json`);
+    log(`Loaded ${headerRules.length} header rule(s) from header-rules.json`, 'INFO');
   } else {
-    log('No header-rules.json found — using default headers only');
+    log('No header-rules.json found — using default headers only', 'WARN');
   }
 } catch (e) {
-  log(`WARN failed to load header-rules.json: ${e.message}`);
+    log(`Failed to load header-rules.json: ${e.message}`, 'ERROR');
 }
 
 function applyHeaderRules(hostname, cleanHeaders, url) {
@@ -137,11 +181,11 @@ function corsHeaders(methods = 'GET, POST, PUT, DELETE, OPTIONS') {
 // ──────────────────────────────────────────────────────────────
 
 process.on('uncaughtException', (err) => {
-  log(`UNCAUGHT EXCEPTION: ${err.message}`);
-  log(`  ${err.stack?.split('\n').slice(1, 3).join(' ')}`);
+  log(`UNCAUGHT EXCEPTION: ${err.message}`, 'ERROR');
+  log(`  ${err.stack?.split('\n').slice(1, 3).join(' ')}`, 'ERROR');
 });
 process.on('unhandledRejection', (err) => {
-  log(`UNHANDLED REJECTION: ${err?.message || err}`);
+  log(`UNHANDLED REJECTION: ${err?.message || err}`, 'ERROR');
 });
 
 http.createServer(async (req, res) => {
@@ -162,7 +206,7 @@ http.createServer(async (req, res) => {
       req.on('end', () => {
         try {
           const data = JSON.parse(body);
-          log(`PLAYER ${data.level || 'INFO'} ${data.message}`);
+          log(`PLAYER ${data.level || 'INFO'} ${data.message}`, 'INFO');
         } catch {
           log(`PLAYER RAW ${body}`);
         }
@@ -190,7 +234,7 @@ http.createServer(async (req, res) => {
       const channels = readChannels();
       channels.push(channel);
       writeChannels(channels);
-      log(`CHANNELS added "${channel.name}" (${channels.length} total)`);
+      log(`Added #${channels.length} "${channel.name}"`, 'CHANNEL');
       serveJson(res, channel, 201);
       return;
     }
@@ -207,7 +251,7 @@ http.createServer(async (req, res) => {
       }
       channels[id] = { ...channels[id], ...update };
       writeChannels(channels);
-      log(`CHANNELS updated #${id} "${update.name}"`);
+      log(`Updated #${id} "${update.name}"`, 'CHANNEL');
       serveJson(res, channels[id]);
       return;
     }
@@ -222,7 +266,7 @@ http.createServer(async (req, res) => {
       }
       const removed = channels.splice(id, 1)[0];
       writeChannels(channels);
-      log(`CHANNELS deleted #${id} "${removed.name}"`);
+      log(`Deleted #${id} "${removed.name}"`, 'CHANNEL');
       res.writeHead(204, corsHeaders());
       res.end();
       return;
@@ -291,11 +335,11 @@ h1{font-size:28px;margin:0 0 8px 0;color:#ffffff}
       cleanHeaders['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
     }
 
-    log(`PROXY ${method} ${url.hostname}${url.pathname.slice(0, 80)} → Origin: ${cleanHeaders['origin']} Referer: ${cleanHeaders['referer']}`);
+    log(`${method} ${url.hostname}${url.pathname.slice(0, 80)}`, 'PROXY');
 
     let responded = false;
 
-    req.setTimeout(30000, () => { log(`TIMEOUT request ${url.hostname}`); req.destroy(); });
+    req.setTimeout(30000, () => { log(`Request timeout ${url.hostname}`, 'WARN'); req.destroy(); });
     const proxyReq = mod.request(target, {
       method,
       agent: url.protocol === 'https:' ? httpsAgent : undefined,
@@ -310,9 +354,9 @@ h1{font-size:28px;margin:0 0 8px 0;color:#ffffff}
             respHeaders[k] = v;
           }
         }
-        log(`PROXY 403 on ${url.hostname}${url.pathname.slice(0, 60)} → ${JSON.stringify(respHeaders)}`);
+        log(`403 ${url.hostname}${url.pathname.slice(0, 60)} → ${JSON.stringify(respHeaders)}`, 'WARN');
       } else if (proxyRes.statusCode >= 500) {
-        log(`PROXY ${proxyRes.statusCode} on ${url.hostname}${url.pathname.slice(0, 60)}`);
+        log(`${proxyRes.statusCode} ${url.hostname}${url.pathname.slice(0, 60)}`, 'WARN');
       }
       res.writeHead(proxyRes.statusCode, {
         'Access-Control-Allow-Origin': '*',
@@ -321,20 +365,24 @@ h1{font-size:28px;margin:0 0 8px 0;color:#ffffff}
         ),
       });
       const cleanup = () => { proxyRes.destroy(); res.destroy(); };
-      res.on('error', (e) => { if (e.message === 'aborted') return; log(`RES error: ${e.message}`); cleanup(); });
-      proxyRes.on('error', (e) => { if (e.message === 'aborted') return; log(`PROXY response error: ${e.message}`); cleanup(); });
+      res.on('error', (e) => { if (e.message === 'aborted') return; log(`Response error: ${e.message}`, 'ERROR'); cleanup(); });
+      proxyRes.on('error', (e) => { if (e.message === 'aborted') return; log(`Upstream error: ${e.message}`, 'ERROR'); cleanup(); });
       proxyRes.pipe(res);
     });
 
-    proxyReq.on('error', (e) => { if (e.message.includes('certificate')) return; log(`PROXY error: ${e.message}`); if (!responded) { responded = true; res.writeHead(502); res.end('Proxy error: ' + e.message); } });
+    proxyReq.on('error', (e) => { if (e.message.includes('certificate')) return; log(`Request error: ${e.message}`, 'ERROR'); if (!responded) { responded = true; res.writeHead(502); res.end('Proxy error: ' + e.message); } });
     proxyReq.on('timeout', () => { if (!responded) { proxyReq.destroy(); responded = true; res.writeHead(504); res.end('Proxy timeout'); } });
-    req.on('error', (e) => { log(`REQ error: ${e.message}`); proxyReq.destroy(); });
+    req.on('error', (e) => { log(`Client error: ${e.message}`, 'ERROR'); proxyReq.destroy(); });
     req.pipe(proxyReq, { end: true });
   } catch (e) {
-    log(`SERVER error: ${e.message}`);
+    log(`Server error: ${e.message}`, 'ERROR');
     if (!res.headersSent) {
       res.writeHead(500);
       res.end('Server error');
     }
   }
-}).listen(PORT, () => log(`TV Server running on http://localhost:${PORT}`));
+}).listen(PORT, () => {
+  const ip = getNetworkIp();
+  const channelCount = readChannels().length;
+  showBanner(ip, channelCount, headerRules.length);
+});
