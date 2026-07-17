@@ -119,7 +119,14 @@ async function handleFetch() {
 
   try {
     const channels = await fetchPlaylist(url);
-    saveSettings({ channels, channelsFetched: new Date().toISOString() });
+    // Auto-set proxy URL from playlist URL origin
+    const s = getSettings();
+    const derivedProxy = deriveProxyUrl(url);
+    const merged = { channels, channelsFetched: new Date().toISOString() };
+    if (derivedProxy && (!s.proxyUrl || s.proxyUrl === '/proxy/' || s.proxyUrl.startsWith('http://localhost'))) {
+      merged.proxyUrl = derivedProxy;
+    }
+    saveSettings(merged);
     statusEl.textContent = 'Fetched ' + channels.length + ' channels';
     if (onPlaylistFetched) onPlaylistFetched(channels);
   } catch (e) {
@@ -137,7 +144,13 @@ async function handleRefresh() {
 
   try {
     const channels = await fetchPlaylist(s.playlistUrl);
-    saveSettings({ channels, channelsFetched: new Date().toISOString() });
+    const s2 = getSettings();
+    const derivedProxy = deriveProxyUrl(s2.playlistUrl);
+    const merged = { channels, channelsFetched: new Date().toISOString() };
+    if (derivedProxy && (!s2.proxyUrl || s2.proxyUrl === '/proxy/' || s2.proxyUrl.startsWith('http://localhost'))) {
+      merged.proxyUrl = derivedProxy;
+    }
+    saveSettings(merged);
     const fetchedEl = document.getElementById('settings-last-fetched');
     if (fetchedEl) fetchedEl.textContent = 'Just now';
     statusEl.textContent = 'Refreshed ' + channels.length + ' channels';
@@ -170,6 +183,16 @@ function handlePlaySingle() {
   };
 
   if (onPlaySingle) onPlaySingle(channel);
+}
+
+function deriveProxyUrl(playlistUrl) {
+  if (!playlistUrl.startsWith('http')) return null;
+  try {
+    const u = new URL(playlistUrl);
+    return u.origin + '/proxy/';
+  } catch {
+    return null;
+  }
 }
 
 async function fetchPlaylist(url) {

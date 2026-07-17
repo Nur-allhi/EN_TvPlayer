@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const PORT = parseInt(process.argv[2], 10) || 5000;
+const HTTP_PORT = parseInt(process.env.HTTP_PORT, 10) || 5080;
 
 // ── Logging ────────────────────────────────────────────────────
 const logsDir = path.resolve(__dirname, '..', '..', 'logs');
@@ -251,6 +252,7 @@ async function startServer() {
   const handler = await createHandler();
 
   https.createServer(tls, handler).listen(PORT);
+  http.createServer(handler).listen(HTTP_PORT);
 
   const ip = getNetworkIp();
   const sep = '─'.repeat(50);
@@ -259,15 +261,17 @@ async function startServer() {
   console.log(`${ANSI.bold}╠${sep}╣${ANSI.reset}`);
   console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Local:${ANSI.reset}   https://localhost:${PORT}              ${ANSI.bold}║${ANSI.reset}`);
   console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Network:${ANSI.reset} https://${ip}:${PORT}              ${ANSI.bold}║${ANSI.reset}`);
+  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}HTTP:${ANSI.reset}    http://${ip}:${HTTP_PORT}             ${ANSI.bold}║${ANSI.reset}`);
   console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Player:${ANSI.reset}  https://${ip}:${PORT}/enplayer      ${ANSI.bold}║${ANSI.reset}`);
   console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}Manage:${ANSI.reset}  https://${ip}:${PORT}/manage        ${ANSI.bold}║${ANSI.reset}`);
-  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}M3U:${ANSI.reset}     https://${ip}:${PORT}/api/playlist.m3u ${ANSI.bold}║${ANSI.reset}`);
+  console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.green}M3U:${ANSI.reset}     http://${ip}:${HTTP_PORT}/api/playlist.m3u${ANSI.reset} ${ANSI.bold}║${ANSI.reset}`);
   console.log(`${ANSI.bold}║${ANSI.reset}                                            ${ANSI.bold}║${ANSI.reset}`);
   console.log(`${ANSI.bold}║${ANSI.reset}  ${ANSI.dim}Channels:${ANSI.reset} ${channelCount()}                          ${ANSI.bold}║${ANSI.reset}`);
   console.log(`${ANSI.bold}╚${sep}╝${ANSI.reset}\n`);
   log(`HTTPS → 0.0.0.0:${PORT}`, 'INFO');
+  log(`HTTP  → 0.0.0.0:${HTTP_PORT}`, 'INFO');
   log(`Network: https://${ip}:${PORT}/enplayer`, 'INFO');
-  log(`Manage:  https://${ip}:${PORT}/manage`, 'INFO');
+  log(`HTTP M3U: http://${ip}:${HTTP_PORT}/api/playlist.m3u`, 'INFO');
 }
 
 startServer().catch(e => { console.error('Server startup failed:', e); process.exit(1); });
