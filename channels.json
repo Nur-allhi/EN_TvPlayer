@@ -21,8 +21,7 @@
     "drm": {
       "keyId": "34475edab991ad5e92548aebd710410a",
       "key": "501b209cccd323ac00bf5ac15b406cb4"
-    },
-    "proxyUrl": "http://192.168.0.136:5001"
+    }
   },
   {
     "name": "Caze Tv HD 2",
@@ -189,8 +188,7 @@
     "drm": {
       "keyId": "14eeabf30c14b7fbf3008c03099ce011",
       "key": "17d2ac8dbc5429bd70af3433aa12158d"
-    },
-    "proxyUrl": "http://192.168.0.136:5001"
+    }
   },
   {
     "name": "TSN AQ 2",
@@ -200,8 +198,7 @@
     "drm": {
       "keyId": "14eeabf30c14b7fbf3008c03099ce011",
       "key": "17d2ac8dbc5429bd70af3433aa12158d"
-    },
-    "proxyUrl": "http://192.168.0.136:5001"
+    }
   },
   {
     "name": "TUDN Mexico",
