@@ -158,6 +158,8 @@ registerChannelsRoutes(router);
 registerProxiesRoutes(router);
 registerStaticRoutes(router);
 
+const PROXY_TARGET = process.env.PROXY_TARGET || 'http://127.0.0.1:5001';
+
 process.on('uncaughtException', (err) => {
   log(`UNCAUGHT EXCEPTION: ${err.message}`, 'ERROR');
   log(`  ${err.stack?.split('\n').slice(1, 3).join(' ')}`, 'ERROR');
@@ -187,6 +189,28 @@ http.createServer(async (req, res) => {
   }
 
   try {
+    // Proxy passthrough: /proxy/<full-url> → forward to proxy server
+    if (req.url.startsWith('/proxy/')) {
+      const targetUrl = req.url.slice('/proxy/'.length);
+      if (!targetUrl) { res.writeHead(400); res.end('Missing target URL'); return; }
+      const fullUrl = PROXY_TARGET + '/' + targetUrl;
+      log(`Proxy: ${targetUrl.slice(0, 80)}...`, 'INFO');
+      http.get(fullUrl, (proxyRes) => {
+        const headers = { 'Access-Control-Allow-Origin': '*' };
+        for (const [k, v] of Object.entries(proxyRes.headers)) {
+          if (!['access-control-allow-origin', 'connection', 'keep-alive', 'transfer-encoding'].includes(k)) {
+            headers[k] = v;
+          }
+        }
+        res.writeHead(proxyRes.statusCode, headers);
+        proxyRes.pipe(res);
+      }).on('error', (e) => {
+        log(`Proxy error: ${e.message}`, 'ERROR');
+        if (!res.headersSent) { res.writeHead(502); res.end('Proxy error: ' + e.message); }
+      });
+      return;
+    }
+
     const match = router.match(method, rawPath);
     if (match) {
       req.params = match.params;

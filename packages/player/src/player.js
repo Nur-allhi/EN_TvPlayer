@@ -59,6 +59,9 @@ export async function initPlayer(videoEl) {
       if (currentChannel && currentChannel.useProxy === false) return;
       const url = request.uris && request.uris[0];
       if (!url || !url.startsWith('http')) return;
+      // Already proxied through server's /proxy/ route — pass through
+      if (url.startsWith(self.location.origin + '/proxy/')) return;
+      // Same-origin API request — don't proxy
       if (url.startsWith(self.location.origin)) return;
       const proxyUrl = (currentChannel && currentChannel.proxyUrl) || config.proxyUrl;
       if (!proxyUrl) return;
@@ -149,9 +152,6 @@ export async function loadChannel(channel) {
   if (reconnectAttempts > 0) {
     const sep = url.indexOf('?') >= 0 ? '&' : '?';
     url += sep + '_t=' + Date.now();
-  }
-  if (channel.useProxy !== false && config.useProxy) {
-    url = config.proxyUrl + url;
   }
 
   try {
