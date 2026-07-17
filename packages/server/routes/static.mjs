@@ -61,13 +61,27 @@ export function registerStaticRoutes(router) {
 
   // Player SPA (built output)
   router.get('/enplayer', (req, res) => {
-    const playerDist = path.resolve('packages/player/dist');
-    if (fs.existsSync(path.join(playerDist, 'index.html'))) {
-      serveStatic(res, path.join(playerDist, 'index.html'));
-    } else {
-      // Dev fallback — proxy to Vite dev server
-      res.writeHead(302, { Location: 'http://localhost:5173/' });
-      res.end();
-    }
+    servePlayerApp(res);
   });
+  router.get('/enplayer/*', (req, res) => {
+    const subPath = req.params.wild || '';
+    servePlayerApp(res, subPath);
+  });
+}
+
+function servePlayerApp(res, subPath) {
+  const playerDist = path.resolve('packages/player/dist');
+  if (subPath) {
+    const filePath = path.join(playerDist, subPath);
+    if (fs.existsSync(filePath) && !fs.statSync(filePath).isDirectory()) {
+      serveStatic(res, filePath);
+      return;
+    }
+  }
+  if (fs.existsSync(path.join(playerDist, 'index.html'))) {
+    serveStatic(res, path.join(playerDist, 'index.html'));
+  } else {
+    res.writeHead(302, { Location: 'http://localhost:5173/' });
+    res.end();
+  }
 }
