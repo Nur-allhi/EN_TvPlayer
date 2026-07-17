@@ -28,6 +28,10 @@ export function init(channelList, callback) {
   if (hoverZone) {
     hoverZone.addEventListener('mouseenter', () => {
       if (isFullscreen) {
+        if (rightSidebarOpen) {
+          rightSidebarOpen = false;
+          applyRightSidebar();
+        }
         sidebarOpen = true;
         applySidebar();
         resetInactivity();
@@ -49,6 +53,10 @@ export function init(channelList, callback) {
   if (rightZone) {
     rightZone.addEventListener('mouseenter', () => {
       if (isFullscreen) {
+        if (sidebarOpen) {
+          sidebarOpen = false;
+          applySidebar();
+        }
         rightSidebarOpen = true;
         applyRightSidebar();
         resetInactivity();

@@ -16,6 +16,8 @@ export function show() {
   if (!container) return;
   container.classList.remove('hidden');
   render();
+  const firstInput = container.querySelector('input, button, select, textarea, [tabindex]:not([tabindex="-1"])');
+  if (firstInput) firstInput.focus();
 }
 
 export function hide() {
@@ -233,9 +235,7 @@ function parseM3u(text) {
             const keyMatch = next.match(/license_key=([a-fA-F0-9]+):([a-fA-F0-9]+)/);
             if (keyMatch) {
               drm = { keyId: keyMatch[1], key: keyMatch[2] };
-              console.log('Parser extracted ClearKey for:', name, 'keyId:', keyMatch[1]);
             } else {
-              console.warn('Parser found license_key= but could not parse keyId:key for:', name, 'line:', next);
             }
           }
           urlIdx++;
@@ -255,9 +255,6 @@ function parseM3u(text) {
           drm: drm,
         };
         if (proxyMatch) ch.proxyUrl = proxyMatch[1];
-        if (!drm && url && url.includes('.mpd')) {
-          console.log('Parser: DASH channel without DRM keys:', name);
-        }
         channels.push(ch);
         index++;
         i = urlIdx;

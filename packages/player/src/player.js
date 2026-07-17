@@ -184,7 +184,6 @@ export async function loadChannel(channel) {
     if (myToken !== loadToken) return false;
 
     if (channel.drm) {
-      console.log('Configuring ClearKey for:', channel.name, 'keyId:', channel.drm.keyId);
       player.configure({
         drm: {
           clearKeys: {
@@ -193,7 +192,6 @@ export async function loadChannel(channel) {
         },
       });
     } else {
-      console.log('No DRM config for:', channel.name, channel.url.slice(0, 60));
       player.configure({ drm: { clearKeys: {} } });
     }
 

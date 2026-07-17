@@ -9,12 +9,6 @@ let currentIndex = 0;
 let channels;
 
 async function init() {
-  // EME diagnostics
-  console.log('EME:' + (typeof navigator.requestMediaKeySystemAccess) + '|MK:' + (typeof window.MediaKeys) + '|loc:' + self.location.origin);
-  if (typeof navigator.requestMediaKeySystemAccess !== 'function') {
-    console.warn('EME not available — DRM channels will not play');
-  }
-
   const videoEl = document.getElementById('video');
   if (!player.initPlayer(videoEl)) {
     document.body.innerHTML =
@@ -24,6 +18,18 @@ async function init() {
       '</div>';
     return;
   }
+
+  remote.init(handleRemoteAction);
+
+  document.addEventListener('tizenhwkey', (e) => {
+    if (e.keyName === 'back') {
+      if (settings.isVisible()) {
+        settings.hide();
+        showPlayer();
+        ui.stopInactivityTimer();
+      }
+    }
+  });
 
   const s = getSettings();
 
@@ -175,8 +181,6 @@ function startPlayer() {
     ui.selectChannel(next);
   });
 
-  remote.init(handleRemoteAction);
-
   ui.selectChannel(0, true);
 }
 
@@ -208,10 +212,13 @@ function showFirstLaunch() {
     },
   });
 
+  document.body.style.overflow = 'hidden';
   settings.show();
+  trackSettingsFocus();
 }
 
 function showPlayer() {
+  document.body.style.overflow = '';
   const playerContainer = document.getElementById('player-container');
   const nowPlaying = document.getElementById('now-playing');
   const sidebar = document.getElementById('sidebar');
@@ -240,7 +247,9 @@ function showSettingsPage() {
   ui.closeAllOverlays();
   ui.stopCursorAutoHide();
   ui.startInactivityTimer();
+  document.body.style.overflow = 'hidden';
   settings.show();
+  trackSettingsFocus();
 }
 
 async function fetchFromPlaylistUrl(url) {
@@ -276,9 +285,7 @@ function parseM3u(text) {
             const keyMatch = next.match(/license_key=([a-fA-F0-9]+):([a-fA-F0-9]+)/);
             if (keyMatch) {
               drm = { keyId: keyMatch[1], key: keyMatch[2] };
-              console.log('Parser extracted ClearKey for:', name, 'keyId:', keyMatch[1]);
             } else {
-              console.warn('Parser found license_key= but could not parse keyId:key for:', name, 'line:', next);
             }
           }
           urlIdx++;
@@ -290,9 +297,6 @@ function parseM3u(text) {
       }
       const url = lines[urlIdx] ? lines[urlIdx].trim() : '';
       if (url && !url.startsWith('#')) {
-        if (!drm && url && url.includes('.mpd')) {
-          console.log('Parser: DASH channel without DRM keys:', name);
-        }
         const ch = { name, url, channelNumber: index + 1, useProxy: true, drm };
         if (proxyMatch) ch.proxyUrl = proxyMatch[1];
         result.push(ch);
@@ -372,12 +376,58 @@ function hideProgress() {
   if (el) el.classList.add('hidden');
 }
 
+const settingsFocusOrder = [
+  'settings-playlist-url', 'settings-fetch-btn',
+  'settings-refresh-btn', 'settings-proxy-url',
+  'settings-single-url', 'settings-single-proxy',
+  'settings-single-proxy-url', 'settings-play-single-btn',
+  'settings-close-btn',
+];
+
+function getSettingsFocusable() {
+  return settingsFocusOrder.map(id => document.getElementById(id)).filter(el => el && el.offsetParent !== null);
+}
+
+function focusSettingsNext() {
+  const els = getSettingsFocusable();
+  const cur = document.activeElement;
+  let idx = els.indexOf(cur);
+  idx = idx < els.length - 1 ? idx + 1 : 0;
+  if (els[idx]) els[idx].focus();
+}
+
+function focusSettingsPrev() {
+  const els = getSettingsFocusable();
+  const cur = document.activeElement;
+  let idx = els.indexOf(cur);
+  idx = idx > 0 ? idx - 1 : els.length - 1;
+  if (els[idx]) els[idx].focus();
+}
+
+function trackSettingsFocus() {
+  const els = getSettingsFocusable();
+  if (els.length > 0 && !els.includes(document.activeElement)) {
+    els[0].focus();
+  }
+}
+
 function handleRemoteAction(action, value) {
   if (settings.isVisible()) {
-    if (action === 'back') {
-      settings.hide();
-      showPlayer();
-      ui.stopInactivityTimer();
+    switch (action) {
+      case 'up':
+        focusSettingsPrev();
+        break;
+      case 'down':
+        focusSettingsNext();
+        break;
+      case 'select':
+        if (document.activeElement) document.activeElement.click();
+        break;
+      case 'back':
+        settings.hide();
+        showPlayer();
+        ui.stopInactivityTimer();
+        break;
     }
     return;
   }

@@ -137,6 +137,12 @@ writeFileSync(join(TEMP, 'config.xml'), configXml);
 // Copy app files
 cpSync(DIST, TEMP, { recursive: true });
 
+// Fix paths: strip /enplayer/ base prefix (WGT serves from root)
+const htmlPath = join(TEMP, 'index.html');
+let html = readFileSync(htmlPath, 'utf-8');
+html = html.replace(/\/enplayer\//g, '/');
+writeFileSync(htmlPath, html);
+
 // Copy app icon
 cpSync(join(TIZEN, 'icons', 'icon_128.png'), join(TEMP, 'icon.png'));
 

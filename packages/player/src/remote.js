@@ -5,11 +5,11 @@ let numberTimeout = null;
 export function init(callback) {
   onKeyAction = callback;
 
-  document.addEventListener('keydown', handleKeyDown);
+  document.addEventListener('keydown', handleKeyDown, true);
 }
 
 export function destroy() {
-  document.removeEventListener('keydown', handleKeyDown);
+  document.removeEventListener('keydown', handleKeyDown, true);
   onKeyAction = null;
 }
 
@@ -18,13 +18,33 @@ function handleKeyDown(e) {
 
   const key = e.key || e.keyCode;
 
-  // When settings page is visible, only intercept back/Escape
+  // When settings is visible, handle arrow navigation + back
   const settingsPage = document.getElementById('settings-page');
   const isSettingsVisible = settingsPage && !settingsPage.classList.contains('hidden');
   if (isSettingsVisible) {
-    if (key === 'Escape' || key === 'Backspace' || e.keyCode === 27) {
+    if (key === 'Escape' || key === 'Backspace' || e.keyCode === 27 || e.keyCode === 10009) {
       e.preventDefault();
+      e.stopPropagation();
       onKeyAction('back');
+      return;
+    }
+    if (key === 'Enter' || e.keyCode === 13) {
+      e.preventDefault();
+      e.stopPropagation();
+      onKeyAction('select');
+      return;
+    }
+    if (key === 'ArrowUp' || e.keyCode === 38) {
+      e.preventDefault();
+      e.stopPropagation();
+      onKeyAction('up');
+      return;
+    }
+    if (key === 'ArrowDown' || e.keyCode === 40) {
+      e.preventDefault();
+      e.stopPropagation();
+      onKeyAction('down');
+      return;
     }
     return;
   }
