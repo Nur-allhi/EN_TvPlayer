@@ -27,19 +27,19 @@
     }
     .header {
       position: sticky; top: 0; z-index: 100;
-      background: var(--bg); padding: 16px 16px 12px;
+      background: var(--bg); padding: 12px 16px 8px;
       border-bottom: 1px solid var(--border);
     }
     .header-top {
       display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
     .header h1 {
-      font-size: 22px; font-weight: 700;
-      display: flex; align-items: center; gap: 10px;
+      font-size: 20px; font-weight: 700;
+      display: flex; align-items: center; gap: 8px;
     }
-    .header h1 small { font-size: 13px; color: var(--text-dim); font-weight: normal; }
-    .header-actions { display: flex; gap: 8px; }
+    .header h1 small { font-size: 12px; color: var(--text-dim); font-weight: normal; }
+    .header-actions { display: flex; gap: 6px; }
     .search-bar {
       display: flex; gap: 8px; align-items: center;
     }
@@ -50,6 +50,21 @@
     }
     .search-bar input:focus { border-color: var(--accent); }
     .search-bar input::placeholder { color: var(--text-dim); }
+
+    /* Tabs */
+    .tabs {
+      display: flex; gap: 0; margin-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab {
+      flex: 1; padding: 10px 16px; text-align: center;
+      font-size: 14px; font-weight: 600; color: var(--text-dim);
+      cursor: pointer; border-bottom: 2px solid transparent;
+      transition: all 0.15s; user-select: none;
+      background: none; font-family: inherit;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
     .sort-bar {
       display: flex; gap: 6px; padding: 8px 0 4px; overflow-x: auto;
@@ -77,11 +92,14 @@
     .btn:active { transform: scale(0.97); }
     .btn-primary { background: var(--green); border-color: var(--green-hover); color: #fff; }
     .btn-primary:active { background: var(--green-hover); }
+    .btn-accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-accent:active { opacity: 0.8; }
     .btn-danger { background: transparent; border-color: var(--red); color: var(--red); }
     .btn-danger:active { background: var(--red); color: #fff; }
     .btn-icon {
       width: 40px; height: 40px; padding: 0; border-radius: 50%;
     }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
     .btn-fab {
       position: fixed; bottom: 24px; right: 24px;
       width: 60px; height: 60px; border-radius: 50%;
@@ -162,12 +180,13 @@
     .form-group label {
       display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 6px; font-weight: 500;
     }
-    .form-group input, .form-group textarea {
+    .form-group input, .form-group textarea, .form-group select {
       width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
       background: var(--bg); color: var(--text); font-size: 15px; outline: none; transition: border-color 0.15s;
     }
-    .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--accent); }
     .form-group textarea { font-family: monospace; font-size: 13px; resize: vertical; min-height: 60px; }
+    .form-group select { cursor: pointer; appearance: auto; }
     .form-row { display: flex; gap: 12px; }
     .form-row .form-group { flex: 1; }
     .form-group.checkbox {
@@ -190,7 +209,7 @@
 
     .status-bar {
       display: flex; align-items: center; gap: 6px;
-      font-size: 12px; color: var(--text-dim); padding: 8px 16px;
+      font-size: 12px; color: var(--text-dim); padding: 6px 0;
     }
     .status-dot {
       width: 6px; height: 6px; border-radius: 50%; background: var(--green);
@@ -198,11 +217,12 @@
     }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
     @media (min-width: 600px) {
-      .card-list {
-        max-width: 600px; margin: 0 auto;
-      }
-      .header { padding: 16px 24px 12px; max-width: 648px; margin: 0 auto; }
+      .card-list { max-width: 600px; margin: 0 auto; }
+      .header { padding: 12px 24px 8px; max-width: 648px; margin: 0 auto; }
       .toast { max-width: 400px; }
     }
   </style>
@@ -211,31 +231,52 @@
 
   <div class="header">
     <div class="header-top">
-      <h1>Channels <small id="channel-count"></small></h1>
-      <div class="header-actions">
-        <button class="btn btn-icon" onclick="loadChannels()" id="refresh-btn" title="Refresh">↻</button>
+      <h1>Manager</h1>
+      <div class="header-actions" id="header-actions">
+        <button class="btn btn-sm" onclick="loadChannels()" id="refresh-btn" title="Refresh">&#x21bb;</button>
       </div>
     </div>
-    <div class="search-bar">
-      <input type="text" id="search-input" placeholder="Search channels..." oninput="renderCards()" />
-    </div>
-    <div class="sort-bar" id="sort-bar"></div>
-    <div class="status-bar">
-      <span class="status-dot" id="status-dot"></span>
-      <span id="status-text">Loading...</span>
+    <div class="tabs">
+      <button class="tab active" data-tab="channels" onclick="switchTab('channels')">Channels</button>
+      <button class="tab" data-tab="proxies" onclick="switchTab('proxies')">Proxy Servers</button>
     </div>
   </div>
 
-  <div id="card-container" class="card-list"></div>
+  <!-- Channels Tab -->
+  <div id="tab-channels" class="tab-content active">
+    <div class="header" style="border-bottom:none;padding-top:0">
+      <div class="search-bar">
+        <input type="text" id="search-input" placeholder="Search channels..." oninput="renderCards()" />
+      </div>
+      <div class="sort-bar" id="sort-bar"></div>
+      <div class="status-bar">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">Loading...</span>
+      </div>
+    </div>
 
-  <div class="empty-state" id="empty-state" style="display:none">
-    <div class="empty-icon">📺</div>
-    <p>No channels yet.<br>Tap the + button to add your first channel.</p>
+    <div id="card-container" class="card-list"></div>
+
+    <div class="empty-state" id="empty-state" style="display:none">
+      <div class="empty-icon">&#x1F4FA;</div>
+      <p>No channels yet.<br>Tap the + button to add your first channel.</p>
+    </div>
+
+    <button class="btn-fab" id="fab-btn" onclick="openAddModal()" aria-label="Add channel">+</button>
   </div>
 
-  <button class="btn-fab" id="fab-btn" onclick="openAddModal()" aria-label="Add channel">+</button>
+  <!-- Proxies Tab -->
+  <div id="tab-proxies" class="tab-content">
+    <div class="card-list" id="proxy-list">
+      <div class="empty-state" id="proxy-empty" style="display:none">
+        <div class="empty-icon">&#x1F310;</div>
+        <p>No proxy servers configured.<br>Add one to enable proxied streaming.</p>
+      </div>
+    </div>
+    <button class="btn-fab" onclick="openProxyModal()" aria-label="Add proxy">+</button>
+  </div>
 
-  <!-- Bottom Sheet Modal -->
+  <!-- Channel Edit Modal -->
   <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
     <div class="modal-sheet" onclick="event.stopPropagation()">
       <div class="modal-handle"></div>
@@ -250,9 +291,13 @@
           <input id="field-number" type="number" placeholder="1" inputmode="numeric" />
         </div>
         <div class="form-group checkbox">
-          <input id="field-proxy" type="checkbox" checked />
+          <input id="field-proxy" type="checkbox" checked onchange="toggleProxyField()" />
           <label for="field-proxy">Use Proxy</label>
         </div>
+      </div>
+      <div class="form-group" id="proxy-select-group" style="display:none">
+        <label>Proxy Server</label>
+        <select id="field-proxy-select"></select>
       </div>
       <div class="form-group">
         <label>Stream URL</label>
@@ -275,17 +320,57 @@
     </div>
   </div>
 
+  <!-- Proxy Edit Modal -->
+  <div class="modal-overlay" id="proxy-modal" onclick="if(event.target===this)closeProxyModal()">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <h2 id="proxy-modal-title">Add Proxy Server</h2>
+      <div class="form-group">
+        <label>Name</label>
+        <input id="proxy-field-name" placeholder="e.g. Local Proxy" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <label>URL</label>
+        <input id="proxy-field-url" placeholder="http://192.168.0.136:5001" inputmode="url" autocomplete="off" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeProxyModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveProxy()" id="proxy-save-btn">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import M3U Modal -->
+  <div class="modal-overlay" id="import-modal" onclick="if(event.target===this)closeImportModal()">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <h2>Import M3U Playlist</h2>
+      <div class="form-group">
+        <label>Playlist URL</label>
+        <input id="import-url" type="text" placeholder="https://example.com/playlist.m3u" autocomplete="off" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeImportModal()">Cancel</button>
+        <button class="btn btn-accent" onclick="importM3u()" id="import-btn">Fetch & Import</button>
+      </div>
+      <div id="import-status" style="margin-top:12px;font-size:14px;color:var(--text-dim)"></div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
   <script>
     let channels = [];
+    let proxies = [];
     let editingIndex = -1;
+    let editingProxyId = null;
     let currentSort = 'number-asc';
+    let currentTab = 'channels';
     const SORT_MODES = [
-      { id: 'number-asc', label: '# ↑' },
-      { id: 'number-desc', label: '# ↓' },
-      { id: 'alpha-asc', label: 'A–Z' },
-      { id: 'alpha-desc', label: 'Z–A' },
+      { id: 'number-asc', label: '# \u2191' },
+      { id: 'number-desc', label: '# \u2193' },
+      { id: 'alpha-asc', label: 'A\u2013Z' },
+      { id: 'alpha-desc', label: 'Z\u2013A' },
       { id: 'newest', label: 'Newest' },
       { id: 'oldest', label: 'Oldest' },
     ];
@@ -299,18 +384,35 @@
       });
       if (!resp.ok) {
         const text = await resp.text().catch(() => '');
-        throw new Error(text || `HTTP ${resp.status}`);
+        throw new Error(text || 'HTTP ' + resp.status);
       }
       return resp.status === 204 ? null : resp.json();
     }
 
-    function shuffleArray(arr) {
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
+      if (tab === 'channels') {
+        renderCards();
+      } else {
+        renderProxies();
       }
-      return arr;
+      updateHeaderActions();
     }
+
+    function updateHeaderActions() {
+      const actions = $('header-actions');
+      if (currentTab === 'channels') {
+        actions.innerHTML =
+          '<button class="btn btn-sm" onclick="openImportModal()" title="Import M3U">\u2193 M3U</button>' +
+          '<button class="btn btn-sm" onclick="loadChannels()" title="Refresh">\u21bb</button>';
+      } else {
+        actions.innerHTML = '<button class="btn btn-sm" onclick="loadProxies()" title="Refresh">\u21bb</button>';
+      }
+    }
+
+    /* ========= Channels ========= */
 
     async function loadChannels() {
       try {
@@ -318,18 +420,16 @@
         channels = await api('/api/channels');
         renderSortBar();
         renderCards();
-        $('channel-count').textContent = channels.length + ' channel' + (channels.length !== 1 ? 's' : '');
         $('status-text').textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       } catch (e) {
         showToast('Failed to load channels: ' + e.message, 'error');
-        $('status-text').textContent = 'Error loading';
       }
     }
 
     function renderSortBar() {
       const bar = $('sort-bar');
       bar.innerHTML = SORT_MODES.map(m =>
-        `<button class="sort-pill${currentSort === m.id ? ' active' : ''}" onclick="setSort('${m.id}')">${m.label}</button>`
+        '<button class="sort-pill' + (currentSort === m.id ? ' active' : '') + '" onclick="setSort(\'' + m.id + '\')">' + m.label + '</button>'
       ).join('');
     }
 
@@ -396,35 +496,36 @@
         const realIdx = channels.indexOf(ch);
         const isProxy = ch.useProxy !== false;
         const hasDrm = ch.drm && ch.drm.keyId;
+        const proxyName = ch.proxyUrl ? getProxyName(ch.proxyUrl) : '';
 
         const card = document.createElement('div');
         card.className = 'card';
-        card.innerHTML = `
-          <div class="card-top">
-            <div class="card-number">${ch.channelNumber || '#'}</div>
-            <div class="card-info">
-              <div class="card-name">${esc(ch.name)}</div>
-              <div class="card-url" title="${esc(ch.url)}">${esc(ch.url)}</div>
-            </div>
-          </div>
-          <div class="card-tags">
-            <span class="tag ${isProxy ? 'tag-proxy' : 'tag-direct'}">${isProxy ? 'Proxy' : 'Direct'}</span>
-            <span class="tag ${hasDrm ? 'tag-drm' : 'tag-none'}">${hasDrm ? 'DRM' : 'No DRM'}</span>
-            ${hasDrm ? '<span class="tag tag-drm">ClearKey</span>' : ''}
-          </div>
-          <div class="card-actions">
-            <button class="btn btn-primary" onclick="openEditModal(${realIdx})">Edit</button>
-            <button class="btn btn-danger" onclick="deleteChannel(${realIdx})">Delete</button>
-          </div>
-        `;
+        card.innerHTML =
+          '<div class="card-top">' +
+            '<div class="card-number">' + (ch.channelNumber || '#') + '</div>' +
+            '<div class="card-info">' +
+              '<div class="card-name">' + esc(ch.name) + '</div>' +
+              '<div class="card-url" title="' + esc(ch.url) + '">' + esc(ch.url) + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="card-tags">' +
+            '<span class="tag ' + (isProxy ? 'tag-proxy' : 'tag-direct') + '">' + (isProxy ? 'Proxy' : 'Direct') + '</span>' +
+            (proxyName ? '<span class="tag tag-proxy">' + esc(proxyName) + '</span>' : '') +
+            '<span class="tag ' + (hasDrm ? 'tag-drm' : 'tag-none') + '">' + (hasDrm ? 'DRM' : 'No DRM') + '</span>' +
+            (hasDrm ? '<span class="tag tag-drm">ClearKey</span>' : '') +
+          '</div>' +
+          '<div class="card-actions">' +
+            '<button class="btn btn-primary" onclick="openEditModal(' + realIdx + ')">Edit</button>' +
+            '<button class="btn btn-danger" onclick="deleteChannel(' + realIdx + ')">Delete</button>' +
+          '</div>';
         container.appendChild(card);
       });
     }
 
-    function esc(s) {
-      const d = document.createElement('div');
-      d.textContent = s || '';
-      return d.innerHTML;
+    function getProxyName(proxyUrl) {
+      if (!proxyUrl) return '';
+      const p = proxies.find(p => p.url === proxyUrl);
+      return p ? p.name : '';
     }
 
     function openAddModal() {
@@ -438,6 +539,8 @@
       $('field-proxy').checked = true;
       $('field-drm-keyid').value = '';
       $('field-drm-key').value = '';
+      populateProxySelect(null);
+      toggleProxyField();
       $('modal').classList.add('open');
       setTimeout(() => $('field-name').focus(), 300);
     }
@@ -453,8 +556,27 @@
       $('field-proxy').checked = ch.useProxy !== false;
       $('field-drm-keyid').value = (ch.drm && ch.drm.keyId) || '';
       $('field-drm-key').value = (ch.drm && ch.drm.key) || '';
+      populateProxySelect(ch.proxyUrl || null);
+      toggleProxyField();
       $('modal').classList.add('open');
       setTimeout(() => $('field-name').focus(), 300);
+    }
+
+    function populateProxySelect(selectedUrl) {
+      const sel = $('field-proxy-select');
+      sel.innerHTML = '<option value="">\u2014 None \u2014</option>';
+      proxies.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.url;
+        opt.textContent = p.name + ' (' + p.url + ')';
+        if (p.url === selectedUrl) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+
+    function toggleProxyField() {
+      const show = $('field-proxy').checked;
+      $('proxy-select-group').style.display = show ? 'block' : 'none';
     }
 
     function closeModal() {
@@ -466,6 +588,7 @@
       const url = $('field-url').value.trim();
       const channelNumber = parseInt($('field-number').value, 10) || 0;
       const useProxy = $('field-proxy').checked;
+      const proxyUrl = useProxy ? $('field-proxy-select').value : '';
       const drmKeyId = $('field-drm-keyid').value.trim();
       const drmKey = $('field-drm-key').value.trim();
 
@@ -473,6 +596,7 @@
       if (!url) { showToast('Stream URL is required', 'error'); return; }
 
       const channel = { name, url, channelNumber, useProxy };
+      if (proxyUrl) channel.proxyUrl = proxyUrl;
       if (drmKeyId && drmKey) {
         channel.drm = { keyId: drmKeyId, key: drmKey };
       } else if (drmKeyId || drmKey) {
@@ -481,16 +605,10 @@
 
       try {
         if (editingIndex === -1) {
-          await api('/api/channels', {
-            method: 'POST',
-            body: JSON.stringify(channel),
-          });
+          await api('/api/channels', { method: 'POST', body: JSON.stringify(channel) });
           showToast('Channel added', 'success');
         } else {
-          await api('/api/channels/' + editingIndex, {
-            method: 'PUT',
-            body: JSON.stringify(channel),
-          });
+          await api('/api/channels/' + editingIndex, { method: 'PUT', body: JSON.stringify(channel) });
           showToast('Channel updated', 'success');
         }
         closeModal();
@@ -512,6 +630,195 @@
       }
     }
 
+    /* ========= Import M3U ========= */
+
+    function openImportModal() {
+      $('import-url').value = '';
+      $('import-status').textContent = '';
+      $('import-btn').disabled = false;
+      $('import-modal').classList.add('open');
+    }
+
+    function closeImportModal() {
+      $('import-modal').classList.remove('open');
+    }
+
+    async function importM3u() {
+      const url = $('import-url').value.trim();
+      if (!url) { showToast('Enter a playlist URL', 'error'); return; }
+
+      const status = $('import-status');
+      const btn = $('import-btn');
+      btn.disabled = true;
+      status.textContent = 'Fetching...';
+
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const text = await resp.text();
+
+        if (!text.startsWith('#EXTM3U')) throw new Error('Not a valid M3U file');
+
+        const imported = parseM3u(text);
+        if (imported.length === 0) throw new Error('No channels found in playlist');
+
+        // Append imported channels
+        const existing = await api('/api/channels');
+        const maxNum = existing.reduce((max, ch) => Math.max(max, ch.channelNumber || 0), 0);
+        imported.forEach((ch, i) => {
+          ch.channelNumber = maxNum + i + 1;
+        });
+        const merged = existing.concat(imported);
+
+        // Save via PUT to index 0 with full list (workaround: delete all + re-add)
+        for (let i = existing.length - 1; i >= 0; i--) {
+          await api('/api/channels/' + i, { method: 'DELETE' });
+        }
+        for (const ch of imported) {
+          await api('/api/channels', { method: 'POST', body: JSON.stringify(ch) });
+        }
+
+        status.textContent = 'Imported ' + imported.length + ' channels';
+        showToast('Imported ' + imported.length + ' channels', 'success');
+        closeImportModal();
+        await loadChannels();
+      } catch (e) {
+        status.textContent = 'Error: ' + e.message;
+        showToast('Import failed: ' + e.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function parseM3u(text) {
+      const lines = text.split('\n');
+      const result = [];
+      let index = 0;
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line.startsWith('#EXTINF:')) {
+          const nameMatch = line.match(/,(.+)$/);
+          const name = nameMatch ? nameMatch[1].trim() : 'Channel ' + (index + 1);
+          const url = lines[i + 1] ? lines[i + 1].trim() : '';
+          if (url && !url.startsWith('#')) {
+            result.push({ name, url, channelNumber: 0, useProxy: false, drm: null });
+            index++;
+          }
+        }
+      }
+      return result;
+    }
+
+    /* ========= Proxy Servers ========= */
+
+    async function loadProxies() {
+      try {
+        proxies = await api('/api/proxies');
+        renderProxies();
+      } catch (e) {
+        showToast('Failed to load proxies: ' + e.message, 'error');
+      }
+    }
+
+    function renderProxies() {
+      const container = $('proxy-list');
+      const empty = $('proxy-empty');
+
+      if (!proxies || proxies.length === 0) {
+        container.innerHTML = '';
+        container.appendChild(empty);
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+      container.innerHTML = '';
+
+      proxies.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML =
+          '<div class="card-top">' +
+            '<div class="card-number" style="color:var(--accent)">\u{1F310}</div>' +
+            '<div class="card-info">' +
+              '<div class="card-name">' + esc(p.name) + '</div>' +
+              '<div class="card-url" title="' + esc(p.url) + '">' + esc(p.url) + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="card-actions">' +
+            '<button class="btn btn-primary" onclick="openEditProxyModal(' + p.id + ')">Edit</button>' +
+            '<button class="btn btn-danger" onclick="deleteProxy(' + p.id + ')">Delete</button>' +
+          '</div>';
+        container.appendChild(card);
+      });
+    }
+
+    function openProxyModal() {
+      editingProxyId = null;
+      $('proxy-modal-title').textContent = 'Add Proxy Server';
+      $('proxy-save-btn').textContent = 'Add';
+      $('proxy-field-name').value = '';
+      $('proxy-field-url').value = '';
+      $('proxy-modal').classList.add('open');
+      setTimeout(() => $('proxy-field-name').focus(), 300);
+    }
+
+    function openEditProxyModal(id) {
+      const p = proxies.find(x => x.id === id);
+      if (!p) return;
+      editingProxyId = id;
+      $('proxy-modal-title').textContent = 'Edit Proxy Server';
+      $('proxy-save-btn').textContent = 'Save';
+      $('proxy-field-name').value = p.name || '';
+      $('proxy-field-url').value = p.url || '';
+      $('proxy-modal').classList.add('open');
+      setTimeout(() => $('proxy-field-name').focus(), 300);
+    }
+
+    function closeProxyModal() {
+      $('proxy-modal').classList.remove('open');
+    }
+
+    async function saveProxy() {
+      const name = $('proxy-field-name').value.trim();
+      const url = $('proxy-field-url').value.trim();
+      if (!name) { showToast('Proxy name is required', 'error'); return; }
+      if (!url) { showToast('Proxy URL is required', 'error'); return; }
+
+      try {
+        if (editingProxyId === null) {
+          await api('/api/proxies', { method: 'POST', body: JSON.stringify({ name, url }) });
+          showToast('Proxy added', 'success');
+        } else {
+          await api('/api/proxies/' + editingProxyId, { method: 'PUT', body: JSON.stringify({ name, url }) });
+          showToast('Proxy updated', 'success');
+        }
+        closeProxyModal();
+        await loadProxies();
+      } catch (e) {
+        showToast('Save failed: ' + e.message, 'error');
+      }
+    }
+
+    async function deleteProxy(id) {
+      const p = proxies.find(x => x.id === id);
+      if (!p || !confirm('Delete proxy "' + p.name + '"?')) return;
+      try {
+        await api('/api/proxies/' + id, { method: 'DELETE' });
+        showToast('Proxy deleted', 'success');
+        await loadProxies();
+      } catch (e) {
+        showToast('Delete failed: ' + e.message, 'error');
+      }
+    }
+
+    /* ========= Shared ========= */
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
     function showToast(message, type) {
       const toast = $('toast');
       toast.textContent = message;
@@ -521,10 +828,16 @@
     }
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeModal();
+      if (e.key === 'Escape') {
+        closeModal();
+        closeProxyModal();
+        closeImportModal();
+      }
     });
 
+    updateHeaderActions();
     loadChannels();
+    loadProxies();
   </script>
 </body>
 </html>
