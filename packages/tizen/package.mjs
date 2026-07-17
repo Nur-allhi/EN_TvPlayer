@@ -4,8 +4,8 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(__dirname, '..');
-const DIST = join(ROOT, 'dist');
+const ROOT = join(__dirname, '..', '..');
+const DIST = join(ROOT, 'packages', 'player', 'dist');
 const TIZEN = __dirname;
 const TV_IP = '192.168.0.180';
 
