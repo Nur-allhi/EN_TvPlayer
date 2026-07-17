@@ -1,0 +1,10 @@
+{
+  "name": "@en-iptv/proxy",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "EN IPTV — standalone CORS proxy server",
+  "main": "proxy.mjs",
+  "scripts": {
+    "start": "node proxy.mjs"
+  }
+}

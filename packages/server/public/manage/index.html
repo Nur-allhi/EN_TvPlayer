@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Channel Manager</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --text-dim: #8b949e;
+      --accent: #58a6ff;
+      --green: #238636;
+      --green-hover: #2ea043;
+      --red: #da3633;
+      --red-hover: #f85149;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding-bottom: 100px;
+    }
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--bg); padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .header-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .header h1 {
+      font-size: 22px; font-weight: 700;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .header h1 small { font-size: 13px; color: var(--text-dim); font-weight: normal; }
+    .header-actions { display: flex; gap: 8px; }
+    .search-bar {
+      display: flex; gap: 8px; align-items: center;
+    }
+    .search-bar input {
+      flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--surface); color: var(--text); font-size: 15px;
+      outline: none; transition: border-color 0.15s;
+    }
+    .search-bar input:focus { border-color: var(--accent); }
+    .search-bar input::placeholder { color: var(--text-dim); }
+
+    .sort-bar {
+      display: flex; gap: 6px; padding: 8px 0 4px; overflow-x: auto;
+      scrollbar-width: none; -ms-overflow-style: none; white-space: nowrap;
+    }
+    .sort-bar::-webkit-scrollbar { display: none; }
+    .sort-pill {
+      flex-shrink: 0; padding: 6px 14px; border: 1px solid var(--border);
+      border-radius: 20px; background: transparent; color: var(--text-dim);
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      transition: all 0.15s; user-select: none; -webkit-tap-highlight-color: transparent;
+    }
+    .sort-pill:active { transform: scale(0.95); }
+    .sort-pill.active {
+      background: var(--accent); color: #fff; border-color: var(--accent);
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px 16px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--surface); color: var(--text); cursor: pointer;
+      font-size: 14px; font-weight: 500; transition: background 0.15s;
+      white-space: nowrap; user-select: none; -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--green); border-color: var(--green-hover); color: #fff; }
+    .btn-primary:active { background: var(--green-hover); }
+    .btn-danger { background: transparent; border-color: var(--red); color: var(--red); }
+    .btn-danger:active { background: var(--red); color: #fff; }
+    .btn-icon {
+      width: 40px; height: 40px; padding: 0; border-radius: 50%;
+    }
+    .btn-fab {
+      position: fixed; bottom: 24px; right: 24px;
+      width: 60px; height: 60px; border-radius: 50%;
+      background: var(--green); border: 2px solid var(--green-hover);
+      color: #fff; font-size: 28px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200; box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      transition: transform 0.15s; user-select: none; -webkit-tap-highlight-color: transparent;
+    }
+    .btn-fab:active { transform: scale(0.92); }
+
+    .card-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px 16px; transition: border-color 0.15s;
+    }
+    .card:active { border-color: var(--accent); }
+    .card-top {
+      display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px;
+    }
+    .card-number {
+      width: 40px; height: 40px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg); border-radius: var(--radius-sm);
+      font-size: 16px; font-weight: 700; color: var(--accent);
+    }
+    .card-info { flex: 1; min-width: 0; }
+    .card-name {
+      font-size: 16px; font-weight: 600; margin-bottom: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .card-url {
+      font-size: 12px; color: var(--text-dim); font-family: monospace;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .card-tags { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+    .tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .tag-proxy { background: #1f6feb33; color: #58a6ff; }
+    .tag-direct { background: #21262d; color: var(--text-dim); }
+    .tag-drm { background: #da363333; color: var(--red-hover); }
+    .tag-none { background: #21262d; color: var(--text-dim); }
+    .card-actions {
+      display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border);
+    }
+    .card-actions .btn { flex: 1; padding: 10px; font-size: 13px; }
+
+    .empty-state {
+      text-align: center; padding: 60px 20px; color: var(--text-dim);
+    }
+    .empty-state .empty-icon {
+      font-size: 48px; margin-bottom: 12px; opacity: 0.4;
+    }
+    .empty-state p { font-size: 15px; line-height: 1.5; }
+
+    /* Bottom Sheet Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.6);
+    }
+    .modal-overlay.open { display: block; }
+    .modal-sheet {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 501;
+      background: var(--surface); border-top: 1px solid var(--border);
+      border-radius: 16px 16px 0 0; padding: 24px 20px 32px;
+      max-height: 88vh; overflow-y: auto;
+      transform: translateY(100%); transition: transform 0.25s ease;
+    }
+    .modal-overlay.open .modal-sheet { transform: translateY(0); }
+    .modal-handle {
+      width: 40px; height: 4px; border-radius: 2px;
+      background: var(--border); margin: -12px auto 16px;
+    }
+    .modal-sheet h2 { font-size: 18px; margin-bottom: 20px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 6px; font-weight: 500;
+    }
+    .form-group input, .form-group textarea {
+      width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--bg); color: var(--text); font-size: 15px; outline: none; transition: border-color 0.15s;
+    }
+    .form-group input:focus, .form-group textarea:focus { border-color: var(--accent); }
+    .form-group textarea { font-family: monospace; font-size: 13px; resize: vertical; min-height: 60px; }
+    .form-row { display: flex; gap: 12px; }
+    .form-row .form-group { flex: 1; }
+    .form-group.checkbox {
+      display: flex; align-items: center; gap: 10px; padding: 10px 0;
+    }
+    .form-group.checkbox input { width: 20px; height: 20px; accent-color: var(--green); }
+    .form-group.checkbox label { margin-bottom: 0; font-size: 15px; color: var(--text); cursor: pointer; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-actions .btn { flex: 1; padding: 14px; font-size: 15px; }
+
+    .toast {
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+      padding: 12px 24px; border-radius: var(--radius-sm); color: #fff;
+      font-size: 14px; font-weight: 500; z-index: 1000; opacity: 0;
+      transition: all 0.3s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast-success { background: var(--green); }
+    .toast-error { background: var(--red); }
+
+    .status-bar {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--text-dim); padding: 8px 16px;
+    }
+    .status-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    @media (min-width: 600px) {
+      .card-list {
+        max-width: 600px; margin: 0 auto;
+      }
+      .header { padding: 16px 24px 12px; max-width: 648px; margin: 0 auto; }
+      .toast { max-width: 400px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-top">
+      <h1>Channels <small id="channel-count"></small></h1>
+      <div class="header-actions">
+        <button class="btn btn-icon" onclick="loadChannels()" id="refresh-btn" title="Refresh">↻</button>
+      </div>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="search-input" placeholder="Search channels..." oninput="renderCards()" />
+    </div>
+    <div class="sort-bar" id="sort-bar"></div>
+    <div class="status-bar">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">Loading...</span>
+    </div>
+  </div>
+
+  <div id="card-container" class="card-list"></div>
+
+  <div class="empty-state" id="empty-state" style="display:none">
+    <div class="empty-icon">📺</div>
+    <p>No channels yet.<br>Tap the + button to add your first channel.</p>
+  </div>
+
+  <button class="btn-fab" id="fab-btn" onclick="openAddModal()" aria-label="Add channel">+</button>
+
+  <!-- Bottom Sheet Modal -->
+  <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <h2 id="modal-title">Add Channel</h2>
+      <div class="form-group">
+        <label>Channel Name</label>
+        <input id="field-name" placeholder="e.g. Bein 1" autocomplete="off" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Channel Number</label>
+          <input id="field-number" type="number" placeholder="1" inputmode="numeric" />
+        </div>
+        <div class="form-group checkbox">
+          <input id="field-proxy" type="checkbox" checked />
+          <label for="field-proxy">Use Proxy</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Stream URL</label>
+        <textarea id="field-url" rows="2" placeholder="https://example.com/stream.m3u8" inputmode="url"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>DRM Key ID</label>
+          <input id="field-drm-keyid" placeholder="34475edab991ad5e92548aebd710410a" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label>DRM Key</label>
+          <input id="field-drm-key" placeholder="501b209cccd323ac00bf5ac15b406cb4" autocomplete="off" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveChannel()" id="save-btn">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let channels = [];
+    let editingIndex = -1;
+    let currentSort = 'number-asc';
+    const SORT_MODES = [
+      { id: 'number-asc', label: '# ↑' },
+      { id: 'number-desc', label: '# ↓' },
+      { id: 'alpha-asc', label: 'A–Z' },
+      { id: 'alpha-desc', label: 'Z–A' },
+      { id: 'newest', label: 'Newest' },
+      { id: 'oldest', label: 'Oldest' },
+    ];
+
+    function $(id) { return document.getElementById(id); }
+
+    async function api(url, options) {
+      const resp = await fetch(url, {
+        ...options,
+        headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) },
+      });
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => '');
+        throw new Error(text || `HTTP ${resp.status}`);
+      }
+      return resp.status === 204 ? null : resp.json();
+    }
+
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    async function loadChannels() {
+      try {
+        $('status-text').textContent = 'Loading...';
+        channels = await api('/api/channels');
+        renderSortBar();
+        renderCards();
+        $('channel-count').textContent = channels.length + ' channel' + (channels.length !== 1 ? 's' : '');
+        $('status-text').textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } catch (e) {
+        showToast('Failed to load channels: ' + e.message, 'error');
+        $('status-text').textContent = 'Error loading';
+      }
+    }
+
+    function renderSortBar() {
+      const bar = $('sort-bar');
+      bar.innerHTML = SORT_MODES.map(m =>
+        `<button class="sort-pill${currentSort === m.id ? ' active' : ''}" onclick="setSort('${m.id}')">${m.label}</button>`
+      ).join('');
+    }
+
+    function setSort(id) {
+      currentSort = id;
+      renderSortBar();
+      renderCards();
+    }
+
+    function applySort(arr) {
+      const sorted = [...arr];
+      switch (currentSort) {
+        case 'number-asc':
+          sorted.sort((a, b) => (a.channelNumber || 999) - (b.channelNumber || 999));
+          break;
+        case 'number-desc':
+          sorted.sort((a, b) => (b.channelNumber || 0) - (a.channelNumber || 0));
+          break;
+        case 'alpha-asc':
+          sorted.sort((a, b) => a.name.localeCompare(b.name));
+          break;
+        case 'alpha-desc':
+          sorted.sort((a, b) => b.name.localeCompare(a.name));
+          break;
+        case 'newest':
+          sorted.reverse();
+          break;
+        case 'oldest':
+          break;
+      }
+      return sorted;
+    }
+
+    function renderCards() {
+      const container = $('card-container');
+      const empty = $('empty-state');
+      const query = $('search-input').value.toLowerCase().trim();
+      container.innerHTML = '';
+
+      if (!channels || channels.length === 0) {
+        container.style.display = 'none';
+        empty.style.display = 'block';
+        return;
+      }
+      container.style.display = 'flex';
+      empty.style.display = 'none';
+
+      const filtered = query
+        ? channels.filter(ch =>
+            ch.name.toLowerCase().includes(query) ||
+            (ch.channelNumber && String(ch.channelNumber).includes(query)) ||
+            ch.url.toLowerCase().includes(query)
+          )
+        : channels;
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-state" style="display:block;padding:40px 20px"><p style="color:var(--text-dim)">No channels match "' + esc($('search-input').value) + '"</p></div>';
+        return;
+      }
+
+      const sorted = applySort(filtered);
+
+      sorted.forEach((ch, displayIdx) => {
+        const realIdx = channels.indexOf(ch);
+        const isProxy = ch.useProxy !== false;
+        const hasDrm = ch.drm && ch.drm.keyId;
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-top">
+            <div class="card-number">${ch.channelNumber || '#'}</div>
+            <div class="card-info">
+              <div class="card-name">${esc(ch.name)}</div>
+              <div class="card-url" title="${esc(ch.url)}">${esc(ch.url)}</div>
+            </div>
+          </div>
+          <div class="card-tags">
+            <span class="tag ${isProxy ? 'tag-proxy' : 'tag-direct'}">${isProxy ? 'Proxy' : 'Direct'}</span>
+            <span class="tag ${hasDrm ? 'tag-drm' : 'tag-none'}">${hasDrm ? 'DRM' : 'No DRM'}</span>
+            ${hasDrm ? '<span class="tag tag-drm">ClearKey</span>' : ''}
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-primary" onclick="openEditModal(${realIdx})">Edit</button>
+            <button class="btn btn-danger" onclick="deleteChannel(${realIdx})">Delete</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    function openAddModal() {
+      editingIndex = -1;
+      $('modal-title').textContent = 'Add Channel';
+      $('save-btn').textContent = 'Add';
+      $('field-name').value = '';
+      const maxNum = channels.reduce((max, ch) => Math.max(max, ch.channelNumber || 0), 0);
+      $('field-number').value = maxNum + 1;
+      $('field-url').value = '';
+      $('field-proxy').checked = true;
+      $('field-drm-keyid').value = '';
+      $('field-drm-key').value = '';
+      $('modal').classList.add('open');
+      setTimeout(() => $('field-name').focus(), 300);
+    }
+
+    function openEditModal(index) {
+      const ch = channels[index];
+      editingIndex = index;
+      $('modal-title').textContent = 'Edit Channel';
+      $('save-btn').textContent = 'Save';
+      $('field-name').value = ch.name || '';
+      $('field-number').value = ch.channelNumber || '';
+      $('field-url').value = ch.url || '';
+      $('field-proxy').checked = ch.useProxy !== false;
+      $('field-drm-keyid').value = (ch.drm && ch.drm.keyId) || '';
+      $('field-drm-key').value = (ch.drm && ch.drm.key) || '';
+      $('modal').classList.add('open');
+      setTimeout(() => $('field-name').focus(), 300);
+    }
+
+    function closeModal() {
+      $('modal').classList.remove('open');
+    }
+
+    async function saveChannel() {
+      const name = $('field-name').value.trim();
+      const url = $('field-url').value.trim();
+      const channelNumber = parseInt($('field-number').value, 10) || 0;
+      const useProxy = $('field-proxy').checked;
+      const drmKeyId = $('field-drm-keyid').value.trim();
+      const drmKey = $('field-drm-key').value.trim();
+
+      if (!name) { showToast('Channel name is required', 'error'); return; }
+      if (!url) { showToast('Stream URL is required', 'error'); return; }
+
+      const channel = { name, url, channelNumber, useProxy };
+      if (drmKeyId && drmKey) {
+        channel.drm = { keyId: drmKeyId, key: drmKey };
+      } else if (drmKeyId || drmKey) {
+        showToast('Both DRM Key ID and Key are required', 'error'); return;
+      }
+
+      try {
+        if (editingIndex === -1) {
+          await api('/api/channels', {
+            method: 'POST',
+            body: JSON.stringify(channel),
+          });
+          showToast('Channel added', 'success');
+        } else {
+          await api('/api/channels/' + editingIndex, {
+            method: 'PUT',
+            body: JSON.stringify(channel),
+          });
+          showToast('Channel updated', 'success');
+        }
+        closeModal();
+        await loadChannels();
+      } catch (e) {
+        showToast('Save failed: ' + e.message, 'error');
+      }
+    }
+
+    async function deleteChannel(index) {
+      const ch = channels[index];
+      if (!confirm('Delete "' + ch.name + '"?')) return;
+      try {
+        await api('/api/channels/' + index, { method: 'DELETE' });
+        showToast('Channel deleted', 'success');
+        await loadChannels();
+      } catch (e) {
+        showToast('Delete failed: ' + e.message, 'error');
+      }
+    }
+
+    function showToast(message, type) {
+      const toast = $('toast');
+      toast.textContent = message;
+      toast.className = 'toast toast-' + type + ' show';
+      clearTimeout(toast._hide);
+      toast._hide = setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    loadChannels();
+  </script>
+</body>
+</html>

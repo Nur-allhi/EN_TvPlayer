@@ -1,0 +1,10 @@
+{
+  "name": "@en-iptv/server",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "EN IPTV — channel management API, M3U, static hosting",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs"
+  }
+}
