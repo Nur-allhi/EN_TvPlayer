@@ -158,6 +158,17 @@ registerChannelsRoutes(router);
 registerProxiesRoutes(router);
 registerStaticRoutes(router);
 
+// Log endpoint for player-side logEvent
+router.post('/log', (req, res) => {
+  router.readBody(req).then((body) => {
+    try {
+      const { level, message } = JSON.parse(body);
+      log(`[Player] ${message}`, level === 'ERROR' ? 'ERROR' : 'INFO');
+    } catch {}
+    res.writeHead(204); res.end();
+  });
+});
+
 const PROXY_TARGET = process.env.PROXY_TARGET || 'http://127.0.0.1:5001';
 
 process.on('uncaughtException', (err) => {
