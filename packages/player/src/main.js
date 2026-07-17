@@ -240,6 +240,7 @@ function parseM3u(text) {
     if (line.startsWith('#EXTINF:')) {
       const nameMatch = line.match(/,(.+)$/);
       const name = nameMatch ? nameMatch[1].trim() : 'Channel ' + (index + 1);
+      const proxyMatch = line.match(/\bproxy="([^"]*)"/);
       let drm = null;
       let urlIdx = i + 1;
       while (urlIdx < lines.length) {
@@ -260,7 +261,9 @@ function parseM3u(text) {
       }
       const url = lines[urlIdx] ? lines[urlIdx].trim() : '';
       if (url && !url.startsWith('#')) {
-        result.push({ name, url, channelNumber: index + 1, useProxy: true, drm });
+        const ch = { name, url, channelNumber: index + 1, useProxy: true, drm };
+        if (proxyMatch) ch.proxyUrl = proxyMatch[1];
+        result.push(ch);
         index++;
         i = urlIdx;
       }
