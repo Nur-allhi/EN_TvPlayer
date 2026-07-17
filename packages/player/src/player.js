@@ -132,8 +132,18 @@ export function getActiveBandwidth() {
   return t ? t.bandwidth : null;
 }
 
+export function isEmeSupported() {
+  return typeof navigator !== 'undefined' && typeof navigator.requestMediaKeySystemAccess === 'function';
+}
+
 export async function loadChannel(channel) {
   if (!channel) return false;
+
+  if (channel.drm && !isEmeSupported()) {
+    logEvent('ERROR', 'DRM not available — EME (Encrypted Media Extensions) is not supported in this browser/context');
+    showError('DRM not available — play this on the actual TV, or try Chrome/Edge');
+    return false;
+  }
 
   const myToken = ++loadToken;
   currentChannel = channel;
