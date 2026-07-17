@@ -9,6 +9,12 @@ let currentIndex = 0;
 let channels;
 
 async function init() {
+  // EME diagnostics
+  console.log('EME:' + (typeof navigator.requestMediaKeySystemAccess) + '|MK:' + (typeof window.MediaKeys) + '|loc:' + self.location.origin);
+  if (typeof navigator.requestMediaKeySystemAccess !== 'function') {
+    console.warn('EME not available — DRM channels will not play');
+  }
+
   const videoEl = document.getElementById('video');
   if (!player.initPlayer(videoEl)) {
     document.body.innerHTML =

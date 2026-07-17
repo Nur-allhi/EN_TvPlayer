@@ -133,7 +133,10 @@ export function getActiveBandwidth() {
 }
 
 export function isEmeSupported() {
-  return typeof navigator !== 'undefined' && typeof navigator.requestMediaKeySystemAccess === 'function';
+  const has = typeof navigator !== 'undefined' && typeof navigator.requestMediaKeySystemAccess === 'function';
+  const hasMediaKeys = typeof window !== 'undefined' && typeof window.MediaKeys === 'function';
+  console.log('EME check: requestMediaKeySystemAccess=' + (typeof navigator.requestMediaKeySystemAccess) + ' MediaKeys=' + (typeof window.MediaKeys) + ' => ' + has);
+  return has && hasMediaKeys;
 }
 
 export async function loadChannel(channel) {
