@@ -133,10 +133,11 @@ export function getActiveBandwidth() {
 }
 
 export function isEmeSupported() {
-  const has = typeof navigator !== 'undefined' && typeof navigator.requestMediaKeySystemAccess === 'function';
-  const hasMediaKeys = typeof window !== 'undefined' && typeof window.MediaKeys === 'function';
-  console.log('EME check: requestMediaKeySystemAccess=' + (typeof navigator.requestMediaKeySystemAccess) + ' MediaKeys=' + (typeof window.MediaKeys) + ' => ' + has);
-  return has && hasMediaKeys;
+  const hasApi = typeof navigator !== 'undefined' && typeof navigator.requestMediaKeySystemAccess === 'function';
+  const hasMediaKeys = typeof window !== 'undefined' && 'MediaKeys' in window;
+  const ok = hasApi && hasMediaKeys;
+  console.log('EME check: requestMediaKeySystemAccess=' + (typeof navigator.requestMediaKeySystemAccess) + ' MediaKeys=' + ('MediaKeys' in window) + ' => ' + ok);
+  return ok;
 }
 
 export async function loadChannel(channel) {
@@ -179,9 +180,11 @@ export async function loadChannel(channel) {
       const ok = await initPlayer(el);
       if (!ok) return false;
     }
+    currentChannel = channel;
     if (myToken !== loadToken) return false;
 
     if (channel.drm) {
+      console.log('Configuring ClearKey for:', channel.name, 'keyId:', channel.drm.keyId);
       player.configure({
         drm: {
           clearKeys: {
@@ -190,6 +193,7 @@ export async function loadChannel(channel) {
         },
       });
     } else {
+      console.log('No DRM config for:', channel.name, channel.url.slice(0, 60));
       player.configure({ drm: { clearKeys: {} } });
     }
 

@@ -27,21 +27,24 @@ async function init() {
 
   const s = getSettings();
 
-  if (s.channels && s.channels.length > 0 && !s.playlistUrl) {
-    channels = s.channels;
-    startPlayer();
-  } else if (s.channels && s.channels.length > 0 && s.playlistUrl) {
-    channels = s.channels;
-    startPlayer();
-    settings.refreshLastFetched();
-  } else if (s.playlistUrl) {
+  if (s.playlistUrl) {
     try {
-      channels = await fetchFromPlaylistUrl(s.playlistUrl);
-      saveSettings({ channels, channelsFetched: new Date().toISOString() });
+      const newChannels = await fetchFromPlaylistUrl(s.playlistUrl);
+      saveSettings({ channels: newChannels, channelsFetched: new Date().toISOString() });
+      channels = newChannels;
       startPlayer();
     } catch (e) {
-      showFirstLaunch();
+      console.warn('Failed to fetch playlist, falling back to cache:', e.message);
+      if (s.channels && s.channels.length > 0) {
+        channels = s.channels;
+        startPlayer();
+      } else {
+        showFirstLaunch();
+      }
     }
+  } else if (s.channels && s.channels.length > 0) {
+    channels = s.channels;
+    startPlayer();
   } else {
     showFirstLaunch();
   }
@@ -256,6 +259,9 @@ function parseM3u(text) {
             const keyMatch = next.match(/license_key=([a-fA-F0-9]+):([a-fA-F0-9]+)/);
             if (keyMatch) {
               drm = { keyId: keyMatch[1], key: keyMatch[2] };
+              console.log('Parser extracted ClearKey for:', name, 'keyId:', keyMatch[1]);
+            } else {
+              console.warn('Parser found license_key= but could not parse keyId:key for:', name, 'line:', next);
             }
           }
           urlIdx++;
@@ -267,6 +273,9 @@ function parseM3u(text) {
       }
       const url = lines[urlIdx] ? lines[urlIdx].trim() : '';
       if (url && !url.startsWith('#')) {
+        if (!drm && url && url.includes('.mpd')) {
+          console.log('Parser: DASH channel without DRM keys:', name);
+        }
         const ch = { name, url, channelNumber: index + 1, useProxy: true, drm };
         if (proxyMatch) ch.proxyUrl = proxyMatch[1];
         result.push(ch);
