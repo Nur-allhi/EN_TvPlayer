@@ -69,7 +69,7 @@ html, body {
 
 /* Sidebar */
 .sidebar {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   bottom: 0;
@@ -323,7 +323,7 @@ html, body {
 
 /* Right sidebar (overlay — always absolute) */
 .right-sidebar {
-  position: absolute;
+  position: fixed;
   right: 0;
   top: 0;
   bottom: 0;
