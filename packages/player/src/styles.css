@@ -77,13 +77,13 @@ html, body {
   background: #111;
   display: flex;
   flex-direction: column;
-  transition: left 0.25s ease;
+  transition: transform 0.25s ease;
   z-index: 50;
   box-shadow: 2px 0 20px rgba(0, 0, 0, 0.7);
 }
 
 .sidebar.closed {
-  left: calc(clamp(280px, 28vw, 440px) * -1);
+  transform: translateX(-100%);
 }
 
 .sidebar-header {
@@ -331,14 +331,13 @@ html, body {
   background: #111;
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
   z-index: 55;
-  transition: right 0.25s ease;
+  transition: transform 0.25s ease;
   box-shadow: -2px 0 20px rgba(0, 0, 0, 0.7);
 }
 
 .right-sidebar.closed {
-  right: calc(clamp(280px, 28vw, 400px) * -1);
+  transform: translateX(100%);
 }
 
 .right-sidebar-header {

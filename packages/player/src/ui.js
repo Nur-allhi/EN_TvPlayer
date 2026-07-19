@@ -154,10 +154,6 @@ export function jumpToNumber(num, skipFullscreen) {
 
 export function toggleSidebar() {
   sidebarOpen = !sidebarOpen;
-  if (sidebarOpen && rightSidebarOpen) {
-    rightSidebarOpen = false;
-    applyRightSidebar();
-  }
   applySidebar();
 }
 
@@ -306,10 +302,6 @@ export function setAutoCloseCallback(callback) {
 
 export function toggleRightSidebar() {
   rightSidebarOpen = !rightSidebarOpen;
-  if (rightSidebarOpen && sidebarOpen) {
-    sidebarOpen = false;
-    applySidebar();
-  }
   applyRightSidebar();
   if (rightSidebarOpen) {
     buildRightItems();
