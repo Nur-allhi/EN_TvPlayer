@@ -14,5 +14,13 @@
       "origin": "https://tapmad.com",
       "referer": "https://tapmad.com/"
     }
+  },
+  {
+    "name": "Fancode",
+    "match": "fancode\\.com$",
+    "headers": {
+      "origin": "https://www.fancode.com",
+      "referer": "https://www.fancode.com/"
+    }
   }
 ]
