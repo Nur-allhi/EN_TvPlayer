@@ -1,7 +1,7 @@
 const SETTINGS_KEY = 'en_settings';
 
 const settingsDefaults = {
-  playlistUrl: 'http://192.168.0.136:5080/api/playlist.m3u',
+  playlistUrl: 'http://192.168.0.136:5080/api/playlist.json',
   channels: [],
   channelsFetched: null,
 };
