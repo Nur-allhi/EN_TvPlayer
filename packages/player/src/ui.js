@@ -128,19 +128,17 @@ export function selectChannel(index, skipFullscreen) {
 }
 
 export function navigateUp() {
-  if (focusedIndex > 0) {
-    focusedIndex--;
-    updateFocus();
-    scrollToFocused();
-  }
+  if (channels.length === 0) return;
+  focusedIndex = (focusedIndex - 1 + channels.length) % channels.length;
+  updateFocus();
+  scrollToFocused();
 }
 
 export function navigateDown() {
-  if (focusedIndex < channels.length - 1) {
-    focusedIndex++;
-    updateFocus();
-    scrollToFocused();
-  }
+  if (channels.length === 0) return;
+  focusedIndex = (focusedIndex + 1) % channels.length;
+  updateFocus();
+  scrollToFocused();
 }
 
 export function selectFocused() {

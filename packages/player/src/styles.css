@@ -17,28 +17,10 @@ html, body {
 }
 
 #app {
-  display: flex;
+  position: relative;
   width: 100%;
   height: 100%;
   overflow: hidden;
-}
-
-/* Fullscreen mode: channel list overlays the video instead of pushing it */
-#app.fullscreen {
-  position: relative;
-}
-
-#app.fullscreen .main {
-  width: 100%;
-}
-
-#app.fullscreen .sidebar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  z-index: 50;
-  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.7);
 }
 
 #app.fullscreen .now-playing {
@@ -87,22 +69,26 @@ html, body {
 
 /* Sidebar */
 .sidebar {
-  width: 440px;
-  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: clamp(280px, 28vw, 440px);
   background: #111;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: margin-left 0.25s ease;
+  transition: left 0.25s ease;
   z-index: 50;
+  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.7);
 }
 
 .sidebar.closed {
-  margin-left: -440px;
+  left: calc(clamp(280px, 28vw, 440px) * -1);
 }
 
 .sidebar-header {
-  padding: 20px 28px;
+  padding: clamp(12px, 2vw, 20px) clamp(16px, 3vw, 28px);
   background: #1a1a1a;
   border-bottom: 1px solid #222;
 }
@@ -111,7 +97,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 26px;
+  font-size: clamp(18px, 2.5vw, 26px);
   font-weight: 700;
   color: #4fc3f7;
   letter-spacing: 2px;
@@ -134,7 +120,7 @@ html, body {
 .channel-item {
   display: flex;
   align-items: center;
-  padding: 18px 28px;
+  padding: clamp(10px, 1.5vw, 18px) clamp(16px, 3vw, 28px);
   cursor: pointer;
   border-bottom: 1px solid #1a1a1a;
   transition: background 0.1s;
@@ -169,15 +155,15 @@ html, body {
 }
 
 .channel-number {
-  width: 52px;
-  font-size: 20px;
+  width: clamp(32px, 4vw, 52px);
+  font-size: clamp(13px, 1.8vw, 20px);
   color: #888;
   font-weight: 600;
 }
 
 .channel-name {
   flex: 1;
-  font-size: 21px;
+  font-size: clamp(14px, 2vw, 21px);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -209,10 +195,10 @@ html, body {
 
 /* Main */
 .main {
-  flex: 1;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  min-width: 0;
 }
 
 .player-container {
@@ -341,37 +327,29 @@ html, body {
   position: absolute;
   right: 0;
   top: 0;
-  width: 400px;
-  height: 100%;
+  bottom: 0;
+  width: clamp(280px, 28vw, 400px);
   background: #111;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   z-index: 55;
-  transition: margin-right 0.25s ease;
+  transition: right 0.25s ease;
   box-shadow: -2px 0 20px rgba(0, 0, 0, 0.7);
 }
 
-#app.fullscreen .right-sidebar {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 55;
-}
-
 .right-sidebar.closed {
-  margin-right: -400px;
+  right: calc(clamp(280px, 28vw, 400px) * -1);
 }
 
 .right-sidebar-header {
-  padding: 22px 28px;
+  padding: clamp(14px, 2vw, 22px) clamp(16px, 3vw, 28px);
   background: #1a1a1a;
   border-bottom: 1px solid #222;
 }
 
 .right-sidebar-title {
-  font-size: 24px;
+  font-size: clamp(16px, 2.5vw, 24px);
   font-weight: 700;
   color: #4fc3f7;
   letter-spacing: 1px;
@@ -388,8 +366,8 @@ html, body {
 }
 
 .section-label {
-  padding: 20px 28px 8px;
-  font-size: 13px;
+  padding: clamp(12px, 2vw, 20px) clamp(16px, 3vw, 28px) clamp(4px, 0.8vw, 8px);
+  font-size: clamp(10px, 1.5vw, 13px);
   text-transform: uppercase;
   letter-spacing: 1.5px;
   color: #666;
@@ -400,8 +378,8 @@ html, body {
 }
 
 .resolution-item-right {
-  padding: 14px 28px;
-  font-size: 20px;
+  padding: clamp(10px, 1.5vw, 14px) clamp(16px, 3vw, 28px);
+  font-size: clamp(13px, 2vw, 20px);
   cursor: pointer;
   border-bottom: 1px solid #1a1a1a;
   transition: background 0.1s;
@@ -421,8 +399,8 @@ html, body {
 .right-sidebar-btn {
   display: block;
   width: 100%;
-  padding: 16px 28px;
-  font-size: 20px;
+  padding: clamp(10px, 1.5vw, 16px) clamp(16px, 3vw, 28px);
+  font-size: clamp(13px, 2vw, 20px);
   text-align: left;
   background: none;
   color: #c9d1d9;
@@ -528,23 +506,23 @@ html, body {
 
 /* Now Playing Bar */
 .now-playing {
-  height: 68px;
+  height: clamp(48px, 6vh, 68px);
   background: #111;
   border-top: 1px solid #222;
   display: flex;
   align-items: center;
-  padding: 0 28px;
+  padding: 0 clamp(14px, 3vw, 28px);
   gap: 16px;
 }
 
 .now-playing .channel-name {
-  font-size: 24px;
+  font-size: clamp(16px, 2.5vw, 24px);
   font-weight: 600;
   color: #fff;
 }
 
 .now-playing .channel-info {
-  font-size: 18px;
+  font-size: clamp(13px, 2vw, 18px);
   color: #888;
 }
 
@@ -558,6 +536,7 @@ html, body {
   z-index: 100;
   display: flex;
   flex-direction: column;
+  align-items: center;
   background: #0d1117;
   overflow: hidden;
 }
@@ -566,13 +545,15 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 28px;
+  width: 100%;
+  max-width: 640px;
+  padding: clamp(14px, 2vw, 20px) clamp(16px, 3vw, 28px);
   background: #1a1a1a;
   border-bottom: 1px solid #222;
 }
 
 .settings-title {
-  font-size: 26px;
+  font-size: clamp(18px, 3vw, 26px);
   font-weight: 700;
   color: #4fc3f7;
   letter-spacing: 2px;
@@ -582,7 +563,7 @@ html, body {
   background: none;
   border: none;
   color: #888;
-  font-size: 32px;
+  font-size: clamp(22px, 4vw, 32px);
   cursor: pointer;
   line-height: 1;
   padding: 0 8px;
@@ -594,8 +575,9 @@ html, body {
 
 .settings-content {
   flex: 1;
-  padding: 28px;
-  max-width: 600px;
+  width: 100%;
+  max-width: 640px;
+  padding: clamp(16px, 3vw, 28px);
   overflow: hidden;
 }
 
@@ -605,36 +587,36 @@ html, body {
 }
 
 .settings-section {
-  margin-bottom: 32px;
-  padding: 20px;
+  margin-bottom: clamp(16px, 3vw, 32px);
+  padding: clamp(12px, 2vw, 20px);
   background: #161b22;
   border: 1px solid #222;
   border-radius: 8px;
 }
 
 .settings-section-title {
-  font-size: 20px;
+  font-size: clamp(16px, 2.5vw, 20px);
   font-weight: 600;
   color: #fff;
   margin-bottom: 8px;
 }
 
 .settings-desc {
-  font-size: 14px;
+  font-size: clamp(12px, 1.8vw, 14px);
   color: #8b949e;
   margin-bottom: 12px;
 }
 
 .settings-info {
-  font-size: 14px;
+  font-size: clamp(12px, 1.8vw, 14px);
   color: #8b949e;
   margin-bottom: 12px;
 }
 
 .settings-input {
   width: 100%;
-  padding: 10px 14px;
-  font-size: 15px;
+  padding: clamp(8px, 1.5vw, 10px) clamp(10px, 1.8vw, 14px);
+  font-size: clamp(13px, 1.8vw, 15px);
   background: #0d1117;
   border: 1px solid #333;
   border-radius: 6px;
@@ -649,8 +631,8 @@ html, body {
 }
 
 .settings-btn {
-  padding: 10px 20px;
-  font-size: 15px;
+  padding: clamp(8px, 1.5vw, 10px) clamp(14px, 2.5vw, 20px);
+  font-size: clamp(13px, 1.8vw, 15px);
   background: #21262d;
   color: #c9d1d9;
   border: 1px solid #333;
@@ -669,8 +651,8 @@ html, body {
 }
 
 .settings-btn-primary {
-  padding: 10px 20px;
-  font-size: 15px;
+  padding: clamp(8px, 1.5vw, 10px) clamp(14px, 2.5vw, 20px);
+  font-size: clamp(13px, 1.8vw, 15px);
   background: #1f6feb;
   color: #fff;
   border: none;
@@ -688,20 +670,20 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 15px;
+  font-size: clamp(13px, 1.8vw, 15px);
   color: #c9d1d9;
   margin-bottom: 10px;
   cursor: pointer;
 }
 
 .settings-checkbox-label input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
+  width: clamp(14px, 2vw, 18px);
+  height: clamp(14px, 2vw, 18px);
   accent-color: #4fc3f7;
 }
 
 .settings-status {
   margin-top: 8px;
-  font-size: 14px;
+  font-size: clamp(12px, 1.8vw, 14px);
   color: #4fc3f7;
 }
