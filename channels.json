@@ -12,7 +12,7 @@
     "channelNumber": 2,
     "useProxy": true,
     "drm": null,
-    "proxyUrl": "https://192.168.0.136:5000/proxy/"
+    "proxyUrl": "http://192.168.0.136:5080/proxy/"
   },
   {
     "name": "Caze Tv HD 1",
@@ -253,13 +253,13 @@
     "url": "https://saseries.akamaized.net/hls/live/2110097/2356jkiL-tapmad/master.m3u8",
     "channelNumber": 29,
     "useProxy": true,
-    "proxyUrl": "https://192.168.0.136:5000/proxy/"
+    "proxyUrl": "http://192.168.0.136:5080/proxy/"
   },
   {
     "name": "BD vs ZIM",
     "url": "https://bd-mc-pdlive.fancode.com/mumbai/143405_english_hls_17da386da48875_1ta-di_h264/index.m3u8",
     "channelNumber": 30,
-    "useProxy": true,
-    "proxyUrl": "https://192.168.0.136:5000/proxy/"
+    "useProxy": false,
+    "proxyUrl": "http://192.168.0.136:5080/proxy/"
   }
 ]
