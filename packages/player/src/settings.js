@@ -2,13 +2,11 @@ import { getSettings, saveSettings } from './config.js';
 
 let container = null;
 let onPlaylistFetched = null;
-let onPlaySingle = null;
 let onClose = null;
 
 export function init(settingsContainer, callbacks) {
   container = settingsContainer;
   onPlaylistFetched = callbacks.onPlaylistFetched;
-  onPlaySingle = callbacks.onPlaySingle;
   onClose = callbacks.onClose;
 }
 
@@ -32,8 +30,6 @@ export function isVisible() {
 function render() {
   const s = getSettings();
   const lastFetched = s.channelsFetched ? timeAgo(s.channelsFetched) : 'Never';
-  const proxyPlaceholder = import.meta.env.VITE_PROXY_URL || 'http://localhost:5001/';
-  const proxyValue = s.proxyUrl || proxyPlaceholder;
 
   container.innerHTML =
     '<div class="settings-page">' +
@@ -44,36 +40,12 @@ function render() {
       '<div class="settings-content">' +
 
         '<div class="settings-section">' +
-          '<h3 class="settings-section-title">1. Add Playlist</h3>' +
-          '<p class="settings-desc">Enter a playlist URL (M3U or JSON) to fetch channels.</p>' +
+          '<h3 class="settings-section-title">Channel Source</h3>' +
+          '<p class="settings-desc">Enter a playlist URL (JSON or M3U) to fetch channels.</p>' +
           '<input id="settings-playlist-url" class="settings-input" type="text" placeholder="https://server:5000/api/playlist.m3u" value="' + escapeHtml(s.playlistUrl || '') + '" />' +
-          '<button id="settings-fetch-btn" class="settings-btn-primary">Fetch Playlist</button>' +
+          '<button id="settings-fetch-btn" class="settings-btn-primary">Fetch</button>' +
           '<div id="settings-fetch-status" class="settings-status hidden"></div>' +
-        '</div>' +
-
-        '<div class="settings-section">' +
-          '<h3 class="settings-section-title">2. Re-fetch Playlist</h3>' +
-          '<p class="settings-desc">Re-fetch channels from the saved playlist URL.</p>' +
           '<p class="settings-info">Last fetched: <span id="settings-last-fetched">' + lastFetched + '</span></p>' +
-          '<button id="settings-refresh-btn" class="settings-btn"' + (s.playlistUrl ? '' : ' disabled') + '>Refresh Now</button>' +
-          '<div id="settings-refresh-status" class="settings-status hidden"></div>' +
-        '</div>' +
-
-        '<div class="settings-section">' +
-          '<h3 class="settings-section-title">3. Proxy Server</h3>' +
-          '<p class="settings-desc">CORS proxy URL for channel streaming.</p>' +
-          '<input id="settings-proxy-url" class="settings-input" type="text" placeholder="' + escapeHtml(proxyPlaceholder) + '" value="' + escapeHtml(proxyValue) + '" />' +
-        '</div>' +
-
-        '<div class="settings-section">' +
-          '<h3 class="settings-section-title">4. Play Single Channel</h3>' +
-          '<p class="settings-desc">Play a single channel URL without a playlist.</p>' +
-          '<input id="settings-single-url" class="settings-input" type="text" placeholder="https://stream.example.com/playlist.m3u8" value="' + escapeHtml(s.singleChannelUrl || '') + '" />' +
-          '<label class="settings-checkbox-label"><input type="checkbox" id="settings-single-proxy"' + (s.singleUseProxy ? ' checked' : '') + ' /> Use Proxy</label>' +
-          '<div id="settings-single-proxy-group" style="display:' + (s.singleUseProxy ? 'block' : 'none') + '">' +
-            '<input id="settings-single-proxy-url" class="settings-input" type="text" placeholder="http://192.168.0.136:5001/" value="' + escapeHtml(s.singleProxyUrl || '') + '" />' +
-          '</div>' +
-          '<button id="settings-play-single-btn" class="settings-btn-primary">Play</button>' +
         '</div>' +
 
       '</div>' +
@@ -86,26 +58,6 @@ function render() {
   document.getElementById('settings-fetch-btn').addEventListener('click', handleFetch);
   document.getElementById('settings-playlist-url').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') handleFetch();
-  });
-
-  document.getElementById('settings-refresh-btn').addEventListener('click', handleRefresh);
-  document.getElementById('settings-proxy-url').addEventListener('change', (e) => {
-    saveSettings({ proxyUrl: normalizeProxyUrl(e.target.value) });
-  });
-  document.getElementById('settings-single-proxy').addEventListener('change', (e) => {
-    saveSettings({ singleUseProxy: e.target.checked });
-    const group = document.getElementById('settings-single-proxy-group');
-    if (group) group.style.display = e.target.checked ? 'block' : 'none';
-  });
-  document.getElementById('settings-single-proxy-url').addEventListener('change', (e) => {
-    saveSettings({ singleProxyUrl: normalizeProxyUrl(e.target.value) });
-  });
-  document.getElementById('settings-single-url').addEventListener('change', (e) => {
-    saveSettings({ singleChannelUrl: e.target.value });
-  });
-  document.getElementById('settings-play-single-btn').addEventListener('click', handlePlaySingle);
-  document.getElementById('settings-single-url').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') handlePlaySingle();
   });
 }
 
@@ -121,79 +73,11 @@ async function handleFetch() {
 
   try {
     const channels = await fetchPlaylist(url);
-    // Auto-set proxy URL from playlist URL origin
-    const s = getSettings();
-    const derivedProxy = deriveProxyUrl(url);
-    const merged = { channels, channelsFetched: new Date().toISOString() };
-    if (derivedProxy && (!s.proxyUrl || s.proxyUrl === '/proxy/' || s.proxyUrl.startsWith('http://localhost'))) {
-      merged.proxyUrl = derivedProxy;
-    }
-    saveSettings(merged);
+    saveSettings({ channels, channelsFetched: new Date().toISOString() });
     statusEl.textContent = 'Fetched ' + channels.length + ' channels';
     if (onPlaylistFetched) onPlaylistFetched(channels);
   } catch (e) {
     statusEl.textContent = 'Error: ' + e.message;
-  }
-}
-
-async function handleRefresh() {
-  const s = getSettings();
-  const statusEl = document.getElementById('settings-refresh-status');
-  if (!s.playlistUrl) return;
-
-  statusEl.className = 'settings-status';
-  statusEl.textContent = 'Refreshing...';
-
-  try {
-    const channels = await fetchPlaylist(s.playlistUrl);
-    const s2 = getSettings();
-    const derivedProxy = deriveProxyUrl(s2.playlistUrl);
-    const merged = { channels, channelsFetched: new Date().toISOString() };
-    if (derivedProxy && (!s2.proxyUrl || s2.proxyUrl === '/proxy/' || s2.proxyUrl.startsWith('http://localhost'))) {
-      merged.proxyUrl = derivedProxy;
-    }
-    saveSettings(merged);
-    const fetchedEl = document.getElementById('settings-last-fetched');
-    if (fetchedEl) fetchedEl.textContent = 'Just now';
-    statusEl.textContent = 'Refreshed ' + channels.length + ' channels';
-    if (onPlaylistFetched) onPlaylistFetched(channels);
-  } catch (e) {
-    statusEl.textContent = 'Error: ' + e.message;
-  }
-}
-
-function handlePlaySingle() {
-  const url = document.getElementById('settings-single-url').value.trim();
-  const useProxy = document.getElementById('settings-single-proxy').checked;
-  const proxyUrl = useProxy ? normalizeProxyUrl(document.getElementById('settings-single-proxy-url').value.trim()) : '';
-  if (!url) return;
-  if (useProxy && !proxyUrl) {
-    alert('Enter a proxy server URL');
-    document.getElementById('settings-single-proxy-url').focus();
-    return;
-  }
-
-  saveSettings({ singleChannelUrl: url, singleUseProxy: useProxy, singleProxyUrl: proxyUrl });
-
-  const channel = {
-    name: url.split('/').pop() || 'Single Channel',
-    url: url,
-    channelNumber: 0,
-    useProxy: useProxy,
-    proxyUrl: proxyUrl,
-    drm: null,
-  };
-
-  if (onPlaySingle) onPlaySingle(channel);
-}
-
-function deriveProxyUrl(playlistUrl) {
-  if (!playlistUrl.startsWith('http')) return null;
-  try {
-    const u = new URL(playlistUrl);
-    return u.origin + '/proxy/';
-  } catch {
-    return null;
   }
 }
 
@@ -204,8 +88,19 @@ async function fetchPlaylist(url) {
   const contentType = resp.headers.get('content-type') || '';
   const text = await resp.text();
 
-  if (contentType.includes('json') || text.trim().startsWith('[')) {
-    return JSON.parse(text);
+  if (contentType.includes('json') || text.trim().startsWith('[') || text.trim().startsWith('{')) {
+    const data = JSON.parse(text);
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.channels)) {
+      const topProxy = data.proxyUrl;
+      if (topProxy) {
+        for (const ch of data.channels) {
+          if (ch.useProxy === true && !ch.proxyUrl) ch.proxyUrl = topProxy;
+        }
+      }
+      return data.channels;
+    }
+    throw new Error('Invalid JSON format — expected array or { proxyUrl, channels }');
   }
 
   if (text.startsWith('#EXTM3U')) {
@@ -251,10 +146,21 @@ function parseM3u(text) {
           name: name,
           url: url,
           channelNumber: index + 1,
-          useProxy: true,
           drm: drm,
         };
-        if (proxyMatch) ch.proxyUrl = proxyMatch[1];
+        if (proxyMatch) {
+          const pv = proxyMatch[1];
+          if (pv === 'false' || pv === 'no' || pv === '0') {
+            ch.useProxy = false;
+          } else if (pv === 'true' || pv === 'yes' || pv === '1') {
+            ch.useProxy = true;
+          } else {
+            ch.useProxy = true;
+            ch.proxyUrl = pv;
+          }
+        } else {
+          ch.useProxy = false;
+        }
         channels.push(ch);
         index++;
         i = urlIdx;
@@ -263,12 +169,6 @@ function parseM3u(text) {
   }
 
   return channels;
-}
-
-export function refreshLastFetched() {
-  const s = getSettings();
-  const el = document.getElementById('settings-last-fetched');
-  if (el) el.textContent = s.channelsFetched ? timeAgo(s.channelsFetched) : 'Never';
 }
 
 function timeAgo(isoString) {
@@ -288,11 +188,4 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
-}
-
-function normalizeProxyUrl(url) {
-  if (!url) return '';
-  url = url.trim();
-  if (url && !url.endsWith('/')) url += '/';
-  return url;
 }

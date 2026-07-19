@@ -2,12 +2,8 @@ const SETTINGS_KEY = 'en_settings';
 
 const settingsDefaults = {
   playlistUrl: '',
-  proxyUrl: '',
-  singleProxyUrl: '',
   channels: [],
   channelsFetched: null,
-  singleChannelUrl: '',
-  singleUseProxy: false,
 };
 
 export function getSettings() {
@@ -30,28 +26,7 @@ export function saveSettings(partial) {
   return merged;
 }
 
-const envProxyUrl = import.meta.env.VITE_PROXY_URL || '/proxy/';
-
-function getEffectiveProxyUrl() {
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    if (raw) {
-      const s = JSON.parse(raw);
-      if (s && s.proxyUrl) return s.proxyUrl;
-    }
-  } catch {}
-  return envProxyUrl;
-}
-
 export default {
-  get proxyUrl() { return getEffectiveProxyUrl(); },
-  get apiUrl() {
-    const p = getEffectiveProxyUrl();
-    if (p.startsWith('http')) {
-      return new URL(p).origin;
-    }
-    return '';
-  },
   useProxy: true,
   player: {
     streaming: {

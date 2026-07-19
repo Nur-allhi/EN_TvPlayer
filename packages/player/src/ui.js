@@ -87,7 +87,8 @@ export function renderChannelList() {
 
     item.innerHTML =
       '<span class="channel-number">' + (channel.channelNumber || index + 1) + '</span>' +
-      '<span class="channel-name">' + escapeHtml(channel.name) + '</span>';
+      '<span class="channel-name">' + escapeHtml(channel.name) + '</span>' +
+      (channel.useProxy ? '<span class="channel-proxy">Use Proxied</span>' : '');
 
     item.addEventListener('click', () => {
       selectChannel(index);

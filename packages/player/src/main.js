@@ -1,4 +1,4 @@
-import config, { getSettings, saveSettings } from './config.js';
+import { getSettings, saveSettings } from './config.js';
 import * as player from './player.js';
 import * as ui from './ui.js';
 import * as remote from './remote.js';
@@ -78,12 +78,6 @@ function startPlayer() {
       settings.hide();
       ui.stopInactivityTimer();
       showPlayer();
-    },
-    onPlaySingle: (channel) => {
-      settings.hide();
-      ui.stopInactivityTimer();
-      showPlayer();
-      handleChannelSelect(channel);
     },
     onClose: () => {
       settings.hide();
@@ -196,13 +190,6 @@ function showFirstLaunch() {
       showPlayer();
       startPlayer();
     },
-    onPlaySingle: (channel) => {
-      channels = [channel];
-      settings.hide();
-      ui.stopInactivityTimer();
-      showPlayer();
-      startPlayer();
-    },
     onClose: () => {
       if (channels && channels.length > 0) {
         settings.hide();
@@ -246,7 +233,6 @@ function showSettingsPage() {
   }
   ui.closeAllOverlays();
   ui.stopCursorAutoHide();
-  ui.startInactivityTimer();
   document.body.style.overflow = 'hidden';
   settings.show();
   trackSettingsFocus();
@@ -257,8 +243,19 @@ async function fetchFromPlaylistUrl(url) {
   if (!resp.ok) throw new Error('HTTP ' + resp.status);
   const contentType = resp.headers.get('content-type') || '';
   const text = await resp.text();
-  if (contentType.includes('json') || text.trim().startsWith('[')) {
-    return JSON.parse(text);
+  if (contentType.includes('json') || text.trim().startsWith('[') || text.trim().startsWith('{')) {
+    const data = JSON.parse(text);
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.channels)) {
+      const topProxy = data.proxyUrl;
+      if (topProxy) {
+        for (const ch of data.channels) {
+          if (ch.useProxy === true && !ch.proxyUrl) ch.proxyUrl = topProxy;
+        }
+      }
+      return data.channels;
+    }
+    throw new Error('Invalid JSON format — expected array or { proxyUrl, channels }');
   }
   if (text.startsWith('#EXTM3U')) {
     return parseM3u(text);
@@ -297,8 +294,20 @@ function parseM3u(text) {
       }
       const url = lines[urlIdx] ? lines[urlIdx].trim() : '';
       if (url && !url.startsWith('#')) {
-        const ch = { name, url, channelNumber: index + 1, useProxy: true, drm };
-        if (proxyMatch) ch.proxyUrl = proxyMatch[1];
+        const ch = { name, url, channelNumber: index + 1, drm };
+        if (proxyMatch) {
+          const pv = proxyMatch[1];
+          if (pv === 'false' || pv === 'no' || pv === '0') {
+            ch.useProxy = false;
+          } else if (pv === 'true' || pv === 'yes' || pv === '1') {
+            ch.useProxy = true;
+          } else {
+            ch.useProxy = true;
+            ch.proxyUrl = pv;
+          }
+        } else {
+          ch.useProxy = false;
+        }
         result.push(ch);
         index++;
         i = urlIdx;
@@ -549,14 +558,23 @@ export async function refreshChannels() {
 }
 
 async function refreshFromApi() {
-  const base = config.apiUrl || '';
+  const s = getSettings();
+  if (!s.playlistUrl) return;
   try {
+    const base = new URL(s.playlistUrl).origin;
     const resp = await fetch(base + '/api/channels');
     if (resp.ok) {
       const data = await resp.json();
-      if (data && data.length > 0) {
-        data.sort((a, b) => (a.channelNumber || 0) - (b.channelNumber || 0));
-        channels = data;
+      let list = Array.isArray(data) ? data : (data && Array.isArray(data.channels) ? data.channels : null);
+      if (list) {
+        const topProxy = !Array.isArray(data) ? data.proxyUrl : null;
+        if (topProxy) {
+          for (const ch of list) {
+            if (ch.useProxy === true && !ch.proxyUrl) ch.proxyUrl = topProxy;
+          }
+        }
+        list.sort((a, b) => (a.channelNumber || 0) - (b.channelNumber || 0));
+        channels = list;
         ui.refreshChannelList(channels);
         console.log('Channels refreshed from API:', channels.length);
       }

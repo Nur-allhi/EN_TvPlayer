@@ -11,7 +11,8 @@
     "url": "https://dfr80qz435crc.cloudfront.net/MNOP/Amagi/Caze/Caze_TV_BR/Caze_TV.m3u8",
     "channelNumber": 2,
     "useProxy": true,
-    "drm": null
+    "drm": null,
+    "proxyUrl": "http://192.168.0.136:5001"
   },
   {
     "name": "Caze Tv HD 1",
@@ -235,26 +236,6 @@
     "drm": {
       "keyId": "603e4118f91f453282dc44850376aabd",
       "key": "be92f663ca1a10134a5b371ade386ccc"
-    }
-  },
-  {
-    "name": "Willow by cricbuzz",
-    "url": "https://otte.cache.aiv-cdn.net/iad-nitro/live/clients/dash/enc/xcprfcksme/out/v1/a91ca17f42454defaae994587f35fcf7/cenc.mpd",
-    "channelNumber": 26,
-    "useProxy": true,
-    "drm": {
-      "keyId": "1110cca52f323597ec7dac91dcb56a26",
-      "key": "83c65be540066b2b8156a5023a474d9d"
-    }
-  },
-  {
-    "name": "Willow by cricbuzz ALT",
-    "url": "https://abfjk4haaaaaaaamkitc5445rybm6.bia-cf.live.pv-cdn.net/iad-nitro/live/clients/dash/enc/xcprfcksme/out/v1/a91ca17f42454defaae994587f35fcf7/cenc.mpd",
-    "channelNumber": 27,
-    "useProxy": true,
-    "drm": {
-      "keyId": "1110cca52f323597ec7dac91dcb56a26",
-      "key": "83c65be540066b2b8156a5023a474d9d"
     }
   },
   {

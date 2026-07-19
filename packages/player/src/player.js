@@ -55,16 +55,11 @@ export async function initPlayer(videoEl) {
   const networkingEngine = player.getNetworkingEngine();
   if (networkingEngine) {
     networkingEngine.registerRequestFilter((type, request) => {
-      if (!config.useProxy) return;
-      if (currentChannel && currentChannel.useProxy === false) return;
+      if (!currentChannel || currentChannel.useProxy !== true) return;
+      const proxyUrl = currentChannel.proxyUrl;
+      if (!proxyUrl) return;
       const url = request.uris && request.uris[0];
       if (!url || !url.startsWith('http')) return;
-      // Already proxied through server's /proxy/ route — pass through
-      if (url.startsWith(self.location.origin + '/proxy/')) return;
-      // Same-origin API request — don't proxy
-      if (url.startsWith(self.location.origin)) return;
-      const proxyUrl = (currentChannel && currentChannel.proxyUrl) || config.proxyUrl;
-      if (!proxyUrl) return;
       if (url.startsWith(proxyUrl)) return;
       request.uris[0] = proxyUrl + url;
     });

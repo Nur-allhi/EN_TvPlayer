@@ -24,8 +24,12 @@ export function exportM3u() {
   for (const ch of channels) {
     const num = ch.channelNumber || '';
     let attrs = `tvg-name="${escapeM3u(ch.name)}" channel-number="${num}" group-title="${escapeM3u(ch.group || '')}"`;
-    if (ch.useProxy !== false && ch.proxyUrl) {
+    if (ch.useProxy === false) {
+      attrs += ` proxy="false"`;
+    } else if (ch.proxyUrl) {
       attrs += ` proxy="${escapeM3u(ch.proxyUrl)}"`;
+    } else {
+      attrs += ` proxy="true"`;
     }
     m3u += `#EXTINF:-1 ${attrs},${escapeM3u(ch.name)}\n`;
     if (ch.drm && ch.drm.keyId && ch.drm.key) {
@@ -56,6 +60,16 @@ export function registerChannelsRoutes(router) {
       'Content-Disposition': 'attachment; filename="playlist.m3u"',
     });
     res.end(m3u);
+  });
+
+  router.get('/api/playlist.json', (req, res) => {
+    const channels = readChannels();
+    let proxyUrl = '';
+    try {
+      const proxies = JSON.parse(fs.readFileSync(path.resolve('proxies.json'), 'utf8'));
+      if (Array.isArray(proxies) && proxies.length > 0) proxyUrl = proxies[0].url;
+    } catch {}
+    router.serveJson(res, { proxyUrl, channels });
   });
 
   router.post('/api/channels', async (req, res) => {
