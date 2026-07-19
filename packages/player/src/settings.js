@@ -32,23 +32,21 @@ function render() {
   const lastFetched = s.channelsFetched ? timeAgo(s.channelsFetched) : 'Never';
 
   container.innerHTML =
-    '<div class="settings-page">' +
-      '<div class="settings-header">' +
-        '<span class="settings-title">Settings</span>' +
-        '<button id="settings-close-btn" class="settings-close">&times;</button>' +
-      '</div>' +
-      '<div class="settings-content">' +
+    '<div class="settings-header">' +
+      '<span class="settings-title">Settings</span>' +
+      '<button id="settings-close-btn" class="settings-close">&times;</button>' +
+    '</div>' +
+    '<div class="settings-content">' +
 
-        '<div class="settings-section">' +
-          '<h3 class="settings-section-title">Channel Source</h3>' +
-          '<p class="settings-desc">Enter a playlist URL (JSON or M3U) to fetch channels.</p>' +
-          '<input id="settings-playlist-url" class="settings-input" type="text" placeholder="https://server:5000/api/playlist.m3u" value="' + escapeHtml(s.playlistUrl || '') + '" />' +
-          '<button id="settings-fetch-btn" class="settings-btn-primary">Fetch</button>' +
-          '<div id="settings-fetch-status" class="settings-status hidden"></div>' +
-          '<p class="settings-info">Last fetched: <span id="settings-last-fetched">' + lastFetched + '</span></p>' +
-        '</div>' +
-
+      '<div class="settings-section">' +
+        '<h3 class="settings-section-title">Channel Source</h3>' +
+        '<p class="settings-desc">Enter a playlist URL (JSON or M3U) to fetch channels.</p>' +
+        '<input id="settings-playlist-url" class="settings-input" type="text" placeholder="https://server:5000/api/playlist.m3u" value="' + escapeHtml(s.playlistUrl || '') + '" />' +
+        '<button id="settings-fetch-btn" class="settings-btn-primary">Fetch</button>' +
+        '<div id="settings-fetch-status" class="settings-status hidden"></div>' +
+        '<p class="settings-info">Last fetched: <span id="settings-last-fetched">' + lastFetched + '</span></p>' +
       '</div>' +
+
     '</div>';
 
   document.getElementById('settings-close-btn').addEventListener('click', () => {
