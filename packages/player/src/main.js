@@ -233,6 +233,7 @@ function showSettingsPage() {
   }
   ui.closeAllOverlays();
   ui.stopCursorAutoHide();
+  ui.stopInactivityTimer();
   document.body.style.overflow = 'hidden';
   settings.show();
   trackSettingsFocus();
