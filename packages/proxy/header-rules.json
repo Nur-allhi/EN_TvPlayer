@@ -6,5 +6,13 @@
       "origin": "https://www.primevideo.com",
       "referer": "https://www.primevideo.com/"
     }
+  },
+  {
+    "name": "Akamai CDN (Tapmad)",
+    "match": "akamaized\\.net$",
+    "headers": {
+      "origin": "https://tapmad.com",
+      "referer": "https://tapmad.com/"
+    }
   }
 ]

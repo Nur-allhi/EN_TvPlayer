@@ -2,6 +2,6 @@
   {
     "id": 1,
     "name": "Local Proxy",
-    "url": "http://192.168.0.136:5001"
+    "url": "https://192.168.0.136:5000/proxy/"
   }
 ]

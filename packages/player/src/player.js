@@ -61,7 +61,7 @@ export async function initPlayer(videoEl) {
       const url = request.uris && request.uris[0];
       if (!url || !url.startsWith('http')) return;
       if (url.startsWith(proxyUrl)) return;
-      request.uris[0] = proxyUrl + url;
+      request.uris[0] = proxyUrl.replace(/\/+$/, '') + '/' + url;
     });
   }
 

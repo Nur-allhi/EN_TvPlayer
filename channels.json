@@ -12,7 +12,7 @@
     "channelNumber": 2,
     "useProxy": true,
     "drm": null,
-    "proxyUrl": "http://192.168.0.136:5001"
+    "proxyUrl": "https://192.168.0.136:5000/proxy/"
   },
   {
     "name": "Caze Tv HD 1",
@@ -185,7 +185,7 @@
     "name": "TNS AQ 1",
     "url": "https://otte.cache.aiv-cdn.net/iad-nitro/live/clients/dash/enc/w0rehjjrwe/out/v1/69a2a7041395406b970598f61680e7cf/cenc.mpd",
     "channelNumber": 20,
-    "useProxy": true,
+    "useProxy": false,
     "drm": {
       "keyId": "14eeabf30c14b7fbf3008c03099ce011",
       "key": "17d2ac8dbc5429bd70af3433aa12158d"
@@ -195,7 +195,7 @@
     "name": "TSN AQ 2",
     "url": "https://otte.cache.aiv-cdn.net/bom-nitro/live/clients/dash/enc/w0rehjjrwe/out/v1/69a2a7041395406b970598f61680e7cf/cenc.mpd",
     "channelNumber": 21,
-    "useProxy": true,
+    "useProxy": false,
     "drm": {
       "keyId": "14eeabf30c14b7fbf3008c03099ce011",
       "key": "17d2ac8dbc5429bd70af3433aa12158d"
@@ -247,5 +247,12 @@
       "keyId": "290e09c837da78d5cd961978d390515c",
       "key": "b748836c71e6a4ca68ef5b5652db6247"
     }
+  },
+  {
+    "name": "IND vs ENG",
+    "url": "https://saseries.akamaized.net/hls/live/2110097/2356jkiL-tapmad/master.m3u8",
+    "channelNumber": 29,
+    "useProxy": true,
+    "proxyUrl": "https://192.168.0.136:5000/proxy/"
   }
 ]
