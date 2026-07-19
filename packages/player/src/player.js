@@ -56,8 +56,11 @@ export async function initPlayer(videoEl) {
   if (networkingEngine) {
     networkingEngine.registerRequestFilter((type, request) => {
       if (!currentChannel || currentChannel.useProxy !== true) return;
-      const proxyUrl = currentChannel.proxyUrl;
+      let proxyUrl = currentChannel.proxyUrl;
       if (!proxyUrl) return;
+      if (window.location.protocol === 'https:' && proxyUrl.startsWith('http://')) {
+        proxyUrl = window.location.origin + '/proxy/';
+      }
       const url = request.uris && request.uris[0];
       if (!url || !url.startsWith('http')) return;
       if (url.startsWith(proxyUrl)) return;
