@@ -554,7 +554,6 @@ html, body {
   z-index: 100;
   display: flex;
   flex-direction: column;
-  align-items: center;
   background: #0d1117;
   overflow: hidden;
 }
@@ -563,9 +562,6 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
   padding: 20px 28px;
   padding: clamp(14px, 2vw, 20px) clamp(16px, 3vw, 28px);
   background: #1a1a1a;
@@ -597,11 +593,9 @@ html, body {
 
 .settings-content {
   flex: 1;
-  width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
   padding: 28px;
   padding: clamp(16px, 3vw, 28px);
+  max-width: 600px;
   overflow: hidden;
 }
 
