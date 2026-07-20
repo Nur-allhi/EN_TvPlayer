@@ -28,11 +28,12 @@
     "name": "Caze Tv HD 2",
     "url": "https://otte.cache.aiv-cdn.net/gru-nitro/live/clients/dash/enc/iayg0kyrof/out/v1/91dc04907f56415b897faccfa9d252da/cenc.mpd",
     "channelNumber": 4,
-    "useProxy": false,
+    "useProxy": true,
     "drm": {
       "keyId": "1223d5105392cabf1bb9c2c1fdf6539a",
       "key": "340b409f4b8f78a343e0363a7938df38"
-    }
+    },
+    "proxyUrl": "http://192.168.0.136:5080/proxy/"
   },
   {
     "name": "CTV AQ",
@@ -48,11 +49,12 @@
     "name": "D sports 1",
     "url": "https://otte.cache.aiv-cdn.net/bom-nitro/live/clients/dash/enc/x0srg3jjpz/out/v1/f779c49314394d61886d63f58d9d52e4/cenc.mpd",
     "channelNumber": 6,
-    "useProxy": false,
+    "useProxy": true,
     "drm": {
       "keyId": "4f4c3a9912ea752e88f4497864a1bc8b",
       "key": "278128004fe8c6ffb2cd2a0c154a241a"
-    }
+    },
+    "proxyUrl": "http://192.168.0.136:5080/proxy/"
   },
   {
     "name": "D sports 2",
@@ -68,17 +70,18 @@
     "name": "FOX 1 HD",
     "url": "https://otte.cache.aiv-cdn.net/bom-nitro/live/clients/dash/enc/cizlveblk4/out/v1/e5c36c41621e4384b80427d87199433a/cenc.mpd",
     "channelNumber": 8,
-    "useProxy": false,
+    "useProxy": true,
     "drm": {
       "keyId": "d7d78ea2021a29541136bd5dc8352fe7",
       "key": "6425ac4c0cdf906fe0cce5cf40dc8933"
-    }
+    },
+    "proxyUrl": "http://192.168.0.136:5080/proxy/"
   },
   {
     "name": "FOX AQ 1",
     "url": "https://otte.cache.aiv-cdn.net/iad-nitro/live/clients/dash/enc/rgmw19qjux/out/v1/c6ac7e638a9d4998891ae85aba377c59/cenc.mpd",
     "channelNumber": 9,
-    "useProxy": false,
+    "useProxy": true,
     "drm": {
       "keyId": "48afc63fa0ecccc3a71f46d3fda20249",
       "key": "c7cd8801e238a263fe4349a95682b83b"
@@ -88,7 +91,7 @@
     "name": "FOX AQ 2",
     "url": "https://otte.cache.aiv-cdn.net/iad-nitro/live/clients/dash/enc/ajfoeddkbz/out/v1/b78800b9b2304879b15843f455836829/cenc.mpd",
     "channelNumber": 10,
-    "useProxy": false,
+    "useProxy": true,
     "drm": {
       "keyId": "f6564ec2aee819046328a0e153be574d",
       "key": "ff46a8a1031eb27ef22576a077c98ab7"
@@ -148,7 +151,7 @@
     "name": "Fox HD 1",
     "url": "https://otte.cache.aiv-cdn.net/bom-nitro/live/clients/dash/enc/zpfs5hlgya/out/v1/84b1d591a23640178a8e8aa43c6e59a7/cenc.mpd",
     "channelNumber": 16,
-    "useProxy": false,
+    "useProxy": true,
     "drm": {
       "keyId": "0cc2f872759c96de70237e6fa6de03d0",
       "key": "a879b1d38ed002d4018bce96f9219b8d"
@@ -158,7 +161,7 @@
     "name": "ITV Sports FHD",
     "url": "https://otte.cache.aiv-cdn.net/lhr-nitro/live/clients/dash/enc/0eiyyz8qzm/out/v1/dd17af8835fe4bd087d1a4e359b635d7/cenc.mpd",
     "channelNumber": 17,
-    "useProxy": false,
+    "useProxy": true,
     "drm": {
       "keyId": "30089c52924f037b225b82c616fee2a5",
       "key": "f55dc8b66ed4fc6753d6035ae7e17144"
@@ -168,24 +171,17 @@
     "name": "SporTv",
     "url": "https://otte.cache.aiv-cdn.net/gru-nitro/live/clients/dash/enc/w8kwdfmlgs/out/v1/3aa321e477504937a439b602e078eb18/cenc.mpd",
     "channelNumber": 18,
-    "useProxy": false,
+    "useProxy": true,
     "drm": {
       "keyId": "51c0ef23b17297e5c01cd7f36dd0a6ce",
       "key": "8823f713ba6fdb9bbe0a2ad82d309a4b"
     }
   },
   {
-    "name": "TNS 3 m3u8",
-    "url": "http://213.152.185.148/tsn4/tracks-v1a1/mono.ts.m3u8",
-    "channelNumber": 19,
-    "useProxy": true,
-    "drm": null
-  },
-  {
     "name": "TNS AQ 1",
     "url": "https://otte.cache.aiv-cdn.net/iad-nitro/live/clients/dash/enc/w0rehjjrwe/out/v1/69a2a7041395406b970598f61680e7cf/cenc.mpd",
     "channelNumber": 20,
-    "useProxy": false,
+    "useProxy": true,
     "drm": {
       "keyId": "14eeabf30c14b7fbf3008c03099ce011",
       "key": "17d2ac8dbc5429bd70af3433aa12158d"
@@ -215,7 +211,7 @@
     "name": "TVE La 1",
     "url": "https://otte.cache.aiv-cdn.net/lhr-nitro/live/clients/dash/enc/c7di7zkdor/out/v1/f7d5b356e048494a8325563e8916d50b/cenc.mpd",
     "channelNumber": 23,
-    "useProxy": false,
+    "useProxy": true,
     "drm": {
       "keyId": "745cd6ec34a58f2f7ac2af35dc3da6d2",
       "key": "ae008f1e47e6567fe4201a6ff8f1ae54"
@@ -225,7 +221,7 @@
     "name": "Vietnamese 1",
     "url": "https://live05.meung.app/live/08552895.m3u8",
     "channelNumber": 24,
-    "useProxy": true,
+    "useProxy": false,
     "drm": null
   },
   {
@@ -247,19 +243,5 @@
       "keyId": "290e09c837da78d5cd961978d390515c",
       "key": "b748836c71e6a4ca68ef5b5652db6247"
     }
-  },
-  {
-    "name": "IND vs ENG",
-    "url": "https://saseries.akamaized.net/hls/live/2110097/2356jkiL-tapmad/master.m3u8",
-    "channelNumber": 29,
-    "useProxy": true,
-    "proxyUrl": "http://192.168.0.136:5080/proxy/"
-  },
-  {
-    "name": "BD vs ZIM",
-    "url": "https://bd-mc-pdlive.fancode.com/mumbai/143405_english_hls_17da386da48875_1ta-di_h264/index.m3u8",
-    "channelNumber": 30,
-    "useProxy": true,
-    "proxyUrl": "http://192.168.0.136:5080/proxy/"
   }
 ]

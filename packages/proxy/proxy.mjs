@@ -175,28 +175,33 @@ function createHandler() {
       const cleanHeaders = Object.fromEntries(
         Object.entries(req.headers).filter(([k]) => !blockedHeaders.includes(k.toLowerCase()))
       );
+      // Parse |referer=... suffix from URL path and set as referer header
+      const pipeIdx = url.pathname.indexOf('%7Creferer=');
+      if (pipeIdx !== -1) {
+        const refValue = url.pathname.slice(pipeIdx + 11);
+        cleanHeaders.referer = decodeURIComponent(refValue);
+        url.pathname = url.pathname.slice(0, pipeIdx);
+      }
       applyHeaderRules(url.hostname, cleanHeaders, url);
       if (!cleanHeaders['user-agent']) {
         cleanHeaders['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
       }
 
       log(`${method} ${url.hostname}${url.pathname.slice(0, 80)}`, 'PROXY');
+      log(`Headers: ${JSON.stringify({referer: cleanHeaders.referer, origin: cleanHeaders.origin, 'user-agent': (cleanHeaders['user-agent']||'').slice(0,50)})}`, 'INFO');
 
       let responded = false;
       req.setTimeout(30000, () => { if (!responded) { log(`Timeout ${url.hostname}`, 'WARN'); req.destroy(); } });
 
-      const proxyReq = mod.request(target, {
+      const cleanTarget = url.href;
+      const proxyReq = mod.request(cleanTarget, {
         method,
         agent: url.protocol === 'https:' ? httpsAgent : undefined,
         headers: { ...cleanHeaders, host: url.hostname },
         timeout: 15000,
       }, (proxyRes) => {
         responded = true;
-        if (proxyRes.statusCode === 403) {
-          log(`403 ${url.hostname}${url.pathname.slice(0, 60)}`, 'WARN');
-        } else if (proxyRes.statusCode >= 500) {
-          log(`${proxyRes.statusCode} ${url.hostname}${url.pathname.slice(0, 60)}`, 'WARN');
-        }
+        log(`${proxyRes.statusCode} ${url.hostname}${url.pathname.slice(0, 60)}`, proxyRes.statusCode >= 400 ? 'WARN' : 'INFO');
         res.writeHead(proxyRes.statusCode, {
           'Access-Control-Allow-Origin': '*',
           ...Object.fromEntries(
