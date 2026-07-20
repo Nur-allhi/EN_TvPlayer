@@ -220,10 +220,68 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
+    /* Selection mode */
+    .card.selectable { padding-left: 8px; }
+    .card-checkbox {
+      flex-shrink: 0; width: 24px; height: 24px; margin-top: 8px;
+      accent-color: var(--accent); cursor: pointer;
+    }
+    .card.selectable .card-top { align-items: flex-start; }
+    .selection-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
+      background: var(--surface); border-top: 2px solid var(--accent);
+      padding: 12px 16px; display: none; align-items: center; gap: 10px;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.4);
+    }
+    .selection-bar.visible { display: flex; }
+    .selection-bar .count {
+      font-size: 14px; font-weight: 600; color: var(--accent);
+      white-space: nowrap; margin-right: auto;
+    }
+    .selection-bar .btn { flex-shrink: 0; }
+    .selection-mode-active .card { border-color: var(--accent); }
+
+    /* Dropdown */
+    .dropdown { position: relative; display: inline-block; }
+    .dropdown-content {
+      display: none; position: absolute; top: 100%; right: 0; z-index: 400;
+      min-width: 160px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      margin-top: 4px; overflow: hidden;
+    }
+    .dropdown-content.show { display: block; }
+    .dropdown-item {
+      display: block; width: 100%; padding: 10px 16px; border: none; background: none;
+      color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer;
+      text-align: left; font-family: inherit; transition: background 0.1s;
+    }
+    .dropdown-item:hover { background: var(--bg); }
+    .dropdown-item:active { background: var(--border); }
+
+    /* Import tabs */
+    .import-tabs { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .import-tab {
+      flex: 1; padding: 8px 12px; text-align: center; font-size: 14px; font-weight: 600;
+      color: var(--text-dim); cursor: pointer; border-bottom: 2px solid transparent;
+      transition: all 0.15s; background: none; font-family: inherit;
+    }
+    .import-tab:hover { color: var(--text); }
+    .import-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .import-panel { display: none; }
+    .import-panel.active { display: block; }
+    .file-drop-zone {
+      border: 2px dashed var(--border); border-radius: var(--radius-sm);
+      padding: 24px; text-align: center; color: var(--text-dim); cursor: pointer;
+      transition: border-color 0.15s; font-size: 14px;
+    }
+    .file-drop-zone:hover { border-color: var(--accent); color: var(--accent); }
+    .file-drop-zone input { display: none; }
+
     @media (min-width: 600px) {
       .card-list { max-width: 600px; margin: 0 auto; }
       .header { padding: 12px 24px 8px; max-width: 648px; margin: 0 auto; }
       .toast { max-width: 400px; }
+      .selection-bar { max-width: 648px; left: 50%; transform: translateX(-50%); border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
     }
   </style>
 </head>
@@ -263,6 +321,15 @@
     </div>
 
     <button class="btn-fab" id="fab-btn" onclick="openAddModal()" aria-label="Add channel">+</button>
+
+    <!-- Selection Toolbar -->
+    <div class="selection-bar" id="selection-bar">
+      <span class="count" id="sel-count">0 selected</span>
+      <button class="btn btn-sm btn-accent" onclick="bulkSetProxy(true)" id="bulk-proxy-on">Proxy On</button>
+      <button class="btn btn-sm" onclick="bulkSetProxy(false)" id="bulk-proxy-off" style="border-color:var(--text-dim);color:var(--text-dim)">Proxy Off</button>
+      <button class="btn btn-sm btn-danger" onclick="bulkDelete()" id="bulk-delete">Delete</button>
+      <button class="btn btn-sm" onclick="toggleSelectionMode()" id="sel-cancel" style="border-color:var(--text-dim);color:var(--text-dim)">Cancel</button>
+    </div>
   </div>
 
   <!-- Proxies Tab -->
@@ -340,18 +407,31 @@
     </div>
   </div>
 
-  <!-- Import M3U Modal -->
+  <!-- Import Modal (URL + File) -->
   <div class="modal-overlay" id="import-modal" onclick="if(event.target===this)closeImportModal()">
     <div class="modal-sheet" onclick="event.stopPropagation()">
       <div class="modal-handle"></div>
-      <h2>Import M3U Playlist</h2>
-      <div class="form-group">
-        <label>Playlist URL</label>
-        <input id="import-url" type="text" placeholder="https://example.com/playlist.m3u" autocomplete="off" />
+      <h2>Import Channels</h2>
+      <div class="import-tabs">
+        <button class="import-tab active" data-panel="url" onclick="switchImportTab('url')">From URL</button>
+        <button class="import-tab" data-panel="file" onclick="switchImportTab('file')">Upload File</button>
+      </div>
+      <div class="import-panel active" id="import-panel-url">
+        <div class="form-group">
+          <label>Playlist URL (M3U or JSON)</label>
+          <input id="import-url" type="text" placeholder="https://example.com/playlist.m3u" autocomplete="off" />
+        </div>
+      </div>
+      <div class="import-panel" id="import-panel-file">
+        <div class="file-drop-zone" id="file-drop-zone" onclick="document.getElementById('import-file').click()">
+          Click to select .m3u or .json file
+        </div>
+        <input id="import-file" type="file" accept=".m3u,.json,.txt,audio/x-mpegurl,application/json" onchange="onFileSelected(event)" />
+        <div id="file-name" style="font-size:13px;color:var(--text-dim);margin-top:8px"></div>
       </div>
       <div class="modal-actions">
         <button class="btn" onclick="closeImportModal()">Cancel</button>
-        <button class="btn btn-accent" onclick="importM3u()" id="import-btn">Fetch & Import</button>
+        <button class="btn btn-accent" onclick="doImport()" id="import-btn">Import</button>
       </div>
       <div id="import-status" style="margin-top:12px;font-size:14px;color:var(--text-dim)"></div>
     </div>
@@ -366,6 +446,10 @@
     let editingProxyId = null;
     let currentSort = 'number-asc';
     let currentTab = 'channels';
+    let selectionMode = false;
+    let selectedIndices = new Set();
+    let importFileContent = null;
+    let importFileName = '';
     const SORT_MODES = [
       { id: 'number-asc', label: '# \u2191' },
       { id: 'number-desc', label: '# \u2193' },
@@ -405,10 +489,156 @@
       const actions = $('header-actions');
       if (currentTab === 'channels') {
         actions.innerHTML =
-          '<button class="btn btn-sm" onclick="openImportModal()" title="Import M3U">\u2193 M3U</button>' +
+          '<button class="btn btn-sm ' + (selectionMode ? 'btn-accent' : '') + '" onclick="toggleSelectionMode()" id="sel-toggle" title="Select channels">' + (selectionMode ? '\u2713 Selected' : '\u2611 Select') + '</button>' +
+          '<div class="dropdown">' +
+            '<button class="btn btn-sm" onclick="toggleExportDropdown(event)" title="Export">\u2191 Export</button>' +
+            '<div class="dropdown-content" id="export-dropdown">' +
+              '<button class="dropdown-item" onclick="exportChannels(\'json\')">Export as JSON</button>' +
+              '<button class="dropdown-item" onclick="exportChannels(\'m3u\')">Export as M3U</button>' +
+            '</div>' +
+          '</div>' +
+          '<button class="btn btn-sm" onclick="openImportModal()" title="Import">\u2193 Import</button>' +
           '<button class="btn btn-sm" onclick="loadChannels()" title="Refresh">\u21bb</button>';
       } else {
         actions.innerHTML = '<button class="btn btn-sm" onclick="loadProxies()" title="Refresh">\u21bb</button>';
+      }
+    }
+
+    /* ========= Selection / Bulk ========= */
+
+    function toggleSelectionMode() {
+      selectionMode = !selectionMode;
+      if (!selectionMode) {
+        selectedIndices.clear();
+      }
+      $('selection-bar').classList.toggle('visible', selectionMode);
+      document.body.classList.toggle('selection-mode-active', selectionMode);
+      renderCards();
+      updateHeaderActions();
+    }
+
+    function toggleChannelSelection(index) {
+      if (selectedIndices.has(index)) {
+        selectedIndices.delete(index);
+      } else {
+        selectedIndices.add(index);
+      }
+      updateSelectionBar();
+      renderCards();
+    }
+
+    function updateSelectionBar() {
+      const count = selectedIndices.size;
+      $('sel-count').textContent = count + ' selected';
+      $('bulk-delete').textContent = 'Delete (' + count + ')';
+    }
+
+    async function bulkDelete() {
+      const count = selectedIndices.size;
+      if (count === 0) return;
+      if (!confirm('Delete ' + count + ' selected channel' + (count > 1 ? 's' : '') + '?')) return;
+      const sorted = [...selectedIndices].sort((a, b) => b - a);
+      try {
+        for (const idx of sorted) {
+          await api('/api/channels/' + idx, { method: 'DELETE' });
+        }
+        showToast('Deleted ' + count + ' channel' + (count > 1 ? 's' : ''), 'success');
+        selectedIndices.clear();
+        toggleSelectionMode();
+        await loadChannels();
+      } catch (e) {
+        showToast('Bulk delete failed: ' + e.message, 'error');
+      }
+    }
+
+    async function bulkSetProxy(enabled) {
+      const count = selectedIndices.size;
+      if (count === 0) return;
+      try {
+        const label = enabled ? 'on' : 'off';
+        if (!confirm('Set proxy ' + label + ' for ' + count + ' channel' + (count > 1 ? 's' : '') + '?')) return;
+        for (const idx of selectedIndices) {
+          const ch = channels[idx];
+          await api('/api/channels/' + idx, {
+            method: 'PUT',
+            body: JSON.stringify({ useProxy: enabled }),
+          });
+        }
+        showToast('Proxy set ' + label + ' for ' + count + ' channel' + (count > 1 ? 's' : ''), 'success');
+        selectedIndices.clear();
+        toggleSelectionMode();
+        await loadChannels();
+      } catch (e) {
+        showToast('Bulk proxy update failed: ' + e.message, 'error');
+      }
+    }
+
+    /* ========= Export ========= */
+
+    function toggleExportDropdown(event) {
+      event.stopPropagation();
+      const dd = $('export-dropdown');
+      dd.classList.toggle('show');
+    }
+    document.addEventListener('click', function() {
+      const dd = $('export-dropdown');
+      if (dd) dd.classList.remove('show');
+    });
+
+    async function exportChannels(format) {
+      $('export-dropdown').classList.remove('show');
+      try {
+        const chs = await api('/api/channels');
+        if (!chs || chs.length === 0) {
+          showToast('No channels to export', 'error');
+          return;
+        }
+        let content, filename, mime;
+        if (format === 'json') {
+          content = JSON.stringify(chs, null, 2);
+          filename = 'channels.json';
+          mime = 'application/json';
+        } else {
+          let m3u = '#EXTM3U\n';
+          for (const ch of chs) {
+            const num = ch.channelNumber || '';
+            const safeName = escapeM3uAttr(ch.name);
+            let attrs = 'tvg-name="' + safeName + '" channel-number="' + num + '"';
+            if (ch.useProxy === false) {
+              attrs += ' proxy="false"';
+            } else if (ch.proxyUrl) {
+              attrs += ' proxy="' + escapeM3uAttr(ch.proxyUrl) + '"';
+            } else {
+              attrs += ' proxy="true"';
+            }
+            m3u += '#EXTINF:-1 ' + attrs + ',' + ch.name + '\n';
+            if (ch.drm && ch.drm.keyId && ch.drm.key) {
+              m3u += '#KODIPROP:inputstream=inputstream.adaptive\n';
+              m3u += '#KODIPROP:inputstream.adaptive.manifest_type=mpd\n';
+              m3u += '#KODIPROP:inputstream.adaptive.license_type=clearkey\n';
+              m3u += '#KODIPROP:inputstream.adaptive.license_key=' + ch.drm.keyId + ':' + ch.drm.key + '\n';
+            }
+            m3u += ch.url + '\n';
+          }
+          function escapeM3uAttr(s) {
+            return String(s).replace(/"/g, '\\"').replace(/\n/g, '\\n');
+          }
+          content = m3u;
+          filename = 'playlist.m3u';
+          mime = 'audio/x-mpegurl';
+        }
+        const blob = new Blob([content], { type: mime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Exported ' + chs.length + ' channels as ' + filename, 'success');
+      } catch (e) {
+        showToast('Export failed: ' + e.message, 'error');
       }
     }
 
@@ -497,12 +727,16 @@
         const isProxy = ch.useProxy !== false;
         const hasDrm = ch.drm && ch.drm.keyId;
         const proxyName = ch.proxyUrl ? getProxyName(ch.proxyUrl) : '';
+        const isSelected = selectedIndices.has(realIdx);
 
         const card = document.createElement('div');
-        card.className = 'card';
+        card.className = 'card' + (selectionMode ? ' selectable' : '');
         card.innerHTML =
           '<div class="card-top">' +
-            '<div class="card-number">' + (ch.channelNumber || '#') + '</div>' +
+            (selectionMode
+              ? '<input type="checkbox" class="card-checkbox" ' + (isSelected ? 'checked' : '') + ' onchange="toggleChannelSelection(' + realIdx + ')" />'
+              : '<div class="card-number">' + (ch.channelNumber || '#') + '</div>'
+            ) +
             '<div class="card-info">' +
               '<div class="card-name">' + esc(ch.name) + '</div>' +
               '<div class="card-url" title="' + esc(ch.url) + '">' + esc(ch.url) + '</div>' +
@@ -630,12 +864,17 @@
       }
     }
 
-    /* ========= Import M3U ========= */
+    /* ========= Import (URL + File, M3U + JSON) ========= */
 
     function openImportModal() {
       $('import-url').value = '';
       $('import-status').textContent = '';
       $('import-btn').disabled = false;
+      importFileContent = null;
+      importFileName = '';
+      $('file-name').textContent = '';
+      $('file-drop-zone').textContent = 'Click to select .m3u or .json file';
+      switchImportTab('url');
       $('import-modal').classList.add('open');
     }
 
@@ -643,43 +882,83 @@
       $('import-modal').classList.remove('open');
     }
 
-    async function importM3u() {
-      const url = $('import-url').value.trim();
-      if (!url) { showToast('Enter a playlist URL', 'error'); return; }
+    function switchImportTab(tab) {
+      document.querySelectorAll('.import-tab').forEach(t => t.classList.toggle('active', t.dataset.panel === tab));
+      document.querySelectorAll('.import-panel').forEach(p => p.classList.toggle('active', p.id === 'import-panel-' + tab));
+    }
 
+    function onFileSelected(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      importFileName = file.name;
+      $('file-name').textContent = 'Selected: ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+      $('file-drop-zone').textContent = '\u2705 ' + file.name;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        importFileContent = e.target.result;
+      };
+      reader.readAsText(file);
+    }
+
+    async function doImport() {
+      const activeUrl = $('import-panel-url').classList.contains('active');
       const status = $('import-status');
       const btn = $('import-btn');
       btn.disabled = true;
-      status.textContent = 'Fetching...';
+      status.textContent = '';
+
+      let text;
+      let sourceLabel;
+
+      if (activeUrl) {
+        const url = $('import-url').value.trim();
+        if (!url) { showToast('Enter a playlist URL', 'error'); btn.disabled = false; return; }
+        sourceLabel = url;
+        status.textContent = 'Fetching...';
+        try {
+          const resp = await fetch(url);
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          text = await resp.text();
+        } catch (e) {
+          status.textContent = 'Error: ' + e.message;
+          showToast('Failed to fetch URL', 'error');
+          btn.disabled = false;
+          return;
+        }
+      } else {
+        if (!importFileContent) { showToast('Select a file to import', 'error'); btn.disabled = false; return; }
+        text = importFileContent;
+        sourceLabel = importFileName || 'file';
+      }
 
       try {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        const text = await resp.text();
+        let imported;
+        if (text.trim().startsWith('{') || text.trim().startsWith('[')) {
+          imported = parseJsonChannels(text);
+        } else if (text.startsWith('#EXTM3U')) {
+          imported = parseM3u(text);
+        } else {
+          throw new Error('Unrecognized format — expected M3U (#EXTM3U) or JSON');
+        }
 
-        if (!text.startsWith('#EXTM3U')) throw new Error('Not a valid M3U file');
+        if (!imported || imported.length === 0) throw new Error('No channels found');
 
-        const imported = parseM3u(text);
-        if (imported.length === 0) throw new Error('No channels found in playlist');
-
-        // Append imported channels
         const existing = await api('/api/channels');
         const maxNum = existing.reduce((max, ch) => Math.max(max, ch.channelNumber || 0), 0);
         imported.forEach((ch, i) => {
-          ch.channelNumber = maxNum + i + 1;
+          if (!ch.channelNumber) ch.channelNumber = maxNum + i + 1;
         });
-        const merged = existing.concat(imported);
 
-        // Save via PUT to index 0 with full list (workaround: delete all + re-add)
         for (let i = existing.length - 1; i >= 0; i--) {
           await api('/api/channels/' + i, { method: 'DELETE' });
         }
-        for (const ch of imported) {
+        const all = existing.concat(imported);
+        for (const ch of all) {
           await api('/api/channels', { method: 'POST', body: JSON.stringify(ch) });
         }
 
         status.textContent = 'Imported ' + imported.length + ' channels';
-        showToast('Imported ' + imported.length + ' channels', 'success');
+        showToast('Imported ' + imported.length + ' channels from ' + sourceLabel, 'success');
         closeImportModal();
         await loadChannels();
       } catch (e) {
@@ -688,6 +967,35 @@
       } finally {
         btn.disabled = false;
       }
+    }
+
+    function parseJsonChannels(text) {
+      const data = JSON.parse(text);
+      if (Array.isArray(data)) {
+        return data.map(normalizeChannel);
+      }
+      if (data && Array.isArray(data.channels)) {
+        const topProxy = data.proxyUrl;
+        const list = data.channels.map(normalizeChannel);
+        if (topProxy) {
+          for (const ch of list) {
+            if (ch.useProxy !== false && !ch.proxyUrl) ch.proxyUrl = topProxy;
+          }
+        }
+        return list;
+      }
+      throw new Error('Invalid JSON — expected array or { proxyUrl, channels }');
+    }
+
+    function normalizeChannel(ch) {
+      return {
+        name: ch.name || 'Unnamed',
+        url: ch.url || '',
+        channelNumber: ch.channelNumber || 0,
+        useProxy: ch.useProxy !== false,
+        proxyUrl: ch.proxyUrl || '',
+        drm: ch.drm || null,
+      };
     }
 
     function parseM3u(text) {
