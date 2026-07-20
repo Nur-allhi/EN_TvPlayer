@@ -1,5 +1,7 @@
 # Tizen OS Build — IPTV Player
 
+> See the [main README](../../README.md) for the full project overview and quick start.
+
 Packages the IPTV web app into a `.wgt` package installable on your Samsung AU8000 (Tizen 6.0).
 
 ## Prerequisites

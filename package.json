@@ -2,7 +2,7 @@
   "name": "en-iptv",
   "version": "0.1.0",
   "private": true,
-  "description": "EN IPTV Player — open source IPTV streaming platform",
+  "description": "EN IPTV Player — open-source IPTV player for Samsung Tizen TVs and desktop browsers",
   "type": "module",
   "workspaces": [
     "packages/server",

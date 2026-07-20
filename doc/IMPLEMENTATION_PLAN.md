@@ -1,5 +1,7 @@
 # EN IPTV Player v0.1 — Implementation Plan
 
+> ⚠️ This document is intended for **contributors and developers**. For user-facing documentation, see the [main README](../README.md).
+
 ## Architecture Overview
 
 ```
