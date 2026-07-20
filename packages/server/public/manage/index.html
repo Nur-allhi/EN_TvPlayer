@@ -157,24 +157,25 @@
     }
     .empty-state p { font-size: 15px; line-height: 1.5; }
 
-    /* Bottom Sheet Modal */
+    /* Modal — centered card, responsive width */
     .modal-overlay {
       display: none; position: fixed; inset: 0; z-index: 500;
       background: rgba(0,0,0,0.6);
+      align-items: center; justify-content: center;
     }
-    .modal-overlay.open { display: block; }
+    .modal-overlay.open { display: flex; }
     .modal-sheet {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 501;
-      background: var(--surface); border-top: 1px solid var(--border);
-      border-radius: 16px 16px 0 0; padding: 24px 20px 32px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px 20px 28px;
       max-height: 88vh; overflow-y: auto;
-      transform: translateY(100%); transition: transform 0.25s ease;
+      width: calc(100% - 32px); max-width: 480px;
+      animation: modalIn 0.2s ease;
     }
-    .modal-overlay.open .modal-sheet { transform: translateY(0); }
-    .modal-handle {
-      width: 40px; height: 4px; border-radius: 2px;
-      background: var(--border); margin: -12px auto 16px;
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(8px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
     }
+    .modal-handle { display: none; }
     .modal-sheet h2 { font-size: 18px; margin-bottom: 20px; }
     .form-group { margin-bottom: 16px; }
     .form-group label {
