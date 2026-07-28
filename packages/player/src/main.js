@@ -1,9 +1,8 @@
-import { getSettings, saveSettings } from './config.js';
+import { getSettings, saveSettings, getProxyOverrides, getActivePlaylist } from './config.js';
 import * as player from './player.js';
 import * as ui from './ui.js';
 import * as remote from './remote.js';
 import * as settings from './settings.js';
-import channelsData from '@root/channels.json';
 
 let currentIndex = 0;
 let channels;
@@ -32,10 +31,12 @@ async function init() {
   });
 
   const s = getSettings();
+  const activePlaylist = getActivePlaylist();
 
-  if (s.playlistUrl) {
+  if (activePlaylist && activePlaylist.url) {
     try {
-      const newChannels = await fetchFromPlaylistUrl(s.playlistUrl);
+      const newChannels = await fetchFromPlaylistUrl(activePlaylist.url);
+      applyProxyOverrides(newChannels);
       saveSettings({ channels: newChannels, channelsFetched: new Date().toISOString() });
       channels = newChannels;
       startPlayer();
@@ -59,7 +60,9 @@ async function init() {
 }
 
 function startPlayer() {
+  console.log('[DEBUG] startPlayer called, channels:', channels ? channels.length : 0);
   if (!channels || channels.length === 0) {
+    console.log('[DEBUG] No channels — showing No Channels screen');
     document.body.innerHTML =
       '<div style="text-align:center;padding:40px;color:#fff;">' +
       '<h2>No Channels</h2>' +
@@ -68,11 +71,12 @@ function startPlayer() {
     return;
   }
 
-  channels.sort((a, b) => (a.channelNumber || 0) - (b.channelNumber || 0));
+  sortChannels(channels);
 
   settings.init(document.getElementById('settings-page'), {
     onPlaylistFetched: (newChannels) => {
-      newChannels.sort((a, b) => (a.channelNumber || 0) - (b.channelNumber || 0));
+      sortChannels(newChannels);
+      applyProxyOverrides(newChannels);
       channels = newChannels;
       ui.refreshChannelList(channels);
       settings.hide();
@@ -84,6 +88,7 @@ function startPlayer() {
       ui.stopInactivityTimer();
       showPlayer();
     },
+    onRender: rebuildSettingsFocusOrder,
   });
 
   ui.init(channels, handleChannelSelect);
@@ -122,6 +127,13 @@ function startPlayer() {
       showProgress('Refreshing');
       await refreshChannels();
       hideProgress();
+    });
+  }
+
+  let toggleProxyBtn = document.getElementById('toggle-proxy-btn');
+  if (toggleProxyBtn) {
+    toggleProxyBtn.addEventListener('click', () => {
+      ui.toggleCurrentChannelProxy();
     });
   }
 
@@ -183,12 +195,18 @@ function showFirstLaunch() {
 
   settings.init(document.getElementById('settings-page'), {
     onPlaylistFetched: (newChannels) => {
-      newChannels.sort((a, b) => (a.channelNumber || 0) - (b.channelNumber || 0));
-      channels = newChannels;
-      settings.hide();
-      ui.stopInactivityTimer();
-      showPlayer();
-      startPlayer();
+      console.log('[DEBUG] showFirstLaunch onPlaylistFetched:', newChannels ? newChannels.length : 0);
+      try {
+        sortChannels(newChannels);
+        applyProxyOverrides(newChannels);
+        channels = newChannels;
+        settings.hide();
+        ui.stopInactivityTimer();
+        showPlayer();
+        startPlayer();
+      } catch (e) {
+        console.error('[DEBUG] showFirstLaunch callback error:', e);
+      }
     },
     onClose: () => {
       if (channels && channels.length > 0) {
@@ -197,6 +215,7 @@ function showFirstLaunch() {
         showPlayer();
       }
     },
+    onRender: rebuildSettingsFocusOrder,
   });
 
   document.body.style.overflow = 'hidden';
@@ -258,10 +277,39 @@ async function fetchFromPlaylistUrl(url) {
     }
     throw new Error('Invalid JSON format — expected array or { proxyUrl, channels }');
   }
-  if (text.startsWith('#EXTM3U')) {
+  if (text.includes('#EXTM3U')) {
     return parseM3u(text);
   }
   throw new Error('Unknown playlist format');
+}
+
+function processStreamUrl(rawUrl) {
+  const pipeIdx = rawUrl.indexOf('|');
+  if (pipeIdx === -1) return { url: rawUrl, extraHeaders: null };
+
+  const baseUrl = rawUrl.slice(0, pipeIdx);
+  const suffix = rawUrl.slice(pipeIdx + 1);
+  const extraHeaders = {};
+  const extraParams = [];
+
+  for (const part of suffix.split('&')) {
+    const eqIdx = part.indexOf('=');
+    if (eqIdx === -1) continue;
+    const key = part.slice(0, eqIdx);
+    const value = part.slice(eqIdx + 1);
+    if (key.startsWith('edge-')) {
+      extraParams.push(key + '=' + value);
+    } else {
+      extraHeaders[key.toLowerCase()] = value;
+    }
+  }
+
+  let finalUrl = baseUrl;
+  if (extraParams.length > 0) {
+    finalUrl += (baseUrl.includes('?') ? '&' : '?') + extraParams.join('&');
+  }
+
+  return { url: finalUrl, extraHeaders: Object.keys(extraHeaders).length > 0 ? extraHeaders : null };
 }
 
 function parseM3u(text) {
@@ -275,6 +323,8 @@ function parseM3u(text) {
       const name = nameMatch ? nameMatch[1].trim() : 'Channel ' + (index + 1);
       const proxyMatch = line.match(/\bproxy="([^"]*)"/);
       let drm = null;
+      let userAgent = null;
+      let customHeaders = null;
       let urlIdx = i + 1;
       while (urlIdx < lines.length) {
         const next = lines[urlIdx].trim();
@@ -283,19 +333,39 @@ function parseM3u(text) {
             const keyMatch = next.match(/license_key=([a-fA-F0-9]+):([a-fA-F0-9]+)/);
             if (keyMatch) {
               drm = { keyId: keyMatch[1], key: keyMatch[2] };
-            } else {
             }
           }
           urlIdx++;
         } else if (next.startsWith('#EXTSYS')) {
           urlIdx++;
+        } else if (next.startsWith('#EXTVLCOPT:')) {
+          const uaMatch = next.match(/http-user-agent=(.+)/);
+          if (uaMatch) {
+            userAgent = uaMatch[1].trim();
+          }
+          urlIdx++;
+        } else if (next.startsWith('#EXTHTTP:')) {
+          try {
+            const json = JSON.parse(next.slice('#EXTHTTP:'.length));
+            if (json && typeof json === 'object') {
+              customHeaders = {};
+              for (const [k, v] of Object.entries(json)) {
+                customHeaders[k] = String(v);
+              }
+            }
+          } catch (e) {}
+          urlIdx++;
         } else {
           break;
         }
       }
-      const url = lines[urlIdx] ? lines[urlIdx].trim() : '';
-      if (url && !url.startsWith('#')) {
-        const ch = { name, url, channelNumber: index + 1, drm };
+      const rawUrl = lines[urlIdx] ? lines[urlIdx].trim() : '';
+      if (rawUrl && !rawUrl.startsWith('#')) {
+        const { url, extraHeaders } = processStreamUrl(rawUrl);
+        if (extraHeaders) {
+          customHeaders = { ...(customHeaders || {}), ...extraHeaders };
+        }
+        const ch = { name, url, channelNumber: index + 1, drm, userAgent, customHeaders };
         if (proxyMatch) {
           const pv = proxyMatch[1];
           if (pv === 'false' || pv === 'no' || pv === '0') {
@@ -386,13 +456,28 @@ function hideProgress() {
   if (el) el.classList.add('hidden');
 }
 
-const settingsFocusOrder = [
-  'settings-playlist-url', 'settings-fetch-btn',
-  'settings-refresh-btn', 'settings-proxy-url',
-  'settings-single-url', 'settings-single-proxy',
-  'settings-single-proxy-url', 'settings-play-single-btn',
-  'settings-close-btn',
-];
+let settingsFocusOrder = [];
+
+function rebuildSettingsFocusOrder() {
+  const order = [];
+  const s = getSettings();
+  for (let i = 0; i < s.playlists.length; i++) {
+    order.push(
+      'pl-select-btn-' + i,
+      'pl-edit-btn-' + i,
+      'pl-delete-btn-' + i,
+      'pl-name-input-' + i,
+      'pl-url-input-' + i,
+      'pl-save-btn-' + i,
+      'pl-cancel-btn-' + i,
+    );
+  }
+  if (s.playlists.length < 8) order.push('pl-add-btn');
+  order.push('settings-fetch-btn',
+             'settings-proxy-url', 'settings-proxy-save-btn',
+             'settings-close-btn');
+  settingsFocusOrder = order;
+}
 
 function getSettingsFocusable() {
   return settingsFocusOrder.map(id => document.getElementById(id)).filter(el => el && el.offsetParent !== null);
@@ -539,51 +624,42 @@ function handleRemoteAction(action, value) {
   }
 }
 
+function sortChannels(ch) {
+  if (!ch || !ch.length) return;
+  ch.sort((a, b) => {
+    if (!a || !b) return 0;
+    return (a.name || '').localeCompare(b.name || '');
+  });
+  ch.forEach((c, i) => { if (c) c.channelNumber = i + 1; });
+}
+
+function applyProxyOverrides(channels) {
+  const overrides = getProxyOverrides();
+  for (const ch of channels) {
+    if (ch.url in overrides) {
+      ch.useProxy = overrides[ch.url];
+    }
+  }
+}
+
 export async function refreshChannels() {
-  const s = getSettings();
-  if (s.playlistUrl) {
+  const active = getActivePlaylist();
+  if (active && active.url) {
     try {
-      const newChannels = await fetchFromPlaylistUrl(s.playlistUrl);
+      const newChannels = await fetchFromPlaylistUrl(active.url);
+      applyProxyOverrides(newChannels);
       saveSettings({ channels: newChannels, channelsFetched: new Date().toISOString() });
-      newChannels.sort((a, b) => (a.channelNumber || 0) - (b.channelNumber || 0));
+      sortChannels(newChannels);
       channels = newChannels;
       ui.refreshChannelList(channels);
       console.log('Channels refreshed from playlist:', channels.length);
     } catch (e) {
-      console.warn('Failed to refresh from playlist, falling back to API:', e.message);
-      await refreshFromApi();
+      console.warn('Failed to refresh from playlist:', e.message);
     }
-  } else {
-    await refreshFromApi();
   }
 }
 
-async function refreshFromApi() {
-  const s = getSettings();
-  if (!s.playlistUrl) return;
-  try {
-    const base = new URL(s.playlistUrl).origin;
-    const resp = await fetch(base + '/api/channels');
-    if (resp.ok) {
-      const data = await resp.json();
-      let list = Array.isArray(data) ? data : (data && Array.isArray(data.channels) ? data.channels : null);
-      if (list) {
-        const topProxy = !Array.isArray(data) ? data.proxyUrl : null;
-        if (topProxy) {
-          for (const ch of list) {
-            if (ch.useProxy === true && !ch.proxyUrl) ch.proxyUrl = topProxy;
-          }
-        }
-        list.sort((a, b) => (a.channelNumber || 0) - (b.channelNumber || 0));
-        channels = list;
-        ui.refreshChannelList(channels);
-        console.log('Channels refreshed from API:', channels.length);
-      }
-    }
-  } catch (e) {
-    console.warn('Failed to refresh from API:', e.message);
-  }
-}
+
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);

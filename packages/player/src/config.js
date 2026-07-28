@@ -1,7 +1,12 @@
 const SETTINGS_KEY = 'en_settings';
+const PROXY_OVERRIDES_KEY = 'en_proxy_overrides';
+
+export const APP_VERSION = '1.0.0';
 
 const settingsDefaults = {
-  playlistUrl: 'http://192.168.0.136:5080/api/playlist.json',
+  playlists: [],
+  activePlaylistIndex: -1,
+  proxyUrl: 'http://localhost:5000/proxy/',
   channels: [],
   channelsFetched: null,
 };
@@ -9,10 +14,27 @@ const settingsDefaults = {
 export function getSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    return raw ? { ...settingsDefaults, ...JSON.parse(raw) } : { ...settingsDefaults };
+    const defaults = { ...settingsDefaults, playlists: [] };
+    const s = raw ? { ...defaults, ...JSON.parse(raw) } : { ...defaults };
+    // Migration from legacy single playlistUrl
+    if ((!s.playlists || s.playlists.length === 0) && s.playlistUrl) {
+      s.playlists = [{ name: 'Playlist 1', url: s.playlistUrl }];
+      s.activePlaylistIndex = 0;
+      delete s.playlistUrl;
+      try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch {}
+    }
+    return s;
   } catch {
-    return { ...settingsDefaults };
+    return { ...settingsDefaults, playlists: [] };
   }
+}
+
+export function getActivePlaylist() {
+  const s = getSettings();
+  if (s.activePlaylistIndex >= 0 && s.activePlaylistIndex < s.playlists.length) {
+    return s.playlists[s.activePlaylistIndex];
+  }
+  return null;
 }
 
 export function saveSettings(partial) {
@@ -24,6 +46,26 @@ export function saveSettings(partial) {
     console.warn('Failed to save settings:', e);
   }
   return merged;
+}
+
+export function getProxyOverrides() {
+  try {
+    const raw = localStorage.getItem(PROXY_OVERRIDES_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function setProxyOverride(url, enabled) {
+  const overrides = getProxyOverrides();
+  overrides[url] = enabled;
+  try {
+    localStorage.setItem(PROXY_OVERRIDES_KEY, JSON.stringify(overrides));
+  } catch (e) {
+    console.warn('Failed to save proxy override:', e);
+  }
+  return overrides;
 }
 
 export default {
