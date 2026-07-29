@@ -3,66 +3,51 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tizen](https://img.shields.io/badge/Tizen-5.0+-red?logo=samsung)](packages/tizen/)
 [![Node](https://img.shields.io/badge/Node-18+-green?logo=node.js)](package.json)
+[![Version](https://img.shields.io/badge/version-0.5.0-blue)](.)
 
-**Open-source IPTV player for Samsung Tizen TVs and desktop browsers.** Powered by Shaka Player with a local CORS proxy server.
-
-<p align="center">
-  <i>Browse channels, play live TV, manage playlists — all from your Samsung TV remote.</i>
-</p>
+**Open-source IPTV player for Samsung Tizen TVs and desktop browsers.** Powered by Shaka Player with a local CORS proxy.
 
 ---
 
 ## Features
 
-- **Samsung TV native** — Install as a `.wgt` app via Developer Mode
-- **Remote control friendly** — Full Samsung remote key mapping
-- **HLS / DASH / MSS** — All formats via Shaka Player
+- **Samsung TV native** — Install as `.wgt` app via Developer Mode or USB
+- **Remote control friendly** — Full Samsung remote key mapping (DPAD, number pad, color keys)
+- **HLS / DASH / MSS** — All streaming formats via Shaka Player
 - **DRM support** — ClearKey, PlayReady
-- **Built-in CORS proxy** — Bypass streaming CDN restrictions
-- **Channel management** — JSON & M3U playlist support
-- **Local network only** — No external servers or cloud dependencies
+- **Per-channel proxy toggle** — Enable/disable CORS proxy per channel from the side menu; setting persists across sessions via localStorage
+- **Built-in CORS proxy** — Bypass streaming CDN restrictions with configurable header rules
+- **Channel management** — Bulk delete, bulk proxy toggle, import/export (M3U + JSON), add channels via URL or file upload
+- **Settings page** — Configure playlist URL, manage channels, import playlists — opens automatically when no channels are loaded
+- **Local network only** — No external servers, no cloud, no telemetry
 
 ---
 
-## Quick Start (Samsung TV)
+## Quick Start
 
 ```bash
-# 1. Install dependencies
 npm install
-
-# 2. Generate Tizen developer certificate (one-time)
-node packages/tizen/spec/generate-cert.mjs
-
-# 3. Build the player + package as WGT
-npm run tizen
-
-# 4. Start server + proxy on your PC
 npm start
-
-# 5. Install on TV (replace with your TV IP)
-node packages/tizen/spec/install.mjs --ip=192.168.x.x
 ```
 
-> **Prerequisites:** Node.js 18+, [OpenSSL](https://slproweb.com/products/Win32OpenSSL.html), Samsung Developer Mode app running on TV.
+Then open `http://localhost:5000/enplayer` in your browser.
+
+For full Tizen TV setup, see [Tizen Build Guide](packages/tizen/README.md).
 
 ---
 
-## Requirements
+## Per-Channel Proxy Toggle
 
-### For Tizen TV
-| Item | Details |
-|---|---|
-| Samsung Smart TV | Tizen 5.0+ (2019+ models) |
-| Developer Mode app | Install from Samsung Smart Hub → Apps → Search "Developer Mode" |
-| PC with Node.js | Windows, macOS, or Linux |
-| Network | TV and PC on the same local network |
+Some CDNs block cross-origin requests (CORS). When a stream fails to load, a toast suggests enabling the proxy:
 
-### For Desktop Browser
-| Browser | Notes |
-|---|---|
-| Chrome / Edge | Best support |
-| Firefox | May need CORS adjustments |
-| Safari | Limited HLS support |
+1. Open the **right sidebar** (menu button or right arrow on remote)
+2. Find the **Proxy** toggle for the current channel
+3. Click **Proxy: OFF** → it changes to **Proxy: ON**
+4. The channel reloads automatically through the proxy
+
+**Persistence:** Proxy settings are saved to localStorage. On the next session, channels with proxy enabled will continue to route through the proxy automatically.
+
+**Console logging:** Look for `[PROXY] SKIP (proxy off):` or `[PROXY] PROC:` messages to confirm proxy behavior.
 
 ---
 
@@ -74,7 +59,7 @@ node packages/tizen/spec/install.mjs --ip=192.168.x.x
 │                                                          │
 │  :5000 (Server)            :5001 (Proxy)                 │
 │  ┌─────────────────┐      ┌──────────────────┐          │
-│  │ Channel API      │      │ Pure CORS proxy  │          │
+│  │ Channel API      │      │ CORS proxy       │          │
 │  │ Static files     │      │ Header rules     │          │
 │  │ Landing page     │      │ Request filter   │          │
 │  │ Manage UI        │      └──────────────────┘          │
@@ -92,68 +77,20 @@ node packages/tizen/spec/install.mjs --ip=192.168.x.x
 
 ---
 
-## Installation (Step by Step)
+## Project Structure
 
-### 1. Generate Tizen Certificate
-
-```bash
-node packages/tizen/spec/generate-cert.mjs
 ```
-
-This creates `author-cert.p12`, `distributor-cert.p12`, and `profile.xml` in `packages/tizen/`. Keep these files — reuse them for future builds.
-
-### 2. Build the WGT Package
-
-```bash
-npm run build       # Build player SPA
-npm run tizen       # Package as .wgt
+tv/
+├── packages/
+│   ├── server/         Channel API + static files (port 5000)
+│   ├── proxy/          CORS proxy (port 5001) + header rules
+│   ├── player/         Shaka Player SPA (Vite + localStorage)
+│   └── tizen/          WGT build tools + certificates
+├── channels.json       Channel database
+├── proxies.json        Proxy server list
+├── doc/                Developer documentation
+└── package.json        npm workspaces root
 ```
-
-Output: `packages/tizen/IPTV-Player.wgt`
-
-### 3. Install on TV
-
-**Option A — Developer Mode (recommended)**
-1. On TV: Apps → Search "Developer Mode" → Install & enable → Note the IP
-2. Run: `node packages/tizen/spec/install.mjs --ip=<TV_IP_ADDRESS>`
-3. App appears in Apps → My Apps
-
-**Option B — USB**
-1. Copy `IPTV-Player.wgt` to USB drive
-2. TV: Settings → Support → Device Care → Self Diagnosis → USB (wgt)
-3. Select the `.wgt` file to install
-
-### 4. Start the Server + Proxy
-
-```bash
-npm start
-```
-
-Or individually:
-```bash
-npm run server       # Channel API on :5000
-npm run proxy        # CORS proxy on :5001
-```
-
-### 5. Open on TV
-
-Open Apps → My Apps → **IPTV Player**. First launch takes a few seconds.
-
----
-
-## Desktop / Browser Usage
-
-```bash
-npm install
-npm start
-```
-
-Then open:
-| URL | Page |
-|---|---|
-| `http://localhost:5000` | Landing page |
-| `http://localhost:5000/enplayer` | IPTV Player |
-| `http://localhost:5000/manage` | Channel Manager |
 
 ---
 
@@ -166,11 +103,16 @@ Then open:
   "name": "Channel 1",
   "url": "https://stream.example.com/playlist.m3u8",
   "channelNumber": 1,
-  "useProxy": true,
+  "useProxy": false,
   "proxyUrl": "http://192.168.0.136:5001",
   "drm": { "keyId": "...", "key": "..." }
 }
 ```
+
+Fields:
+- `useProxy` — Whether to route through the CORS proxy (can be toggled from the UI)
+- `proxyUrl` — Proxy server endpoint (auto-set when proxy is enabled from UI)
+- `drm` — Optional DRM configuration
 
 ### Proxy Header Rules (`packages/proxy/header-rules.json`)
 
@@ -185,12 +127,6 @@ Customize request/response headers for specific CDN origins:
 ]
 ```
 
-### Environment Variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `VITE_PROXY_URL` | `/proxy/` | CORS proxy URL for player |
-
 ---
 
 ## Troubleshooting
@@ -199,37 +135,36 @@ Customize request/response headers for specific CDN origins:
 |---|---|
 | TV "Invalid certificate" | Delete `*.p12` + `profile.xml`, re-run `generate-cert.mjs` |
 | App not in My Apps | Restart TV, check Developer Mode is enabled |
-| Video won't play | Ensure `npm start` is running on PC, TV & PC on same network |
-| Channel list empty | Configure playlist URL in Settings → Channel Source |
+| Video won't play | Try enabling **Proxy** from the right sidebar for that channel |
+| "Stream not loading" toast | Open right sidebar → toggle Proxy from OFF to ON |
+| Channel list empty | Settings page opens automatically — paste your playlist URL or upload a file |
 | Install fails | Check TV and PC are on same network, Developer Mode is active |
-| 403 on streams | The proxy handles most CDN blocks — check header-rules.json |
-
----
-
-## Project Structure
-
-```
-tv/
-├── packages/
-│   ├── server/         Channel API + static files (port 5000)
-│   ├── proxy/          CORS proxy (port 5001)
-│   ├── player/         Shaka Player SPA (Vite + localStorage)
-│   └── tizen/          WGT build tools + certificates
-├── channels.json       Channel database
-├── proxies.json        Proxy server list
-├── doc/                Developer documentation
-└── package.json        npm workspaces root
-```
+| 403 on streams | Enable per-channel proxy or check `header-rules.json` |
 
 ---
 
 ## Development
 
 ```bash
-npm run dev          # Vite dev server for player SPA
+npm run dev          # Vite dev server for player SPA (hot reload)
 npm run build        # Build player for production
-npm run tizen        # Build WGT package for Tizen
+npm run tizen        # Build WGT package for Tizen TV
+npm run server       # Channel API server only
+npm run proxy        # CORS proxy only
 ```
+
+---
+
+## Changelog
+
+### 0.5.0 (2026-07-30)
+- Per-channel proxy toggle with localStorage persistence
+- CORS proxy suggestion toast on stream failure
+- Settings page opens automatically when no channels loaded
+- Bulk delete and bulk proxy toggle in channel manager
+- M3U + JSON import/export (URL upload + file upload)
+- Reduced manifest retry attempts for faster failure feedback
+- Centered card modals with responsive fixed width
 
 ---
 
@@ -242,4 +177,4 @@ MIT — see [LICENSE](LICENSE).
 ## Links
 
 - [Tizen Build Guide](packages/tizen/README.md) — Detailed instructions for Samsung TV
-- [Implementation Plan](doc/IMPLEMENTATION_PLAN.md) — For contributors
+- [Implementation Plan](doc/IMPLEMENTATION_PLAN.md) — Project roadmap for contributors
