@@ -187,6 +187,14 @@ function startPlayer() {
     ui.selectChannel(next);
   });
 
+  player.onProxySuggestion(() => {
+    ui.showProxyToast();
+  });
+
+  ui.setProxyToggleCallback(() => {
+    player.reloadChannel();
+  });
+
   ui.selectChannel(0, true);
 }
 
@@ -389,6 +397,7 @@ function parseM3u(text) {
 }
 
 async function handleChannelSelect(channel) {
+  ui.hideProxyToast();
   currentIndex = channels.indexOf(channel);
   const ok = await player.loadChannel(channel);
   if (!ok) hideProgress();

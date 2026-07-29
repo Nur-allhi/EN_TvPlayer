@@ -94,7 +94,7 @@ export default {
     },
     manifest: {
       retryParameters: {
-        maxAttempts: 8,
+        maxAttempts: 3,
         baseDelay: 500,
         backoffFactor: 2,
         fuzzFactor: 0.5,

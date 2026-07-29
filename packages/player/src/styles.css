@@ -720,3 +720,27 @@ html, body {
   font-size: clamp(12px, 1.8vw, 14px);
   color: #4fc3f7;
 }
+
+/* Proxy suggestion toast */
+.proxy-toast {
+  position: fixed;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(30, 30, 30, 0.95);
+  color: #ffab00;
+  padding: 12px 24px;
+  padding: clamp(8px, 1.5vw, 12px) clamp(16px, 3vw, 24px);
+  border-radius: 8px;
+  font-size: 16px;
+  font-size: clamp(13px, 2vw, 16px);
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  white-space: nowrap;
+  transition: opacity 0.3s ease;
+}
+
+.proxy-toast.hidden {
+  display: none;
+}

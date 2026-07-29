@@ -16,6 +16,7 @@ let videoElement = null;
 let bufferingCallback = null;
 let trackCallback = null;
 let channelAdvanceCallback = null;
+let proxySuggestionCallback = null;
 let isBuffering = false;
 let currentChannel = null;
 let loadToken = 0;
@@ -55,15 +56,19 @@ export async function initPlayer(videoEl) {
   const networkingEngine = player.getNetworkingEngine();
   if (networkingEngine) {
     networkingEngine.registerRequestFilter((type, request) => {
-      if (!currentChannel || currentChannel.useProxy !== true) return;
+      const url = request.uris && request.uris[0];
+      if (!currentChannel || currentChannel.useProxy !== true) {
+        if (url && url.includes('.m3u8')) console.log('[PROXY] SKIP (proxy off):', (url || '').slice(0, 120));
+        return;
+      }
       let proxyUrl = currentChannel.proxyUrl;
-      if (!proxyUrl) return;
+      if (!proxyUrl) { console.log('[PROXY] SKIP (no proxyUrl):', (url || '').slice(0, 120)); return; }
       if (window.location.protocol === 'https:' && proxyUrl.startsWith('http://')) {
         proxyUrl = window.location.origin + '/proxy/';
       }
-      const url = request.uris && request.uris[0];
       if (!url || !url.startsWith('http')) return;
       if (url.startsWith(proxyUrl)) return;
+      console.log('[PROXY] PROC:', (url || '').slice(0, 120));
       request.uris[0] = proxyUrl.replace(/\/+$/, '') + '/' + url;
     });
   }
@@ -112,6 +117,10 @@ export function onTrackChange(callback) {
 
 export function onChannelAdvance(callback) {
   channelAdvanceCallback = callback;
+}
+
+export function onProxySuggestion(callback) {
+  proxySuggestionCallback = callback;
 }
 
 export function getActiveTrack() {
@@ -241,6 +250,9 @@ export async function loadChannel(channel) {
       return false;
     }
 
+    if (currentChannel && currentChannel.useProxy === false && proxySuggestionCallback) {
+      proxySuggestionCallback(currentChannel);
+    }
     logEvent('ERROR', 'Failed to load — ' + getErrorMessage(error));
     showError(getErrorMessage(error));
     return false;

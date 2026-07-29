@@ -1,9 +1,12 @@
+import { setProxyOverride } from './config.js';
+
 let channels = [];
 let currentIndex = -1;
 let focusedIndex = 0;
 let sidebarOpen = true;
 let isFullscreen = false;
 let onChannelSelect = null;
+let onProxyToggle = null;
 
 /* Right sidebar state */
 let rightSidebarOpen = false;
@@ -125,6 +128,7 @@ export function selectChannel(index, skipFullscreen) {
     const ext = channels[index].url.split('.').pop().split('?')[0];
     infoEl.textContent = ext.toUpperCase();
   }
+  updateProxyButtonText();
 }
 
 export function navigateUp() {
@@ -304,6 +308,7 @@ export function toggleRightSidebar() {
   rightSidebarOpen = !rightSidebarOpen;
   applyRightSidebar();
   if (rightSidebarOpen) {
+    updateProxyButtonText();
     buildRightItems();
     rightFocus = 0;
     updateRightFocus();
@@ -313,6 +318,30 @@ export function toggleRightSidebar() {
 
 export function isRightSidebarOpen() {
   return rightSidebarOpen;
+}
+
+export function setProxyToggleCallback(cb) {
+  onProxyToggle = cb;
+}
+
+export function toggleCurrentChannelProxy() {
+  const ch = getCurrentChannel();
+  if (!ch) return;
+  ch.useProxy = !ch.useProxy;
+  if (ch.useProxy && !ch.proxyUrl) {
+    ch.proxyUrl = window.location.origin + '/proxy/';
+  }
+  setProxyOverride(ch.url, ch.useProxy);
+  renderChannelList();
+  updateProxyButtonText();
+  if (onProxyToggle) onProxyToggle(ch);
+}
+
+export function updateProxyButtonText() {
+  const btn = document.getElementById('toggle-proxy-btn');
+  if (!btn) return;
+  const ch = getCurrentChannel();
+  btn.textContent = ch && ch.useProxy ? 'Proxy: ON' : 'Proxy: OFF';
 }
 
 export function setResolutionCallback(cb) {
@@ -364,7 +393,7 @@ function buildRightItems() {
     });
   }
   // Button IDs
-  const btnIds = ['refresh-stream-btn', 'refresh-channels-btn', 'settings-btn'];
+  const btnIds = ['refresh-stream-btn', 'refresh-channels-btn', 'toggle-proxy-btn', 'settings-btn'];
   btnIds.forEach((id) => {
     const el = document.getElementById(id);
     if (el) {
@@ -520,4 +549,15 @@ export function hideBuffering() {
 function setBufferingPercent(percent) {
   const p = document.getElementById('buffering-percent');
   if (p) p.textContent = (typeof percent === 'number' ? percent : 0) + '%';
+}
+
+/* Proxy suggestion toast */
+export function showProxyToast() {
+  const el = document.getElementById('proxy-toast');
+  if (el) el.classList.remove('hidden');
+}
+
+export function hideProxyToast() {
+  const el = document.getElementById('proxy-toast');
+  if (el) el.classList.add('hidden');
 }

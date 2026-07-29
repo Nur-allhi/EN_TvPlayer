@@ -61,6 +61,11 @@
             <div class="progress-spinner"></div>
             <span id="progress-text">Loading</span>
           </div>
+
+          <!-- Proxy suggestion toast -->
+          <div id="proxy-toast" class="proxy-toast hidden">
+            <span id="proxy-toast-text">Stream not loading — try enabling Proxy in the right menu</span>
+          </div>
         </div>
 
         <!-- Now Playing Bar -->
@@ -86,6 +91,7 @@
           <div class="section-label">Actions</div>
           <button id="refresh-stream-btn" class="right-sidebar-btn" type="button">&#8635; Reload Stream</button>
           <button id="refresh-channels-btn" class="right-sidebar-btn" type="button">&#8634; Refresh Channels</button>
+          <button id="toggle-proxy-btn" class="right-sidebar-btn" type="button">Proxy: OFF</button>
           <button id="settings-btn" class="right-sidebar-btn" type="button">&#9881; Settings</button>
         </div>
       </div>
