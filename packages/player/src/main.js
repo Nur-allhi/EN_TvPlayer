@@ -62,12 +62,8 @@ async function init() {
 function startPlayer() {
   console.log('[DEBUG] startPlayer called, channels:', channels ? channels.length : 0);
   if (!channels || channels.length === 0) {
-    console.log('[DEBUG] No channels — showing No Channels screen');
-    document.body.innerHTML =
-      '<div style="text-align:center;padding:40px;color:#fff;">' +
-      '<h2>No Channels</h2>' +
-      '<p>Add channels via Settings or edit channels.json.</p>' +
-      '</div>';
+    console.log('[DEBUG] No channels — opening settings');
+    showFirstLaunch();
     return;
   }
 
