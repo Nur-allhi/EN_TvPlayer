@@ -643,6 +643,9 @@ function applyProxyOverrides(channels) {
   for (const ch of channels) {
     if (ch.url in overrides) {
       ch.useProxy = overrides[ch.url];
+      if (ch.useProxy && !ch.proxyUrl) {
+        ch.proxyUrl = window.location.origin + '/proxy/';
+      }
     }
   }
 }
