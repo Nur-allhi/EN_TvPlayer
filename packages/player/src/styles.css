@@ -563,7 +563,7 @@ html, body {
   align-items: center;
   justify-content: space-between;
   padding: 20px 28px;
-  padding: clamp(14px, 2vw, 20px) clamp(16px, 3vw, 28px);
+  padding: clamp(14px, 2.5vw, 28px) clamp(20px, 4vw, 48px);
   background: #1a1a1a;
   border-bottom: 1px solid #222;
 }
@@ -593,10 +593,10 @@ html, body {
 
 .settings-content {
   flex: 1;
-  padding: 28px;
-  padding: clamp(16px, 3vw, 28px);
-  max-width: 600px;
+  width: 100%;
+  padding: clamp(20px, 4vw, 48px);
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
 #settings-page *:focus {
@@ -605,6 +605,7 @@ html, body {
 }
 
 .settings-section {
+  max-width: 860px;
   margin-bottom: 32px;
   margin-bottom: clamp(16px, 3vw, 32px);
   padding: 20px;
