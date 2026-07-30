@@ -787,6 +787,10 @@ html, body {
   margin-bottom: 6px;
 }
 
+#settings-fetch-btn {
+  margin-top: 12px;
+}
+
 /* Proxy suggestion toast */
 .proxy-toast {
   position: fixed;
