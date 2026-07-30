@@ -789,6 +789,7 @@ html, body {
 
 #settings-fetch-btn {
   margin-top: 12px;
+  margin-left: 12px;
 }
 
 /* Proxy suggestion toast */
