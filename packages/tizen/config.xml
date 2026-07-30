@@ -2,15 +2,15 @@
 <widget xmlns:tizen="http://tizen.org/ns/widgets"
         xmlns="http://www.w3.org/ns/widgets"
         id="https://iptvplayer"
-        version="1.0.0"
+        version="0.5.0"
         viewmodes="maximized">
   <access origin="*" subdomains="true"/>
   <tizen:application id="IPTVPlayer.IPTV" package="IPTVPlayer" required_version="5.0"/>
-  <author href="http://iptvplayer">IPTV Player</author>
+  <author href="http://iptvplayer">EN-IPTV Player</author>
   <content src="index.html"/>
   <feature name="http://tizen.org/feature/screen.size.all"/>
   <icon src="icon.png"/>
-  <name>IPTV</name>
+  <name>EN-IPTV Player</name>
   <tizen:privilege name="http://tizen.org/privilege/internet"/>
   <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
   <tizen:profile name="tv-samsung"/>

@@ -11,6 +11,10 @@ const TV_IP = '192.168.0.180';
 
 const PKG = 'IPTVPlayer'; // Must be EXACTLY 10 chars!
 
+// Read app version from player package.json
+const playerPkg = JSON.parse(readFileSync(join(ROOT, 'packages', 'player', 'package.json'), 'utf-8'));
+const APP_VERSION = playerPkg.version;
+
 function findOpenSSL() {
   const candidates = [
     'openssl',
@@ -113,15 +117,15 @@ const configXml = `<?xml version="1.0" encoding="UTF-8"?>
 <widget xmlns:tizen="http://tizen.org/ns/widgets"
         xmlns="http://www.w3.org/ns/widgets"
         id="https://iptvplayer"
-        version="1.0.0"
+        version="${APP_VERSION}"
         viewmodes="maximized">
   <access origin="*" subdomains="true"/>
   <tizen:application id="${PKG}.IPTV" package="${PKG}" required_version="5.0"/>
-  <author href="http://iptvplayer">IPTV Player</author>
+  <author href="http://iptvplayer">EN-IPTV Player</author>
   <content src="index.html"/>
   <feature name="http://tizen.org/feature/screen.size.all"/>
   <icon src="icon.png"/>
-  <name>IPTV</name>
+  <name>EN-IPTV Player</name>
   <tizen:privilege name="http://tizen.org/privilege/internet"/>
   <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
   <tizen:profile name="tv-samsung"/>
