@@ -34,13 +34,13 @@ function handleKeyDown(e) {
       onKeyAction('select');
       return;
     }
-    if (key === 'ArrowUp' || e.keyCode === 38) {
+    if (key === 'ArrowUp' || e.keyCode === 38 || key === 'ArrowLeft' || e.keyCode === 37) {
       e.preventDefault();
       e.stopPropagation();
       onKeyAction('up');
       return;
     }
-    if (key === 'ArrowDown' || e.keyCode === 40) {
+    if (key === 'ArrowDown' || e.keyCode === 40 || key === 'ArrowRight' || e.keyCode === 39) {
       e.preventDefault();
       e.stopPropagation();
       onKeyAction('down');
