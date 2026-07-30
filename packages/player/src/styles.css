@@ -554,6 +554,7 @@ html, body {
   z-index: 100;
   display: flex;
   flex-direction: column;
+  align-items: center;
   background: #0d1117;
   overflow: hidden;
 }
@@ -562,10 +563,13 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
+  max-width: 960px;
   padding: 20px 28px;
   padding: clamp(14px, 2.5vw, 28px) clamp(20px, 4vw, 48px);
   background: #1a1a1a;
   border-bottom: 1px solid #222;
+  box-sizing: border-box;
 }
 
 .settings-title {
@@ -594,6 +598,7 @@ html, body {
 .settings-content {
   flex: 1;
   width: 100%;
+  max-width: 960px;
   padding: clamp(20px, 4vw, 48px);
   overflow-y: auto;
   box-sizing: border-box;
