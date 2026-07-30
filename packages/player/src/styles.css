@@ -596,7 +596,7 @@ html, body {
   padding: 28px;
   padding: clamp(16px, 3vw, 28px);
   max-width: 600px;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 #settings-page *:focus {
@@ -719,6 +719,70 @@ html, body {
   font-size: 14px;
   font-size: clamp(12px, 1.8vw, 14px);
   color: #4fc3f7;
+}
+
+#settings-playlist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.playlist-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: #0d1117;
+  border: 1px solid #333;
+  border-radius: 6px;
+}
+
+.playlist-entry.active {
+  border-color: #4fc3f7;
+}
+
+.playlist-indicator {
+  font-size: 12px;
+  color: #8b949e;
+}
+
+.playlist-entry.active .playlist-indicator {
+  color: #4fc3f7;
+}
+
+.playlist-name {
+  font-size: 15px;
+  font-size: clamp(13px, 1.8vw, 15px);
+  font-weight: 600;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playlist-url {
+  font-size: 13px;
+  font-size: clamp(11px, 1.5vw, 13px);
+  color: #8b949e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: break-all;
+}
+
+.playlist-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.playlist-name-input {
+  margin-bottom: 6px;
+}
+
+.playlist-url-input {
+  margin-bottom: 6px;
 }
 
 /* Proxy suggestion toast */
