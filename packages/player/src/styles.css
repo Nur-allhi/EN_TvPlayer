@@ -606,6 +606,7 @@ html, body {
 
 .settings-section {
   max-width: 860px;
+  margin-inline: auto;
   margin-bottom: 32px;
   margin-bottom: clamp(16px, 3vw, 32px);
   padding: 20px;
