@@ -323,6 +323,10 @@ function parseM3u(text) {
       }
       const rawUrl = lines[urlIdx] ? lines[urlIdx].trim() : '';
       if (rawUrl && !rawUrl.startsWith('#')) {
+        if (!drm) {
+          const urlDrm = rawUrl.match(/[?&]drmLicense=([a-fA-F0-9]+):([a-fA-F0-9]+)/);
+          if (urlDrm) drm = { keyId: urlDrm[1].toLowerCase(), key: urlDrm[2].toLowerCase() };
+        }
         const { url, extraHeaders } = processStreamUrl(rawUrl);
         if (extraHeaders) {
           customHeaders = { ...(customHeaders || {}), ...extraHeaders };
