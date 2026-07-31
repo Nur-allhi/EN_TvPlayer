@@ -9,3 +9,4 @@ tizen/*.wgt
 tizen/profile.xml
 .playwright-mcp/
 logs/
+test-results/
