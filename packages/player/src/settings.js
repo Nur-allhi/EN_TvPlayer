@@ -315,6 +315,14 @@ function applyFocus() {
     if (el) {
       el.setAttribute('data-focused', '');
       el.scrollIntoView({ block: 'nearest' });
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        el.focus();
+      } else {
+        const activeEl = document.activeElement;
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+          activeEl.blur();
+        }
+      }
     }
   }
 }
