@@ -94,14 +94,28 @@ export function navigateNav(dir) {
   const inNavZone = curIdx >= 0 && curIdx < navCount;
   const contentStart = navCount + 1;
 
+  const btnGroup = cur.closest('.btn-group');
+  if (btnGroup) {
+    const buttons = Array.from(btnGroup.querySelectorAll('.btn'));
+    const btnIdx = buttons.indexOf(cur);
+    if (btnIdx >= 0) {
+      if (dir > 0 && btnIdx < buttons.length - 1) {
+        const newIdx = focusOrder.indexOf(buttons[btnIdx + 1]);
+        if (newIdx >= 0) { focusIdx = newIdx; applyFocus(); }
+      } else if (dir < 0 && btnIdx > 0) {
+        const newIdx = focusOrder.indexOf(buttons[btnIdx - 1]);
+        if (newIdx >= 0) { focusIdx = newIdx; applyFocus(); }
+      }
+      return;
+    }
+  }
+
   if (dir > 0) {
-    // RIGHT: nav → content
     if (inNavZone) {
       focusIdx = contentStart;
       applyFocus();
     }
   } else {
-    // LEFT: content → nav
     if (curIdx >= contentStart) {
       const activeTab = document.querySelector('.settings-tab.active');
       const tabs = Array.from(document.querySelectorAll('.nav-item'));
@@ -226,14 +240,6 @@ function applyFocus() {
     if (el) {
       el.setAttribute('data-focused', '');
       el.scrollIntoView({ block: 'nearest' });
-      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-        el.focus();
-      } else {
-        const activeEl = document.activeElement;
-        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
-          activeEl.blur();
-        }
-      }
     }
   }
 }
