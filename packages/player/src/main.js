@@ -497,20 +497,61 @@ function getSettingsFocusable() {
   return [...tabEls, ...contentEls];
 }
 
+function getSettingsTabs() {
+  return Array.from(document.querySelectorAll('.settings-tab')).filter(el => el.offsetParent !== null);
+}
+
+function getSettingsContent() {
+  return settingsFocusOrder.map(id => document.getElementById(id)).filter(el => el && el.offsetParent !== null);
+}
+
 function focusSettingsNext() {
-  const els = getSettingsFocusable();
+  const tabs = getSettingsTabs();
+  const content = getSettingsContent();
   const cur = document.activeElement;
-  let idx = els.indexOf(cur);
-  idx = idx < els.length - 1 ? idx + 1 : 0;
-  if (els[idx]) els[idx].focus();
+
+  const tabIdx = tabs.indexOf(cur);
+  if (tabIdx >= 0) {
+    if (content.length > 0) {
+      content[0].focus();
+    }
+    return;
+  }
+
+  const contentIdx = content.indexOf(cur);
+  if (contentIdx >= 0) {
+    if (contentIdx < content.length - 1) {
+      content[contentIdx + 1].focus();
+    } else {
+      tabs[0].focus();
+    }
+    return;
+  }
 }
 
 function focusSettingsPrev() {
-  const els = getSettingsFocusable();
+  const tabs = getSettingsTabs();
+  const content = getSettingsContent();
   const cur = document.activeElement;
-  let idx = els.indexOf(cur);
-  idx = idx > 0 ? idx - 1 : els.length - 1;
-  if (els[idx]) els[idx].focus();
+
+  const tabIdx = tabs.indexOf(cur);
+  if (tabIdx >= 0) {
+    if (content.length > 0) {
+      content[content.length - 1].focus();
+    }
+    return;
+  }
+
+  const contentIdx = content.indexOf(cur);
+  if (contentIdx >= 0) {
+    if (contentIdx > 0) {
+      content[contentIdx - 1].focus();
+    } else {
+      const activeTab = document.querySelector('.settings-tab.active');
+      if (activeTab) activeTab.focus();
+    }
+    return;
+  }
 }
 
 function trackSettingsFocus() {
