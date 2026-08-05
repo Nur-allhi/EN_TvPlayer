@@ -54,40 +54,62 @@ export function navigate(dir) {
   const total = focusOrder.length;
   if (total === 0) return;
 
-  const navCount = document.querySelectorAll('.nav-item').length + 1; // +1 for back btn
+  const navCount = document.querySelectorAll('.nav-item').length;
   const cur = document.querySelector('[data-focused]');
   const curIdx = focusOrder.indexOf(cur);
+  const inNavZone = curIdx >= 0 && curIdx < navCount;
+  const contentStart = navCount + 1; // +1 for back button
 
   if (dir > 0) {
     // DOWN
-    if (curIdx >= 0 && curIdx < navCount - 1) {
-      // In nav zone (not back btn) → jump to first content element
-      focusIdx = navCount;
-    } else if (curIdx >= navCount) {
-      // In content zone → move down within content
-      focusIdx = Math.min(total - 1, curIdx + 1);
+    if (inNavZone) {
+      focusIdx = (curIdx + 1) % navCount;
+    } else if (curIdx >= contentStart) {
+      focusIdx = curIdx + 1;
+      if (focusIdx >= total) focusIdx = contentStart;
     } else {
       focusIdx = Math.min(total - 1, focusIdx + 1);
     }
   } else {
     // UP
-    if (curIdx >= navCount) {
-      // In content zone → move up within content
-      if (curIdx > navCount) {
-        focusIdx = curIdx - 1;
-      } else {
-        // At first content element → jump back to last nav item
-        focusIdx = navCount - 2;
-      }
-    } else if (curIdx >= 0) {
-      // In nav zone → wrap to last content element
-      focusIdx = total - 1;
+    if (inNavZone) {
+      focusIdx = (curIdx - 1 + navCount) % navCount;
+    } else if (curIdx >= contentStart) {
+      focusIdx = curIdx - 1;
+      if (focusIdx < contentStart) focusIdx = total - 1;
     } else {
       focusIdx = Math.max(0, focusIdx - 1);
     }
   }
 
   applyFocus();
+}
+
+export function navigateNav(dir) {
+  const cur = document.querySelector('[data-focused]');
+  if (!cur) return;
+
+  const navCount = document.querySelectorAll('.nav-item').length;
+  const curIdx = focusOrder.indexOf(cur);
+  const inNavZone = curIdx >= 0 && curIdx < navCount;
+  const contentStart = navCount + 1;
+
+  if (dir > 0) {
+    // RIGHT: nav → content
+    if (inNavZone) {
+      focusIdx = contentStart;
+      applyFocus();
+    }
+  } else {
+    // LEFT: content → nav
+    if (curIdx >= contentStart) {
+      const activeTab = document.querySelector('.settings-tab.active');
+      const tabs = Array.from(document.querySelectorAll('.nav-item'));
+      const idx = tabs.indexOf(activeTab);
+      focusIdx = idx >= 0 ? idx : 0;
+      applyFocus();
+    }
+  }
 }
 
 export function selectFocused() {
@@ -161,21 +183,6 @@ export function selectFocused() {
   }
 }
 
-export function navigateNav(dir) {
-  const tabs = Array.from(document.querySelectorAll('.nav-item'));
-  const cur = document.querySelector('[data-focused]');
-  if (!cur || !cur.classList.contains('nav-item')) return;
-  const idx = tabs.indexOf(cur);
-  if (idx < 0) return;
-  const newIdx = (idx + dir + tabs.length) % tabs.length;
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  tabs[newIdx].classList.add('active');
-  activeSection = tabs[newIdx].dataset.section;
-  focusIdx = 0;
-  render();
-  applyFocus();
-}
-
 function buildFocusOrder() {
   focusOrder = [];
   document.querySelectorAll('.nav-item').forEach(el => focusOrder.push(el));
@@ -219,6 +226,14 @@ function applyFocus() {
     if (el) {
       el.setAttribute('data-focused', '');
       el.scrollIntoView({ block: 'nearest' });
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        el.focus();
+      } else {
+        const activeEl = document.activeElement;
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+          activeEl.blur();
+        }
+      }
     }
   }
 }
