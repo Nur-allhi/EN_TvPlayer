@@ -34,16 +34,28 @@ function handleKeyDown(e) {
       onKeyAction('select');
       return;
     }
-    if (key === 'ArrowUp' || e.keyCode === 38 || key === 'ArrowLeft' || e.keyCode === 37) {
+    if (key === 'ArrowUp' || e.keyCode === 38) {
       e.preventDefault();
       e.stopPropagation();
       onKeyAction('up');
       return;
     }
-    if (key === 'ArrowDown' || e.keyCode === 40 || key === 'ArrowRight' || e.keyCode === 39) {
+    if (key === 'ArrowDown' || e.keyCode === 40) {
       e.preventDefault();
       e.stopPropagation();
       onKeyAction('down');
+      return;
+    }
+    if (key === 'ArrowLeft' || e.keyCode === 37) {
+      e.preventDefault();
+      e.stopPropagation();
+      onKeyAction('left');
+      return;
+    }
+    if (key === 'ArrowRight' || e.keyCode === 39) {
+      e.preventDefault();
+      e.stopPropagation();
+      onKeyAction('right');
       return;
     }
     return;

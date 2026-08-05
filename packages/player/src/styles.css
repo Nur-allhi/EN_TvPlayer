@@ -554,9 +554,9 @@ html, body {
   z-index: 100;
   display: flex;
   flex-direction: column;
-  align-items: center;
   background: #0d1117;
   overflow: hidden;
+  padding: min(4vh, 48px) min(5vw, 80px);
 }
 
 .settings-header {
@@ -564,17 +564,15 @@ html, body {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  max-width: 960px;
-  padding: 20px 28px;
-  padding: clamp(14px, 2.5vw, 28px) clamp(20px, 4vw, 48px);
-  background: #1a1a1a;
-  border-bottom: 1px solid #222;
+  padding: min(2vh, 24px) 0;
+  margin-bottom: min(2vh, 24px);
+  background: transparent;
+  border-bottom: 2px solid #333;
   box-sizing: border-box;
 }
 
 .settings-title {
-  font-size: 26px;
-  font-size: clamp(18px, 3vw, 26px);
+  font-size: clamp(28px, 3.5vw, 40px);
   font-weight: 700;
   color: #4fc3f7;
   letter-spacing: 2px;
@@ -584,95 +582,123 @@ html, body {
   background: none;
   border: none;
   color: #888;
-  font-size: 32px;
-  font-size: clamp(22px, 4vw, 32px);
+  font-size: clamp(28px, 4vw, 40px);
   cursor: pointer;
   line-height: 1;
-  padding: 0 8px;
+  padding: 8px 16px;
 }
 
 .settings-close:hover {
   color: #fff;
 }
 
+/* Tab navigation */
+.settings-tabs {
+  display: flex;
+  gap: clamp(12px, 2vw, 32px);
+  padding: 0;
+  margin-bottom: min(3vh, 32px);
+  border-bottom: 3px solid #222;
+  width: 100%;
+}
+
+.settings-tab {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: clamp(22px, 2.5vw, 28px);
+  font-weight: 600;
+  cursor: pointer;
+  padding: min(1.5vh, 16px) min(2vw, 32px);
+  border-bottom: 4px solid transparent;
+  margin-bottom: -3px;
+  transition: color 0.2s, border-color 0.2s;
+  font-family: inherit;
+}
+
+.settings-tab.active {
+  color: #4fc3f7;
+  border-bottom-color: #4fc3f7;
+}
+
+.settings-tab.focused {
+  color: #fff;
+  background: rgba(79, 195, 247, 0.15);
+  border-radius: 8px 8px 0 0;
+}
+
 .settings-content {
   flex: 1;
   width: 100%;
-  max-width: 960px;
-  padding: clamp(20px, 4vw, 48px);
   overflow-y: auto;
   box-sizing: border-box;
+  padding-bottom: min(4vh, 48px);
 }
 
 #settings-page *:focus {
-  outline: 3px solid #4fc3f7;
-  outline-offset: 2px;
+  outline: 4px solid #4fc3f7;
+  outline-offset: 3px;
 }
 
 .settings-section {
-  max-width: 860px;
-  margin-inline: auto;
-  margin-bottom: 32px;
-  margin-bottom: clamp(16px, 3vw, 32px);
-  padding: 20px;
-  padding: clamp(12px, 2vw, 20px);
+  width: 100%;
+  margin-bottom: min(4vh, 48px);
+  padding: min(3vh, 32px) min(3vw, 48px);
   background: #161b22;
   border: 1px solid #222;
-  border-radius: 8px;
+  border-radius: 12px;
+  box-sizing: border-box;
 }
 
 .settings-section-title {
-  font-size: 20px;
-  font-size: clamp(16px, 2.5vw, 20px);
+  font-size: clamp(24px, 2.8vw, 32px);
   font-weight: 600;
   color: #fff;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .settings-desc {
-  font-size: 14px;
-  font-size: clamp(12px, 1.8vw, 14px);
+  font-size: clamp(20px, 2vw, 24px);
   color: #8b949e;
-  margin-bottom: 12px;
+  margin-bottom: min(2vh, 24px);
+  line-height: 1.4;
 }
 
 .settings-info {
-  font-size: 14px;
-  font-size: clamp(12px, 1.8vw, 14px);
+  font-size: clamp(20px, 2vw, 24px);
   color: #8b949e;
-  margin-bottom: 12px;
+  margin-bottom: min(2vh, 24px);
+  line-height: 1.4;
 }
 
 .settings-input {
   width: 100%;
-  padding: 10px 14px;
-  padding: clamp(8px, 1.5vw, 10px) clamp(10px, 1.8vw, 14px);
-  font-size: 15px;
-  font-size: clamp(13px, 1.8vw, 15px);
+  padding: min(1.5vh, 16px) min(2vw, 24px);
+  font-size: clamp(20px, 2vw, 24px);
   background: #0d1117;
   border: 1px solid #333;
-  border-radius: 6px;
+  border-radius: 8px;
   color: #fff;
   outline: none;
-  margin-bottom: 10px;
+  margin-bottom: min(1.5vh, 16px);
   font-family: inherit;
 }
 
 .settings-input:focus {
   border-color: #4fc3f7;
+  box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.3);
 }
 
 .settings-btn {
-  padding: 10px 20px;
-  padding: clamp(8px, 1.5vw, 10px) clamp(14px, 2.5vw, 20px);
-  font-size: 15px;
-  font-size: clamp(13px, 1.8vw, 15px);
+  padding: min(1.5vh, 16px) min(3vw, 32px);
+  font-size: clamp(20px, 2vw, 24px);
   background: #21262d;
   color: #c9d1d9;
   border: 1px solid #333;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-family: inherit;
+  margin: 8px 8px 8px 0;
 }
 
 .settings-btn:hover {
@@ -685,64 +711,64 @@ html, body {
 }
 
 .settings-btn-primary {
-  padding: 10px 20px;
-  padding: clamp(8px, 1.5vw, 10px) clamp(14px, 2.5vw, 20px);
-  font-size: 15px;
-  font-size: clamp(13px, 1.8vw, 15px);
+  padding: min(1.5vh, 16px) min(3vw, 32px);
+  font-size: clamp(20px, 2vw, 24px);
   background: #1f6feb;
   color: #fff;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-family: inherit;
   font-weight: 600;
+  margin: 8px 8px 8px 0;
 }
 
 .settings-btn-primary:hover {
   background: #388bfd;
 }
 
+.settings-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .settings-checkbox-label {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 15px;
-  font-size: clamp(13px, 1.8vw, 15px);
+  gap: 12px;
+  font-size: clamp(20px, 2vw, 24px);
   color: #c9d1d9;
-  margin-bottom: 10px;
+  margin-bottom: min(1.5vh, 16px);
   cursor: pointer;
 }
 
 .settings-checkbox-label input[type="checkbox"] {
-  width: 18px;
-  width: clamp(14px, 2vw, 18px);
-  height: 18px;
-  height: clamp(14px, 2vw, 18px);
+  width: 24px;
+  height: 24px;
   accent-color: #4fc3f7;
 }
 
 .settings-status {
-  margin-top: 8px;
-  font-size: 14px;
-  font-size: clamp(12px, 1.8vw, 14px);
+  margin-top: 12px;
+  font-size: clamp(20px, 2vw, 24px);
   color: #4fc3f7;
 }
 
 #settings-playlist-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 16px;
+  margin-bottom: min(2vh, 24px);
 }
 
 .playlist-entry {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px;
+  gap: 8px;
+  padding: min(2vh, 20px) min(2vw, 24px);
   background: #0d1117;
   border: 1px solid #333;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .playlist-entry.active {
@@ -750,7 +776,7 @@ html, body {
 }
 
 .playlist-indicator {
-  font-size: 12px;
+  font-size: clamp(18px, 1.8vw, 22px);
   color: #8b949e;
 }
 
@@ -759,8 +785,7 @@ html, body {
 }
 
 .playlist-name {
-  font-size: 15px;
-  font-size: clamp(13px, 1.8vw, 15px);
+  font-size: clamp(20px, 2vw, 24px);
   font-weight: 600;
   color: #fff;
   overflow: hidden;
@@ -769,8 +794,7 @@ html, body {
 }
 
 .playlist-url {
-  font-size: 13px;
-  font-size: clamp(11px, 1.5vw, 13px);
+  font-size: clamp(18px, 1.8vw, 22px);
   color: #8b949e;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -780,21 +804,22 @@ html, body {
 
 .playlist-actions {
   display: flex;
-  gap: 8px;
-  margin-top: 6px;
+  gap: 16px;
+  margin-top: 12px;
+  flex-wrap: wrap;
 }
 
 .playlist-name-input {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .playlist-url-input {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 #settings-fetch-btn {
-  margin-top: 12px;
-  margin-left: 12px;
+  margin-top: 16px;
+  margin-left: 16px;
 }
 
 /* Proxy suggestion toast */

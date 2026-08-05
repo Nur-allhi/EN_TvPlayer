@@ -5,6 +5,9 @@ let onPlaylistFetched = null;
 let onClose = null;
 let onRender = null;
 let editIndex = -1;
+let activeTab = 0;
+
+const TABS = ['Channel Source', 'Proxy', 'About'];
 
 export function init(settingsContainer, callbacks) {
   container = settingsContainer;
@@ -16,6 +19,7 @@ export function init(settingsContainer, callbacks) {
 export function show() {
   if (!container) return;
   editIndex = -1;
+  activeTab = 0;
   container.classList.remove('hidden');
   render();
   const firstInput = container.querySelector('input, button, select, textarea, [tabindex]:not([tabindex="-1"])');
@@ -29,6 +33,17 @@ export function hide() {
 
 export function isVisible() {
   return container && !container.classList.contains('hidden');
+}
+
+export function switchTab(direction) {
+  activeTab = (activeTab + direction + TABS.length) % TABS.length;
+  render();
+  const tabEl = container.querySelector('.settings-tab.active');
+  if (tabEl) tabEl.focus();
+}
+
+export function getActiveTab() {
+  return activeTab;
 }
 
 function render() {
@@ -67,13 +82,13 @@ function render() {
     ? '<button id="pl-add-btn" class="settings-btn">+ Add Playlist</button>'
     : '';
 
-  container.innerHTML =
-    '<div class="settings-header">' +
-      '<span class="settings-title">Settings</span>' +
-      '<button id="settings-close-btn" class="settings-close">&times;</button>' +
-    '</div>' +
-    '<div class="settings-content">' +
+  const tabHtml = TABS.map((tab, i) =>
+    '<button id="settings-tab-' + i + '" class="settings-tab' + (i === activeTab ? ' active' : '') + '" data-tab="' + i + '">' + tab + '</button>'
+  ).join('');
 
+  let contentHtml = '';
+  if (activeTab === 0) {
+    contentHtml =
       '<div class="settings-section">' +
         '<h3 class="settings-section-title">Channel Source</h3>' +
         '<p class="settings-desc">Saved playlists (' + s.playlists.length + '/8). Select one, then click Fetch.</p>' +
@@ -82,21 +97,45 @@ function render() {
         '<button id="settings-fetch-btn" class="settings-btn-primary">Fetch Active</button>' +
         '<div id="settings-fetch-status" class="settings-status hidden"></div>' +
         '<p class="settings-info">Last fetched: <span id="settings-last-fetched">' + lastFetched + '</span></p>' +
-      '</div>' +
-
+      '</div>';
+  } else if (activeTab === 1) {
+    contentHtml =
       '<div class="settings-section">' +
         '<h3 class="settings-section-title">Proxy Server</h3>' +
         '<p class="settings-desc">Proxy URL for channels marked with proxy="true" in the playlist.</p>' +
         '<input id="settings-proxy-url" class="settings-input" type="text" placeholder="http://localhost:5000/proxy/" value="' + escapeHtml(s.proxyUrl || '') + '" />' +
         '<button id="settings-proxy-save-btn" class="settings-btn-primary">Save Proxy</button>' +
         '<div id="settings-proxy-status" class="settings-status hidden"></div>' +
-      '</div>' +
-
-      '<div class="settings-section settings-footer">' +
+      '</div>';
+  } else {
+    contentHtml =
+      '<div class="settings-section">' +
+        '<h3 class="settings-section-title">About</h3>' +
+        '<p class="settings-info">EN IPTV Player</p>' +
         '<p class="settings-info">Version <span id="settings-app-version">' + APP_VERSION + '</span></p>' +
-      '</div>' +
+        '<p class="settings-info">Open-source IPTV player for Samsung Tizen TVs and desktop browsers.</p>' +
+        '<p class="settings-info">Powered by Shaka Player with a local CORS proxy.</p>' +
+      '</div>';
+  }
 
-    '</div>';
+  container.innerHTML =
+    '<div class="settings-header">' +
+      '<span class="settings-title">Settings</span>' +
+      '<button id="settings-close-btn" class="settings-close">&times;</button>' +
+    '</div>' +
+    '<div class="settings-tabs" role="tablist">' + tabHtml + '</div>' +
+    '<div class="settings-content">' + contentHtml + '</div>';
+
+  // Tab click handlers
+  const tabEls = container.querySelectorAll('.settings-tab');
+  tabEls.forEach((tabEl) => {
+    tabEl.addEventListener('click', () => {
+      activeTab = parseInt(tabEl.dataset.tab, 10);
+      render();
+      const firstFocusable = container.querySelector('.settings-content input, .settings-content button');
+      if (firstFocusable) firstFocusable.focus();
+    });
+  });
 
   // Event listeners
   document.getElementById('settings-close-btn').addEventListener('click', () => {

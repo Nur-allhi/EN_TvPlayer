@@ -470,6 +470,9 @@ let settingsFocusOrder = [];
 function rebuildSettingsFocusOrder() {
   const order = [];
   const s = getSettings();
+  for (let i = 0; i < 3; i++) {
+    order.push('settings-tab-' + i);
+  }
   for (let i = 0; i < s.playlists.length; i++) {
     order.push(
       'pl-select-btn-' + i,
@@ -489,7 +492,9 @@ function rebuildSettingsFocusOrder() {
 }
 
 function getSettingsFocusable() {
-  return settingsFocusOrder.map(id => document.getElementById(id)).filter(el => el && el.offsetParent !== null);
+  const tabEls = Array.from(document.querySelectorAll('.settings-tab')).filter(el => el.offsetParent !== null);
+  const contentEls = settingsFocusOrder.map(id => document.getElementById(id)).filter(el => el && el.offsetParent !== null);
+  return [...tabEls, ...contentEls];
 }
 
 function focusSettingsNext() {
@@ -523,6 +528,12 @@ function handleRemoteAction(action, value) {
         break;
       case 'down':
         focusSettingsNext();
+        break;
+      case 'left':
+        settings.switchTab(-1);
+        break;
+      case 'right':
+        settings.switchTab(1);
         break;
       case 'select':
         if (document.activeElement) document.activeElement.click();
