@@ -8,6 +8,7 @@ let editIndex = -1;
 let activeSection = 'source';
 let focusIdx = 0;
 let focusOrder = [];
+let resizeBound = false;
 
 const NAV_ITEMS = [
   { id: 'source', icon: '\u{1F4E1}', label: 'Channel Source' },
@@ -31,6 +32,11 @@ export function show() {
   container.classList.remove('hidden');
   render();
   applyFocus();
+  scheduleFit();
+  if (!resizeBound) {
+    window.addEventListener('resize', fit);
+    resizeBound = true;
+  }
 }
 
 export function hide() {
@@ -181,7 +187,7 @@ function render() {
       '<div class="hint-group"><kbd>Back</kbd> <span class="sep">|</span> Close</div>' +
     '</div>';
 
-  fit();
+  scheduleFit();
   buildFocusOrder();
 
   document.getElementById('btn-back').addEventListener('click', () => {
@@ -325,13 +331,24 @@ function renderAboutCard() {
 function fit() {
   const app = document.getElementById('settings-page');
   if (!app) return;
-  const sw = window.innerWidth;
-  const sh = window.innerHeight;
+  let sw = window.innerWidth;
+  let sh = window.innerHeight;
+  if (!sw || !sh) {
+    sw = screen.width || 1920;
+    sh = screen.height || 1080;
+  }
   const scale = Math.min(sw / 1920, sh / 1080);
   if (!isFinite(scale) || scale <= 0) return;
   const tx = (sw - 1920 * scale) / 2;
   const ty = (sh - 1080 * scale) / 2;
   app.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+}
+
+function scheduleFit() {
+  fit();
+  setTimeout(fit, 100);
+  setTimeout(fit, 500);
+  setTimeout(fit, 1000);
 }
 
 async function handleFetch() {
