@@ -470,9 +470,6 @@ let settingsFocusOrder = [];
 function rebuildSettingsFocusOrder() {
   const order = [];
   const s = getSettings();
-  for (let i = 0; i < 3; i++) {
-    order.push('settings-tab-' + i);
-  }
   for (let i = 0; i < s.playlists.length; i++) {
     order.push(
       'pl-select-btn-' + i,
@@ -493,7 +490,7 @@ function rebuildSettingsFocusOrder() {
 
 function getSettingsFocusable() {
   const tabEls = Array.from(document.querySelectorAll('.settings-tab')).filter(el => el.offsetParent !== null);
-  const contentEls = settingsFocusOrder.map(id => document.getElementById(id)).filter(el => el && el.offsetParent !== null);
+  const contentEls = getSettingsContent();
   return [...tabEls, ...contentEls];
 }
 
