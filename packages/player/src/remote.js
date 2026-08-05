@@ -22,6 +22,31 @@ function handleKeyDown(e) {
   const settingsPage = document.getElementById('settings-page');
   const isSettingsVisible = settingsPage && !settingsPage.classList.contains('hidden');
   if (isSettingsVisible) {
+    const activeEl = document.activeElement;
+    const isInputFocused = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+
+    if (isInputFocused) {
+      if (key === 'ArrowUp' || e.keyCode === 38) {
+        e.preventDefault();
+        e.stopPropagation();
+        onKeyAction('up');
+        return;
+      }
+      if (key === 'ArrowDown' || e.keyCode === 40) {
+        e.preventDefault();
+        e.stopPropagation();
+        onKeyAction('down');
+        return;
+      }
+      if (key === 'Enter' || e.keyCode === 13) {
+        e.preventDefault();
+        e.stopPropagation();
+        onKeyAction('select');
+        return;
+      }
+      return;
+    }
+
     if (key === 'Escape' || key === 'Backspace' || e.keyCode === 27 || e.keyCode === 10009) {
       e.preventDefault();
       e.stopPropagation();
