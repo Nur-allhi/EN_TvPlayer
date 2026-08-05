@@ -1,7 +1,7 @@
 const SETTINGS_KEY = 'en_settings';
 const PROXY_OVERRIDES_KEY = 'en_proxy_overrides';
 
-export const APP_VERSION = '0.5.0';
+export const APP_VERSION = __APP_VERSION__;
 
 const settingsDefaults = {
   playlists: [],
