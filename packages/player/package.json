@@ -1,6 +1,6 @@
 {
   "name": "@en-iptv/player",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "type": "module",
   "description": "EN IPTV — Shaka-powered player SPA",
   "scripts": {
