@@ -106,7 +106,7 @@ if (!existsSync(KEY_FILE) || !existsSync(CERT_FILE)) {
 // ─── Step 4: Build and sign the WGT ──────────────────────────────────────
 
 const TEMP = join(TIZEN, 'temp-wgt');
-const OUTPUT = join(TIZEN, WGT_NAME);
+const OUTPUT = join(ROOT, WGT_NAME);
 const UNSIGNED = join(TIZEN, 'unsigned.zip');
 
 for (const p of [TEMP, OUTPUT]) {

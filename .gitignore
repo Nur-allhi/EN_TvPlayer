@@ -1,14 +1,38 @@
+# Dependencies
 node_modules/
+
+# Build outputs
 dist/
+packages/player/dist/
+packages/player/node_modules/.vite/
 
 # Tizen build artifacts
-tizen/temp-wgt/
-tizen/*.p12
-tizen/*.pem
-tizen/*.wgt
-tizen/profile.xml
+packages/tizen/temp-wgt/
+packages/tizen/*.p12
+packages/tizen/*.pem
+packages/tizen/icons/
+
 # Root WGT is the release artifact — do NOT ignore
 !*.wgt
-.playwright-mcp/
+
+# Logs and debug
 logs/
+.playwright-mcp/
+*.log
+
+# Test results
 test-results/
+
+# Certificates (regenerate with generate-cert.mjs)
+certs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Accidental files
+Proceed)
