@@ -92,10 +92,14 @@ export async function initPlayer(videoEl) {
     }
   });
 
+  videoEl.removeEventListener('progress', notifyBufferingProgress);
+  videoEl.removeEventListener('timeupdate', notifyBufferingProgress);
+  videoEl.removeEventListener('play', onPlayEvent);
+  videoEl.removeEventListener('pause', onPauseEvent);
   videoEl.addEventListener('progress', notifyBufferingProgress);
   videoEl.addEventListener('timeupdate', notifyBufferingProgress);
-  videoEl.addEventListener('play', () => showPlayState(false));
-  videoEl.addEventListener('pause', () => showPlayState(true));
+  videoEl.addEventListener('play', onPlayEvent);
+  videoEl.addEventListener('pause', onPauseEvent);
 
   await player.attach(videoEl).catch((e) => console.error('Player attach failed:', e));
   return true;
@@ -105,6 +109,14 @@ function notifyBufferingProgress() {
   if (isBuffering && bufferingCallback) {
     bufferingCallback(true, getBufferingPercent());
   }
+}
+
+function onPlayEvent() {
+  showPlayState(false);
+}
+
+function onPauseEvent() {
+  showPlayState(true);
 }
 
 export function onBuffering(callback) {
@@ -207,6 +219,10 @@ export async function loadChannel(channel) {
     loadingTimeout = setTimeout(() => {
       logEvent('WARN', 'Load timed out — destroying stuck player');
       if (player) player.destroy().catch(() => {});
+      if (videoElement) {
+        videoElement.src = '';
+        videoElement.load();
+      }
     }, 30000);
 
     await player.load(url);
@@ -268,6 +284,10 @@ async function destroyPlayer(keepElement) {
   if (player) {
     try { await player.destroy(); } catch {}
     player = null;
+  }
+  if (videoElement) {
+    videoElement.src = '';
+    videoElement.load();
   }
   currentChannel = null;
   isBuffering = false;
