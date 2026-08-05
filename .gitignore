@@ -7,6 +7,8 @@ tizen/*.p12
 tizen/*.pem
 tizen/*.wgt
 tizen/profile.xml
+# Root WGT is the release artifact — do NOT ignore
+!*.wgt
 .playwright-mcp/
 logs/
 test-results/
