@@ -195,11 +195,13 @@ export function selectFocused() {
       playlists.push({ name: name || 'Unnamed', url });
       saveSettings({ playlists, activePlaylistIndex: playlists.length - 1 });
       addMode = false;
+      render();
       const activeEl = document.activeElement;
       if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
         activeEl.blur();
       }
-      render();
+      document.body.focus();
+      focusIdx = 0;
       applyFocus();
     }
     return;
@@ -207,11 +209,13 @@ export function selectFocused() {
 
   if (el.id === 'pl-add-cancel') {
     addMode = false;
+    render();
     const activeEl = document.activeElement;
     if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
       activeEl.blur();
     }
-    render();
+    document.body.focus();
+    focusIdx = 0;
     applyFocus();
     return;
   }
@@ -227,11 +231,13 @@ export function selectFocused() {
       saveSettings({ playlists });
       editMode = false;
       editIndex = -1;
+      render();
       const activeEl = document.activeElement;
       if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
         activeEl.blur();
       }
-      render();
+      document.body.focus();
+      focusIdx = 0;
       applyFocus();
     }
     return;
@@ -240,11 +246,13 @@ export function selectFocused() {
   if (el.id === 'pl-edit-cancel') {
     editMode = false;
     editIndex = -1;
+    render();
     const activeEl = document.activeElement;
     if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
       activeEl.blur();
     }
-    render();
+    document.body.focus();
+    focusIdx = 0;
     applyFocus();
     return;
   }
