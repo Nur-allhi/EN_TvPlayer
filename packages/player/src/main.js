@@ -84,7 +84,6 @@ function startPlayer() {
       ui.stopInactivityTimer();
       showPlayer();
     },
-    onRender: rebuildSettingsFocusOrder,
   });
 
   ui.init(channels, handleChannelSelect);
@@ -219,12 +218,10 @@ function showFirstLaunch() {
         showPlayer();
       }
     },
-    onRender: rebuildSettingsFocusOrder,
   });
 
   document.body.style.overflow = 'hidden';
   settings.show();
-  trackSettingsFocus();
 }
 
 function showPlayer() {
@@ -259,7 +256,6 @@ function showSettingsPage() {
   ui.stopInactivityTimer();
   document.body.style.overflow = 'hidden';
   settings.show();
-  trackSettingsFocus();
 }
 
 async function fetchFromPlaylistUrl(url) {
@@ -465,116 +461,21 @@ function hideProgress() {
   if (el) el.classList.add('hidden');
 }
 
-let settingsFocusOrder = [];
-
-function rebuildSettingsFocusOrder() {
-  const order = [];
-  const s = getSettings();
-  for (let i = 0; i < s.playlists.length; i++) {
-    order.push(
-      'pl-select-btn-' + i,
-      'pl-edit-btn-' + i,
-      'pl-delete-btn-' + i,
-      'pl-name-input-' + i,
-      'pl-url-input-' + i,
-      'pl-save-btn-' + i,
-      'pl-cancel-btn-' + i,
-    );
-  }
-  if (s.playlists.length < 8) order.push('pl-add-btn');
-  order.push('settings-fetch-btn',
-             'settings-proxy-url', 'settings-proxy-save-btn',
-             'settings-close-btn');
-  settingsFocusOrder = order;
-}
-
-function getSettingsFocusable() {
-  const tabEls = Array.from(document.querySelectorAll('.settings-tab')).filter(el => el.offsetParent !== null);
-  const contentEls = getSettingsContent();
-  return [...tabEls, ...contentEls];
-}
-
-function getSettingsTabs() {
-  return Array.from(document.querySelectorAll('.settings-tab')).filter(el => el.offsetParent !== null);
-}
-
-function getSettingsContent() {
-  return settingsFocusOrder.map(id => document.getElementById(id)).filter(el => el && el.offsetParent !== null);
-}
-
-function focusSettingsNext() {
-  const tabs = getSettingsTabs();
-  const content = getSettingsContent();
-  const cur = document.activeElement;
-
-  const tabIdx = tabs.indexOf(cur);
-  if (tabIdx >= 0) {
-    if (content.length > 0) {
-      content[0].focus();
-    }
-    return;
-  }
-
-  const contentIdx = content.indexOf(cur);
-  if (contentIdx >= 0) {
-    if (contentIdx < content.length - 1) {
-      content[contentIdx + 1].focus();
-    } else {
-      tabs[0].focus();
-    }
-    return;
-  }
-}
-
-function focusSettingsPrev() {
-  const tabs = getSettingsTabs();
-  const content = getSettingsContent();
-  const cur = document.activeElement;
-
-  const tabIdx = tabs.indexOf(cur);
-  if (tabIdx >= 0) {
-    if (content.length > 0) {
-      content[content.length - 1].focus();
-    }
-    return;
-  }
-
-  const contentIdx = content.indexOf(cur);
-  if (contentIdx >= 0) {
-    if (contentIdx > 0) {
-      content[contentIdx - 1].focus();
-    } else {
-      const activeTab = document.querySelector('.settings-tab.active');
-      if (activeTab) activeTab.focus();
-    }
-    return;
-  }
-}
-
-function trackSettingsFocus() {
-  const els = getSettingsFocusable();
-  if (els.length > 0 && !els.includes(document.activeElement)) {
-    els[0].focus();
-  }
-}
-
 function handleRemoteAction(action, value) {
   if (settings.isVisible()) {
     switch (action) {
       case 'up':
-        focusSettingsPrev();
+        settings.navigate(-1);
         break;
       case 'down':
-        focusSettingsNext();
+        settings.navigate(1);
         break;
       case 'left':
-        settings.switchTab(-1);
-        break;
       case 'right':
-        settings.switchTab(1);
+        settings.navigate(action === 'left' ? -1 : 1);
         break;
       case 'select':
-        if (document.activeElement) document.activeElement.click();
+        settings.selectFocused();
         break;
       case 'back':
         settings.hide();

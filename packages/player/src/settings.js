@@ -5,9 +5,16 @@ let onPlaylistFetched = null;
 let onClose = null;
 let onRender = null;
 let editIndex = -1;
-let activeTab = 0;
+let activeSection = 'source';
+let focusIdx = 0;
+let focusOrder = [];
 
-const TABS = ['Channel Source', 'Proxy', 'About'];
+const NAV_ITEMS = [
+  { id: 'source', icon: '\u{1F4E1}', label: 'Channel Source' },
+  { id: 'connection', icon: '\u{1F517}', label: 'Connection' },
+  { id: 'playback', icon: '\u25B6', label: 'Playback' },
+  { id: 'about', icon: '\u2139', label: 'About' },
+];
 
 export function init(settingsContainer, callbacks) {
   container = settingsContainer;
@@ -19,11 +26,11 @@ export function init(settingsContainer, callbacks) {
 export function show() {
   if (!container) return;
   editIndex = -1;
-  activeTab = 0;
+  activeSection = 'source';
+  focusIdx = 0;
   container.classList.remove('hidden');
   render();
-  const firstInput = container.querySelector('input, button, select, textarea, [tabindex]:not([tabindex="-1"])');
-  if (firstInput) firstInput.focus();
+  applyFocus();
 }
 
 export function hide() {
@@ -35,208 +42,317 @@ export function isVisible() {
   return container && !container.classList.contains('hidden');
 }
 
-export function switchTab(direction) {
-  activeTab = (activeTab + direction + TABS.length) % TABS.length;
-  render();
-  const tabEl = container.querySelector('.settings-tab.active');
-  if (tabEl) tabEl.focus();
+export function navigate(dir) {
+  focusIdx = Math.max(0, Math.min(focusOrder.length - 1, focusIdx + dir));
+  applyFocus();
 }
 
-export function getActiveTab() {
-  return activeTab;
+export function selectFocused() {
+  const el = document.querySelector('[data-focused]');
+  if (!el) return;
+
+  if (el.classList.contains('nav-item')) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    activeSection = el.dataset.section;
+    focusIdx = 0;
+    render();
+    applyFocus();
+    return;
+  }
+
+  if (el.id === 'btn-back') {
+    if (onClose) onClose();
+    return;
+  }
+
+  if (el.classList.contains('toggle')) {
+    el.classList.toggle('on');
+    return;
+  }
+
+  if (el.classList.contains('select-opt')) {
+    document.querySelectorAll('.select-opt').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+    return;
+  }
+
+  if (el.tagName === 'INPUT') {
+    el.focus();
+    return;
+  }
+
+  if (el.classList.contains('btn') || el.classList.contains('playlist-entry')) {
+    el.click();
+    return;
+  }
+}
+
+function buildFocusOrder() {
+  focusOrder = [];
+  document.querySelectorAll('.nav-item').forEach(el => focusOrder.push(el));
+  focusOrder.push(document.getElementById('btn-back'));
+
+  if (activeSection === 'source') {
+    const s = getSettings();
+    for (let i = 0; i < s.playlists.length; i++) {
+      const entry = document.getElementById('playlist-entry-' + i);
+      if (entry) focusOrder.push(entry);
+    }
+    const addBtn = document.getElementById('pl-add-btn');
+    if (addBtn) focusOrder.push(addBtn);
+    focusOrder.push(document.getElementById('settings-fetch-btn'));
+  } else if (activeSection === 'connection') {
+    focusOrder.push(document.getElementById('settings-proxy-url'));
+    focusOrder.push(document.getElementById('settings-proxy-save-btn'));
+  } else if (activeSection === 'playback') {
+    document.querySelectorAll('.select-opt').forEach(el => focusOrder.push(el));
+    focusOrder.push(document.getElementById('toggle-autoq'));
+    focusOrder.push(document.getElementById('toggle-audio'));
+  }
+}
+
+function clearFocus() {
+  document.querySelectorAll('[data-focused]').forEach(el => el.removeAttribute('data-focused'));
+}
+
+function applyFocus() {
+  clearFocus();
+  buildFocusOrder();
+  if (focusIdx >= 0 && focusIdx < focusOrder.length) {
+    const el = focusOrder[focusIdx];
+    if (el) {
+      el.setAttribute('data-focused', '');
+      el.scrollIntoView({ block: 'nearest' });
+    }
+  }
 }
 
 function render() {
   const s = getSettings();
   const lastFetched = s.channelsFetched ? timeAgo(s.channelsFetched) : 'Never';
 
-  let entriesHtml = '';
-  for (let i = 0; i < s.playlists.length; i++) {
-    const p = s.playlists[i];
-    const isActive = i === s.activePlaylistIndex;
-    entriesHtml += '<div class="playlist-entry' + (isActive ? ' active' : '') + '">' +
-      '<span class="playlist-indicator">' + (isActive ? '\u25B6' : '\u25CB') + '</span>';
-
-    if (editIndex === i) {
-      entriesHtml +=
-        '<input id="pl-name-input-' + i + '" class="settings-input playlist-name-input" value="' + escapeHtml(p.name || '') + '" placeholder="Playlist name" />' +
-        '<input id="pl-url-input-' + i + '" class="settings-input playlist-url-input" value="' + escapeHtml(p.url || '') + '" placeholder="https://..." />' +
-        '<div class="playlist-actions">' +
-          '<button id="pl-save-btn-' + i + '" class="settings-btn-primary">Save</button>' +
-          '<button id="pl-cancel-btn-' + i + '" class="settings-btn">Cancel</button>' +
-        '</div>';
-    } else {
-      entriesHtml +=
-        '<span class="playlist-name">' + escapeHtml(p.name || 'Unnamed') + '</span>' +
-        '<span class="playlist-url">' + escapeHtml(p.url || '') + '</span>' +
-        '<div class="playlist-actions">' +
-          '<button id="pl-select-btn-' + i + '" class="settings-btn' + (isActive ? ' active' : '') + '">' + (isActive ? 'Selected' : 'Select') + '</button>' +
-          '<button id="pl-edit-btn-' + i + '" class="settings-btn">Edit</button>' +
-          '<button id="pl-delete-btn-' + i + '" class="settings-btn">Delete</button>' +
-        '</div>';
-    }
-    entriesHtml += '</div>';
-  }
-
-  const addBtnHtml = s.playlists.length < 8
-    ? '<button id="pl-add-btn" class="settings-btn">+ Add Playlist</button>'
-    : '';
-
-  const tabHtml = TABS.map((tab, i) =>
-    '<button id="settings-tab-' + i + '" class="settings-tab' + (i === activeTab ? ' active' : '') + '" data-tab="' + i + '">' + tab + '</button>'
+  const navHtml = NAV_ITEMS.map(item =>
+    '<div class="nav-item' + (activeSection === item.id ? ' active' : '') + '" data-section="' + item.id + '">' +
+      '<span class="nav-icon">' + item.icon + '</span> ' + item.label +
+    '</div>'
   ).join('');
 
-  let contentHtml = '';
-  if (activeTab === 0) {
-    contentHtml =
-      '<div class="settings-section">' +
-        '<h3 class="settings-section-title">Channel Source</h3>' +
-        '<p class="settings-desc">Saved playlists (' + s.playlists.length + '/8). Select one, then click Fetch.</p>' +
-        '<div id="settings-playlist-list">' + entriesHtml + '</div>' +
-        addBtnHtml +
-        '<button id="settings-fetch-btn" class="settings-btn-primary">Fetch Active</button>' +
-        '<div id="settings-fetch-status" class="settings-status hidden"></div>' +
-        '<p class="settings-info">Last fetched: <span id="settings-last-fetched">' + lastFetched + '</span></p>' +
-      '</div>';
-  } else if (activeTab === 1) {
-    contentHtml =
-      '<div class="settings-section">' +
-        '<h3 class="settings-section-title">Proxy Server</h3>' +
-        '<p class="settings-desc">Proxy URL for channels marked with proxy="true" in the playlist.</p>' +
-        '<input id="settings-proxy-url" class="settings-input" type="text" placeholder="http://localhost:5000/proxy/" value="' + escapeHtml(s.proxyUrl || '') + '" />' +
-        '<button id="settings-proxy-save-btn" class="settings-btn-primary">Save Proxy</button>' +
-        '<div id="settings-proxy-status" class="settings-status hidden"></div>' +
-      '</div>';
+  let mainHtml = '';
+  mainHtml += '<div class="page-title">';
+  mainHtml += '<button class="back-btn" id="btn-back">\u2039</button>';
+  mainHtml += 'Settings';
+  mainHtml += '</div>';
+
+  if (activeSection === 'source') {
+    mainHtml += renderSourceCard(s, lastFetched);
+  } else if (activeSection === 'connection') {
+    mainHtml += renderConnectionCard(s);
+  } else if (activeSection === 'playback') {
+    mainHtml += renderPlaybackCard();
   } else {
-    contentHtml =
-      '<div class="settings-section">' +
-        '<h3 class="settings-section-title">About</h3>' +
-        '<p class="settings-info">EN IPTV Player</p>' +
-        '<p class="settings-info">Version <span id="settings-app-version">' + APP_VERSION + '</span></p>' +
-        '<p class="settings-info">Open-source IPTV player for Samsung Tizen TVs and desktop browsers.</p>' +
-        '<p class="settings-info">Powered by Shaka Player with a local CORS proxy.</p>' +
-      '</div>';
+    mainHtml += renderAboutCard();
   }
 
+  mainHtml += '<div class="settings-footer">';
+  mainHtml += '<span class="footer-info">All settings are saved automatically</span>';
+  mainHtml += '<span class="footer-version">' + APP_VERSION + '</span>';
+  mainHtml += '</div>';
+
   container.innerHTML =
-    '<div class="settings-header">' +
-      '<span class="settings-title">Settings</span>' +
-      '<button id="settings-close-btn" class="settings-close">&times;</button>' +
+    '<div class="bg-glow"></div>' +
+    '<div class="settings-layout">' +
+      '<nav class="settings-nav">' +
+        '<div class="nav-header">' +
+          '<div class="nav-logo">' +
+            '<div class="icon">EN</div>' +
+            '<div class="text">EN <span>IPTV</span></div>' +
+          '</div>' +
+          '<div class="nav-sub">Settings</div>' +
+        '</div>' +
+        '<div class="nav-items">' + navHtml + '</div>' +
+      '</nav>' +
+      '<main class="settings-main">' + mainHtml + '</main>' +
     '</div>' +
-    '<div class="settings-tabs" role="tablist">' + tabHtml + '</div>' +
-    '<div class="settings-content">' + contentHtml + '</div>';
+    '<div id="remote-hints">' +
+      '<div class="hint-group"><kbd>&#9650;</kbd> <kbd>&#9660;</kbd> <span class="sep">|</span> Navigate</div>' +
+      '<div class="hint-group"><kbd>Enter</kbd> <span class="sep">|</span> Select / Toggle</div>' +
+      '<div class="hint-group"><kbd>&#9664;</kbd> <span class="sep">|</span> Back</div>' +
+      '<div class="hint-group"><kbd>Back</kbd> <span class="sep">|</span> Close</div>' +
+    '</div>';
 
-  // Tab click handlers
-  const tabEls = container.querySelectorAll('.settings-tab');
-  tabEls.forEach((tabEl) => {
-    tabEl.addEventListener('click', () => {
-      activeTab = parseInt(tabEl.dataset.tab, 10);
-      render();
-      const firstFocusable = container.querySelector('.settings-content input, .settings-content button');
-      if (firstFocusable) firstFocusable.focus();
-    });
-  });
+  fit();
+  buildFocusOrder();
 
-  // Event listeners
-  document.getElementById('settings-close-btn').addEventListener('click', () => {
+  document.getElementById('btn-back').addEventListener('click', () => {
     if (onClose) onClose();
   });
 
-  for (let i = 0; i < s.playlists.length; i++) {
-    const selectBtn = document.getElementById('pl-select-btn-' + i);
-    if (selectBtn) {
-      selectBtn.addEventListener('click', () => {
-        saveSettings({ activePlaylistIndex: i });
-        render();
-      });
-    }
-
-    const editBtn = document.getElementById('pl-edit-btn-' + i);
-    if (editBtn) {
-      editBtn.addEventListener('click', () => {
-        editIndex = i;
-        render();
-      });
-    }
-
-    const deleteBtn = document.getElementById('pl-delete-btn-' + i);
-    if (deleteBtn) {
-      deleteBtn.addEventListener('click', () => {
-        const playlists = getSettings().playlists.filter((_, j) => j !== i);
-        let active = getSettings().activePlaylistIndex;
-        if (active >= playlists.length) active = playlists.length - 1;
-        if (active < 0) active = -1;
-        saveSettings({ playlists, activePlaylistIndex: active });
-        editIndex = -1;
-        render();
-      });
-    }
-
-    const saveBtn = document.getElementById('pl-save-btn-' + i);
-    if (saveBtn) {
-      saveBtn.addEventListener('click', () => {
-        const nameInput = document.getElementById('pl-name-input-' + i);
-        const urlInput = document.getElementById('pl-url-input-' + i);
-        const playlists = getSettings().playlists;
-        playlists[i] = { name: nameInput.value.trim() || 'Unnamed', url: urlInput.value.trim() };
-        saveSettings({ playlists });
-        editIndex = -1;
-        render();
-      });
-    }
-
-    const cancelBtn = document.getElementById('pl-cancel-btn-' + i);
-    if (cancelBtn) {
-      cancelBtn.addEventListener('click', () => {
-        editIndex = -1;
-        render();
-      });
-    }
-  }
-
-  const addBtn = document.getElementById('pl-add-btn');
-  if (addBtn) {
-    addBtn.addEventListener('click', () => {
-      const s = getSettings();
-      const playlists = s.playlists;
-      playlists.push({ name: 'New Playlist', url: '' });
-      const newIdx = playlists.length - 1;
-      saveSettings({ playlists, activePlaylistIndex: newIdx });
-      editIndex = newIdx;
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      item.classList.add('active');
+      activeSection = item.dataset.section;
+      focusIdx = 0;
       render();
+      applyFocus();
+    });
+  });
+
+  if (activeSection === 'source') {
+    for (let i = 0; i < s.playlists.length; i++) {
+      const entry = document.getElementById('playlist-entry-' + i);
+      if (entry) {
+        entry.addEventListener('click', () => {
+          saveSettings({ activePlaylistIndex: i });
+          render();
+          applyFocus();
+        });
+      }
+    }
+    const addBtn = document.getElementById('pl-add-btn');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        const playlists = getSettings().playlists;
+        playlists.push({ name: 'New Playlist', url: '' });
+        const newIdx = playlists.length - 1;
+        saveSettings({ playlists, activePlaylistIndex: newIdx });
+        render();
+        applyFocus();
+      });
+    }
+    document.getElementById('settings-fetch-btn').addEventListener('click', handleFetch);
+  } else if (activeSection === 'connection') {
+    document.getElementById('settings-proxy-save-btn').addEventListener('click', handleProxySave);
+    document.getElementById('settings-proxy-url').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleProxySave();
+    });
+  } else if (activeSection === 'playback') {
+    document.querySelectorAll('.select-opt').forEach(opt => {
+      opt.addEventListener('click', () => {
+        document.querySelectorAll('.select-opt').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+      });
+    });
+    document.querySelectorAll('.toggle').forEach(t => {
+      t.addEventListener('click', function() { this.classList.toggle('on'); });
     });
   }
-
-  document.getElementById('settings-fetch-btn').addEventListener('click', handleFetch);
-
-  document.getElementById('settings-proxy-save-btn').addEventListener('click', handleProxySave);
-  document.getElementById('settings-proxy-url').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') handleProxySave();
-  });
 
   if (typeof onRender === 'function') onRender();
 }
 
+function renderSourceCard(s, lastFetched) {
+  let html = '';
+  html += '<div class="setting-card">';
+  html += '<div class="card-header"><h3><span class="card-icon">\u{1F4E1}</span> Channel Source</h3></div>';
+  html += '<div class="card-body">';
+  html += '<p class="hint" style="margin-bottom:16px;">Saved playlists (' + s.playlists.length + '/8). Select one, then click Fetch.</p>';
+  html += '<div class="playlist-list">';
+  for (let i = 0; i < s.playlists.length; i++) {
+    const p = s.playlists[i];
+    const isActive = i === s.activePlaylistIndex;
+    html += '<div id="playlist-entry-' + i + '" class="playlist-entry' + (isActive ? ' active' : '') + '">';
+    html += '<span class="playlist-indicator">' + (isActive ? '\u25B6' : '\u25CB') + '</span>';
+    html += '<span class="playlist-name">' + escapeHtml(p.name || 'Unnamed') + '</span>';
+    html += '<span class="playlist-url">' + escapeHtml(p.url || '') + '</span>';
+    html += '</div>';
+  }
+  html += '</div>';
+  if (s.playlists.length < 8) {
+    html += '<button id="pl-add-btn" class="btn btn-secondary">+ Add Playlist</button>';
+  }
+  html += '<button id="settings-fetch-btn" class="btn btn-primary">Fetch Active</button>';
+  html += '<div id="settings-fetch-status" class="status-info hidden" style="margin-top:12px;"></div>';
+  html += '<p class="hint" style="margin-top:16px;">Last fetched: ' + lastFetched + '</p>';
+  html += '</div></div>';
+  return html;
+}
+
+function renderConnectionCard(s) {
+  let html = '';
+  html += '<div class="setting-card">';
+  html += '<div class="card-header"><h3><span class="card-icon">\u{1F517}</span> Connection</h3><span class="status-dot connected"></span></div>';
+  html += '<div class="card-body">';
+  html += '<div class="status-row">';
+  html += '<span class="status-dot connected"></span>';
+  html += '<div><div class="status-info">Proxy Server</div><div class="status-label">Configure proxy for channels that need it</div></div>';
+  html += '</div>';
+  html += '<div class="input-group">';
+  html += '<label for="settings-proxy-url">Proxy URL</label>';
+  html += '<div class="input-row">';
+  html += '<input id="settings-proxy-url" class="input-field" type="text" placeholder="http://localhost:5000/proxy/" value="' + escapeHtml(s.proxyUrl || '') + '" />';
+  html += '<button id="settings-proxy-save-btn" class="btn btn-primary">Save</button>';
+  html += '</div>';
+  html += '<div id="settings-proxy-status" class="status-info hidden" style="margin-top:8px;"></div>';
+  html += '</div>';
+  html += '</div></div>';
+  return html;
+}
+
+function renderPlaybackCard() {
+  let html = '';
+  html += '<div class="setting-card">';
+  html += '<div class="card-header"><h3><span class="card-icon">\u25B6</span> Playback</h3></div>';
+  html += '<div class="card-body">';
+  html += '<div class="toggle-row">';
+  html += '<div><div class="toggle-label">Auto quality</div><div class="toggle-desc">Automatically adjust resolution based on bandwidth</div></div>';
+  html += '<div class="toggle on" id="toggle-autoq"><div class="knob"></div></div>';
+  html += '</div>';
+  html += '<div class="toggle-row">';
+  html += '<div><div class="toggle-label">Audio passthrough</div><div class="toggle-desc">Pass through Dolby Digital / DTS to audio system</div></div>';
+  html += '<div class="toggle" id="toggle-audio"><div class="knob"></div></div>';
+  html += '</div>';
+  html += '</div></div>';
+  return html;
+}
+
+function renderAboutCard() {
+  let html = '';
+  html += '<div class="setting-card">';
+  html += '<div class="card-header"><h3><span class="card-icon">\u2139</span> About</h3></div>';
+  html += '<div class="card-body">';
+  html += '<div class="input-group">';
+  html += '<label>EN IPTV Player</label>';
+  html += '<div class="hint" style="margin-top:4px;">Tizen TV App &middot; Version ' + APP_VERSION + '</div>';
+  html += '<div class="hint" style="margin-top:2px;">Open-source IPTV player for Samsung Tizen TVs and desktop browsers.</div>';
+  html += '<div class="hint" style="margin-top:2px;">Powered by Shaka Player with a local CORS proxy.</div>';
+  html += '</div>';
+  html += '</div></div>';
+  return html;
+}
+
+function fit() {
+  const app = document.getElementById('settings-page');
+  if (!app) return;
+  const sw = window.innerWidth;
+  const sh = window.innerHeight;
+  const scale = Math.min(sw / 1920, sh / 1080);
+  if (!isFinite(scale) || scale <= 0) return;
+  const tx = (sw - 1920 * scale) / 2;
+  const ty = (sh - 1080 * scale) / 2;
+  app.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+}
+
 async function handleFetch() {
   const statusEl = document.getElementById('settings-fetch-status');
+  if (!statusEl) return;
   const active = getActivePlaylist();
   if (!active || !active.url) {
-    statusEl.className = 'settings-status';
+    statusEl.className = 'status-info';
     statusEl.textContent = 'Select or add a playlist with a URL first';
+    statusEl.classList.remove('hidden');
     return;
   }
-
-  statusEl.className = 'settings-status';
+  statusEl.className = 'status-info';
   statusEl.textContent = 'Fetching...';
-
+  statusEl.classList.remove('hidden');
   try {
     const channels = await fetchPlaylist(active.url);
-    console.log('[DEBUG] handleFetch: active.url=', active.url, 'channels.length=', channels ? channels.length : 0);
     saveSettings({ channels, channelsFetched: new Date().toISOString() });
     statusEl.textContent = 'Fetched ' + channels.length + ' channels';
     if (onPlaylistFetched) onPlaylistFetched(channels);
   } catch (e) {
-    console.log('[DEBUG] handleFetch error:', e.message);
     statusEl.textContent = 'Error: ' + e.message;
   }
 }
@@ -244,23 +360,20 @@ async function handleFetch() {
 function handleProxySave() {
   const proxyInput = document.getElementById('settings-proxy-url');
   const statusEl = document.getElementById('settings-proxy-status');
+  if (!proxyInput || !statusEl) return;
   const url = proxyInput.value.trim();
-
   saveSettings({ proxyUrl: url });
-  statusEl.className = 'settings-status';
+  statusEl.className = 'status-info';
   statusEl.textContent = 'Proxy URL saved';
-  setTimeout(() => {
-    statusEl.classList.add('hidden');
-  }, 2000);
+  statusEl.classList.remove('hidden');
+  setTimeout(() => statusEl.classList.add('hidden'), 2000);
 }
 
 async function fetchPlaylist(url) {
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('HTTP ' + resp.status);
-
   const contentType = resp.headers.get('content-type') || '';
   const text = await resp.text();
-
   if (contentType.includes('json') || text.trim().startsWith('[') || text.trim().startsWith('{')) {
     const data = JSON.parse(text);
     if (Array.isArray(data)) return data;
@@ -273,25 +386,21 @@ async function fetchPlaylist(url) {
       }
       return data.channels;
     }
-    throw new Error('Invalid JSON format — expected array or { proxyUrl, channels }');
+    throw new Error('Invalid JSON format');
   }
-
   if (text.includes('#EXTM3U')) {
     return parseM3u(text);
   }
-
   throw new Error('Unknown playlist format');
 }
 
 function processStreamUrl(rawUrl) {
   const pipeIdx = rawUrl.indexOf('|');
   if (pipeIdx === -1) return { url: rawUrl, extraHeaders: null };
-
   const baseUrl = rawUrl.slice(0, pipeIdx);
   const suffix = rawUrl.slice(pipeIdx + 1);
   const extraHeaders = {};
   const extraParams = [];
-
   for (const part of suffix.split('&')) {
     const eqIdx = part.indexOf('=');
     if (eqIdx === -1) continue;
@@ -303,12 +412,10 @@ function processStreamUrl(rawUrl) {
       extraHeaders[key.toLowerCase()] = value;
     }
   }
-
   let finalUrl = baseUrl;
   if (extraParams.length > 0) {
     finalUrl += (baseUrl.includes('?') ? '&' : '?') + extraParams.join('&');
   }
-
   return { url: finalUrl, extraHeaders: Object.keys(extraHeaders).length > 0 ? extraHeaders : null };
 }
 
@@ -316,7 +423,6 @@ function parseM3u(text) {
   const lines = text.split('\n');
   const channels = [];
   let index = 0;
-
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (line.startsWith('#EXTINF:')) {
@@ -332,27 +438,21 @@ function parseM3u(text) {
         if (next.startsWith('#KODIPROP:')) {
           if (next.includes('license_key=')) {
             const keyMatch = next.match(/license_key=([a-fA-F0-9]+):([a-fA-F0-9]+)/);
-            if (keyMatch) {
-              drm = { keyId: keyMatch[1], key: keyMatch[2] };
-            }
+            if (keyMatch) drm = { keyId: keyMatch[1], key: keyMatch[2] };
           }
           urlIdx++;
         } else if (next.startsWith('#EXTSYS')) {
           urlIdx++;
         } else if (next.startsWith('#EXTVLCOPT:')) {
           const uaMatch = next.match(/http-user-agent=(.+)/);
-          if (uaMatch) {
-            userAgent = uaMatch[1].trim();
-          }
+          if (uaMatch) userAgent = uaMatch[1].trim();
           urlIdx++;
         } else if (next.startsWith('#EXTHTTP:')) {
           try {
             const json = JSON.parse(next.slice('#EXTHTTP:'.length));
             if (json && typeof json === 'object') {
               customHeaders = {};
-              for (const [k, v] of Object.entries(json)) {
-                customHeaders[k] = String(v);
-              }
+              for (const [k, v] of Object.entries(json)) customHeaders[k] = String(v);
             }
           } catch (e) {}
           urlIdx++;
@@ -367,27 +467,13 @@ function parseM3u(text) {
           if (urlDrm) drm = { keyId: urlDrm[1].toLowerCase(), key: urlDrm[2].toLowerCase() };
         }
         const { url, extraHeaders } = processStreamUrl(rawUrl);
-        if (extraHeaders) {
-          customHeaders = { ...(customHeaders || {}), ...extraHeaders };
-        }
-        const ch = {
-          name: name,
-          url: url,
-          channelNumber: index + 1,
-          drm: drm,
-          userAgent: userAgent,
-          customHeaders: customHeaders,
-        };
+        if (extraHeaders) customHeaders = { ...(customHeaders || {}), ...extraHeaders };
+        const ch = { name, url, channelNumber: index + 1, drm, userAgent, customHeaders };
         if (proxyMatch) {
           const pv = proxyMatch[1];
-          if (pv === 'false' || pv === 'no' || pv === '0') {
-            ch.useProxy = false;
-          } else if (pv === 'true' || pv === 'yes' || pv === '1') {
-            ch.useProxy = true;
-          } else {
-            ch.useProxy = true;
-            ch.proxyUrl = pv;
-          }
+          if (pv === 'false' || pv === 'no' || pv === '0') ch.useProxy = false;
+          else if (pv === 'true' || pv === 'yes' || pv === '1') ch.useProxy = true;
+          else { ch.useProxy = true; ch.proxyUrl = pv; }
         } else {
           ch.useProxy = false;
         }
@@ -397,7 +483,6 @@ function parseM3u(text) {
       }
     }
   }
-
   return channels;
 }
 

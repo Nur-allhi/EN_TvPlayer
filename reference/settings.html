@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>EN IPTV — Settings</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+  font: 28px/1.4 -apple-system, 'Segoe UI', 'Tizen', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: none;
+}
+body.show-cursor { cursor: auto; }
+
+#app {
+  width: 1920px;
+  height: 1080px;
+  position: relative;
+  transform-origin: top left;
+  overflow: hidden;
+  background: linear-gradient(135deg, #0a0e14 0%, #0d1117 50%, #0a0e14 100%);
+}
+
+/* === Background === */
+.bg-glow {
+  position: absolute;
+  top: -300px; left: -200px;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(237,66,31,0.04) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* === Layout === */
+.settings-layout {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+/* === Left nav === */
+.settings-nav {
+  width: 360px;
+  border-right: 1px solid #222;
+  padding: 100px 0 0;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.nav-header {
+  padding: 0 32px 32px;
+  border-bottom: 1px solid #1a1a1a;
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.nav-logo .icon {
+  width: 36px; height: 36px;
+  background: #ED421F;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+.nav-logo .text {
+  font-size: 22px;
+  font-weight: 590;
+  letter-spacing: -0.01em;
+}
+.nav-logo .text span { color: #ED421F; }
+.nav-sub {
+  font-size: 16px;
+  color: #555;
+  letter-spacing: 0.02em;
+}
+
+.nav-items {
+  padding: 16px 0;
+  flex: 1;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 32px;
+  font-size: 22px;
+  font-weight: 450;
+  color: #8b949e;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-left: 4px solid transparent;
+  min-height: 56px;
+}
+.nav-item .nav-icon { font-size: 20px; width: 24px; text-align: center; }
+.nav-item.active {
+  color: #ED421F;
+  background: rgba(237,66,31,0.06);
+  border-left-color: #ED421F;
+}
+.nav-item.active .nav-icon { color: #ED421F; }
+.nav-item[data-focused] {
+  color: #fff;
+  background: rgba(237,66,31,0.1);
+  border-left-color: #ED421F;
+  box-shadow: inset 0 0 12px rgba(237,66,31,0.15);
+}
+.nav-item:hover { color: #c9d1d9; background: rgba(255,255,255,0.03); }
+
+/* === Main panel === */
+.settings-main {
+  flex: 1;
+  padding: 100px 60px 60px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #333 transparent;
+}
+
+.page-title {
+  font-size: 32px;
+  font-weight: 590;
+  letter-spacing: -0.01em;
+  margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.page-title .back-btn {
+  width: 48px; height: 48px;
+  background: transparent;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #8b949e;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.page-title .back-btn[data-focused] {
+  border-color: #ED421F;
+  color: #ED421F;
+  box-shadow: inset 0 0 0 4px #ED421F;
+}
+.page-title .back-btn:hover { border-color: #ED421F; color: #ED421F; }
+
+/* === Setting cards === */
+.setting-card {
+  background: #161b22;
+  border: 1px solid #222;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+.card-header {
+  padding: 20px 28px;
+  border-bottom: 1px solid #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-header h3 {
+  font-size: 22px;
+  font-weight: 590;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.card-header .card-icon {
+  width: 32px; height: 32px;
+  background: rgba(237,66,31,0.1);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #ED421F;
+}
+.card-body {
+  padding: 24px 28px 28px;
+}
+
+/* Input groups */
+.input-group {
+  margin-bottom: 20px;
+}
+.input-group:last-child { margin-bottom: 0; }
+.input-group label {
+  display: block;
+  font-size: 20px;
+  font-weight: 510;
+  color: #c9d1d9;
+  margin-bottom: 8px;
+}
+.input-group .hint {
+  font-size: 16px;
+  color: #555;
+  margin-top: 6px;
+}
+.input-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.input-field {
+  flex: 1;
+  padding: 16px 20px;
+  font-size: 22px;
+  background: #0d1117;
+  border: 2px solid #333;
+  border-radius: 8px;
+  color: #fff;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+  caret-color: #ED421F;
+}
+.input-field:focus,
+.input-field[data-focused] {
+  border-color: #ED421F;
+  box-shadow: 0 0 0 3px #ED421F;
+}
+
+/* Buttons */
+.btn {
+  padding: 16px 32px;
+  font-size: 20px;
+  font-weight: 590;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  min-height: 56px;
+  font-family: inherit;
+}
+.btn-primary {
+  background: #ED421F;
+  color: #fff;
+}
+.btn-primary[data-focused] {
+  box-shadow: 0 0 20px rgba(237,66,31,0.5);
+  outline: 3px solid #ED421F;
+  outline-offset: 3px;
+}
+.btn-primary:hover { box-shadow: 0 0 16px rgba(237,66,31,0.4); }
+.btn-secondary {
+  background: rgba(255,255,255,0.06);
+  color: #c9d1d9;
+  border: 1px solid #333;
+}
+.btn-secondary[data-focused] {
+  border-color: #ED421F;
+  box-shadow: inset 0 0 0 4px #ED421F;
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.1); }
+.btn-group {
+  display: flex;
+  gap: 12px;
+}
+
+/* Status row */
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #0d1117;
+  border: 1px solid #333;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.status-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #555;
+}
+.status-dot.connected { background: #2ea043; box-shadow: 0 0 10px rgba(46,160,67,0.5); }
+.status-dot.error { background: #ED421F; box-shadow: 0 0 10px rgba(237,66,31,0.5); }
+.status-dot.connecting { background: #d29922; animation: pulse 1s infinite; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.status-info { font-size: 20px; color: #c9d1d9; }
+.status-label { font-size: 16px; color: #555; }
+
+/* Toggle row */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid #1a1a1a;
+}
+.toggle-row:last-child { border-bottom: none; }
+.toggle-row .toggle-label {
+  font-size: 20px;
+  font-weight: 450;
+  color: #c9d1d9;
+}
+.toggle-row .toggle-desc {
+  font-size: 16px;
+  color: #555;
+  margin-top: 2px;
+}
+.toggle {
+  width: 56px; height: 32px;
+  background: #333;
+  border-radius: 999px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggle.on { background: #ED421F; }
+.toggle .knob {
+  width: 24px; height: 24px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 4px; left: 4px;
+  transition: transform 0.2s;
+}
+.toggle.on .knob { transform: translateX(24px); }
+.toggle[data-focused] { box-shadow: 0 0 0 3px #ED421F; }
+
+/* Select group */
+.select-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.select-opt {
+  padding: 14px 16px;
+  font-size: 20px;
+  font-weight: 510;
+  color: #c9d1d9;
+  background: #0d1117;
+  border: 2px solid #333;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  min-height: 52px;
+  letter-spacing: 0.02em;
+}
+.select-opt.active {
+  border-color: #ED421F;
+  color: #ED421F;
+  background: rgba(237,66,31,0.06);
+}
+.select-opt[data-focused] {
+  border-color: #ED421F;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(237,66,31,0.3);
+}
+.select-opt:hover { background: rgba(255,255,255,0.05); }
+
+/* Footer */
+.settings-footer {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.footer-info {
+  font-size: 16px;
+  color: #444;
+  letter-spacing: 0.02em;
+}
+.footer-version {
+  font-size: 16px;
+  color: #444;
+  font-variant-numeric: tabular-nums;
+}
+
+/* === Remote hints === */
+#remote-hints {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: 8px 20px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 8px;
+  z-index: 200;
+  pointer-events: none;
+  transition: opacity 0.5s;
+}
+#remote-hints.hidden { opacity: 0; }
+.hint-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.hint-group kbd {
+  font: 12px/1 ui-monospace, monospace;
+  color: rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.08);
+  padding: 2px 6px;
+  border-radius: 3px;
+  min-width: 22px;
+  text-align: center;
+}
+.hint-group .sep { color: rgba(255,255,255,0.15); }
+
+/* === Responsive === */
+@media (min-width: 2000px) {
+  .settings-nav { width: 420px; }
+}
+@media (max-width: 1600px) {
+  .settings-nav { width: 300px; }
+  .settings-main { padding: 80px 40px 40px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="bg-glow"></div>
+
+  <div class="settings-layout">
+    <!-- Left nav -->
+    <nav class="settings-nav" data-od-id="settings-nav">
+      <div class="nav-header">
+        <div class="nav-logo">
+          <div class="icon">EN</div>
+          <div class="text">EN <span>IPTV</span></div>
+        </div>
+        <div class="nav-sub">Settings</div>
+      </div>
+      <div class="nav-items">
+        <div class="nav-item active" data-section="source" data-od-id="nav-source">
+          <span class="nav-icon">📡</span> Channel Source
+        </div>
+        <div class="nav-item" data-section="connection" data-od-id="nav-connection">
+          <span class="nav-icon">🔗</span> Connection
+        </div>
+        <div class="nav-item" data-section="playback" data-od-id="nav-playback">
+          <span class="nav-icon">▶</span> Playback
+        </div>
+        <div class="nav-item" data-section="about" data-od-id="nav-about">
+          <span class="nav-icon">ℹ</span> About
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main panel -->
+    <main class="settings-main" data-od-id="settings-main">
+      <div class="page-title">
+        <button class="back-btn" id="btn-back" data-od-id="btn-back">‹</button>
+        Settings
+      </div>
+
+      <!-- Card: Channel Source -->
+      <div class="setting-card" data-section="source" data-od-id="card-source">
+        <div class="card-header">
+          <h3><span class="card-icon">📡</span> Channel Source</h3>
+        </div>
+        <div class="card-body">
+          <div class="input-group">
+            <label for="stream-url">Stream URL / M3U Playlist</label>
+            <div class="input-row">
+              <input type="text" id="stream-url" class="input-field" value="http://stream.en-iptv.com/live/playlist.m3u" placeholder="http://…" spellcheck="false">
+              <button class="btn btn-primary" id="btn-connect" data-od-id="btn-connect">Connect</button>
+            </div>
+            <div class="hint">Supports M3U URLs, direct RTMP/HTTP streams, and local playlist files</div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-secondary" id="btn-test" data-od-id="btn-test-url">Test Connection</button>
+            <button class="btn btn-secondary" id="btn-clear" data-od-id="btn-clear-url">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Connection -->
+      <div class="setting-card" data-section="connection" data-od-id="card-connection">
+        <div class="card-header">
+          <h3><span class="card-icon">🔗</span> Connection</h3>
+          <span class="status-dot connected" id="conn-dot"></span>
+        </div>
+        <div class="card-body">
+          <div class="status-row">
+            <span class="status-dot connected" id="status-dot"></span>
+            <div>
+              <div class="status-info" id="status-text">Connected — 8 ms latency</div>
+              <div class="status-label">Server: stream.en-iptv.com</div>
+            </div>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Auto-reconnect</div>
+              <div class="toggle-desc">Automatically reconnect when connection drops</div>
+            </div>
+            <div class="toggle on" id="toggle-reconnect" data-od-id="toggle-reconnect">
+              <div class="knob"></div>
+            </div>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Hardware acceleration</div>
+              <div class="toggle-desc">Use GPU decoding when available</div>
+            </div>
+            <div class="toggle on" id="toggle-hwaccel" data-od-id="toggle-hwaccel">
+              <div class="knob"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Playback -->
+      <div class="setting-card" data-section="playback" data-od-id="card-playback">
+        <div class="card-header">
+          <h3><span class="card-icon">▶</span> Playback</h3>
+        </div>
+        <div class="card-body">
+          <div class="input-group">
+            <label>Buffer Size</label>
+            <div class="select-grid">
+              <div class="select-opt" data-buffer="low" data-od-id="buf-low">Low (1s)</div>
+              <div class="select-opt active" data-buffer="medium" data-od-id="buf-medium">Medium (3s)</div>
+              <div class="select-opt" data-buffer="high" data-od-id="buf-high">High (8s)</div>
+              <div class="select-opt" data-buffer="max" data-od-id="buf-max">Maximum (15s)</div>
+            </div>
+            <div class="hint">Higher buffer = smoother playback, more latency</div>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Auto quality</div>
+              <div class="toggle-desc">Automatically adjust resolution based on bandwidth</div>
+            </div>
+            <div class="toggle on" id="toggle-autoq" data-od-id="toggle-autoq">
+              <div class="knob"></div>
+            </div>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Audio passthrough</div>
+              <div class="toggle-desc">Pass through Dolby Digital / DTS to audio system</div>
+            </div>
+            <div class="toggle" id="toggle-audio" data-od-id="toggle-audio">
+              <div class="knob"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: About -->
+      <div class="setting-card" data-section="about" data-od-id="card-about">
+        <div class="card-header">
+          <h3><span class="card-icon">ℹ</span> About</h3>
+        </div>
+        <div class="card-body">
+          <div class="input-group">
+            <label>EN IPTV Player</label>
+            <div class="hint" style="margin-top:4px;">Tizen TV App · Version 2.1.0 · Build 2026.07</div>
+            <div class="hint" style="margin-top:2px;">© 2026 EN IPTV. All rights reserved.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-footer">
+        <span class="footer-info">All settings are saved automatically</span>
+        <span class="footer-version">v2.1.0</span>
+      </div>
+    </main>
+  </div>
+
+  <!-- Remote hints -->
+  <div id="remote-hints">
+    <div class="hint-group"><kbd>▲</kbd> <kbd>▼</kbd> <span class="sep">|</span> Navigate</div>
+    <div class="hint-group"><kbd>Enter</kbd> <span class="sep">|</span> Select / Toggle</div>
+    <div class="hint-group"><kbd>◀</kbd> <span class="sep">|</span> Back</div>
+    <div class="hint-group"><kbd>Back</kbd> <span class="sep">|</span> Close</div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  var app = document.getElementById('app');
+
+  // === Scale-to-fit ===
+  function fit() {
+    var sw = window.innerWidth;
+    var sh = window.innerHeight;
+    var s = Math.min(sw / 1920, sh / 1080);
+    if (!isFinite(s) || s <= 0) s = 1;
+    var tx = (sw - 1920 * s) / 2;
+    var ty = (sh - 1080 * s) / 2;
+    app.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + s + ')';
+  }
+  window.addEventListener('resize', fit);
+  fit();
+
+  // === Cursor auto-hide ===
+  var cursorTimer;
+  function showCursor() {
+    document.body.classList.add('show-cursor');
+    clearTimeout(cursorTimer);
+    cursorTimer = setTimeout(function() { document.body.classList.remove('show-cursor'); }, 1700);
+  }
+  document.addEventListener('mousemove', showCursor);
+
+  // === Focus management ===
+  var focusOrder = [];
+
+  function buildFocusOrder() {
+    focusOrder = [];
+    // Nav items
+    document.querySelectorAll('.nav-item').forEach(function(el) { focusOrder.push(el); });
+    // Back button
+    focusOrder.push(document.getElementById('btn-back'));
+    // Source card: URL input
+    focusOrder.push(document.getElementById('stream-url'));
+    // Source card: Connect, Test, Clear buttons
+    ['btn-connect', 'btn-test', 'btn-clear'].forEach(function(id) {
+      focusOrder.push(document.getElementById(id));
+    });
+    // Connection: toggles
+    ['toggle-reconnect', 'toggle-hwaccel'].forEach(function(id) {
+      focusOrder.push(document.getElementById(id));
+    });
+    // Playback: buffer options
+    document.querySelectorAll('.select-opt').forEach(function(el) { focusOrder.push(el); });
+    // Playback: toggles
+    ['toggle-autoq', 'toggle-audio'].forEach(function(id) {
+      focusOrder.push(document.getElementById(id));
+    });
+  }
+
+  var focusIdx = 0;
+  buildFocusOrder();
+
+  function clearFocus() {
+    document.querySelectorAll('[data-focused]').forEach(function(el) { el.removeAttribute('data-focused'); });
+  }
+
+  function applyFocus() {
+    clearFocus();
+    if (focusIdx >= 0 && focusIdx < focusOrder.length) {
+      var el = focusOrder[focusIdx];
+      if (el) {
+        el.setAttribute('data-focused', '');
+        el.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }
+
+  function navigateFocus(dir) {
+    focusIdx = Math.max(0, Math.min(focusOrder.length - 1, focusIdx + dir));
+    applyFocus();
+  }
+
+  applyFocus();
+
+  // === Select / Activate ===
+  function selectFocused() {
+    var el = document.querySelector('[data-focused]');
+    if (!el) return;
+
+    // Nav items
+    if (el.classList.contains('nav-item')) {
+      document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+      el.classList.add('active');
+      return;
+    }
+
+    // Back button
+    if (el.id === 'btn-back') {
+      window.location.href = 'index.html';
+      return;
+    }
+
+    // Connect button
+    if (el.id === 'btn-connect') {
+      var url = document.getElementById('stream-url').value;
+      if (url) {
+        var dot = document.getElementById('status-dot');
+        var text = document.getElementById('status-text');
+        dot.className = 'status-dot connecting';
+        text.textContent = 'Connecting…';
+        setTimeout(function() {
+          dot.className = 'status-dot connected';
+          text.textContent = 'Connected — 12 ms latency';
+        }, 2000);
+      }
+      return;
+    }
+
+    // Test button
+    if (el.id === 'btn-test') {
+      var dot2 = document.getElementById('status-dot');
+      var text2 = document.getElementById('status-text');
+      dot2.className = 'status-dot connecting';
+      text2.textContent = 'Testing connection…';
+      setTimeout(function() {
+        dot2.className = 'status-dot connected';
+        text2.textContent = 'Connected — 8 ms latency';
+      }, 1500);
+      return;
+    }
+
+    // Clear button
+    if (el.id === 'btn-clear') {
+      document.getElementById('stream-url').value = '';
+      return;
+    }
+
+    // Toggles
+    if (el.classList.contains('toggle')) {
+      el.classList.toggle('on');
+      return;
+    }
+
+    // Buffer options
+    if (el.classList.contains('select-opt')) {
+      document.querySelectorAll('.select-opt').forEach(function(o) { o.classList.remove('active'); });
+      el.classList.add('active');
+      return;
+    }
+
+    // Input field — focus it
+    if (el.tagName === 'INPUT') {
+      el.focus();
+      return;
+    }
+  }
+
+  // === Keyboard ===
+  function onKey(e) {
+    var key = e.key;
+    var handled = true;
+
+    if (key === 'ArrowUp') { navigateFocus(-1); }
+    else if (key === 'ArrowDown') { navigateFocus(1); }
+    else if (key === 'ArrowLeft' || key === 'ArrowRight') { navigateFocus(key === 'ArrowLeft' ? -1 : 1); }
+    else if (key === 'Enter' || key === 'OK') { selectFocused(); }
+    else if (key === 'Back' || key === 'Escape' || key === 'Backspace') {
+      window.location.href = 'index.html';
+    }
+    else { handled = false; }
+
+    if (handled) e.preventDefault();
+  }
+
+  document.addEventListener('keydown', onKey, true);
+
+  // === Click handlers ===
+  document.getElementById('btn-back').addEventListener('click', function() {
+    window.location.href = 'index.html';
+  });
+
+  document.querySelectorAll('.nav-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+      this.classList.add('active');
+    });
+  });
+
+  document.getElementById('btn-connect').addEventListener('click', function() {
+    var url = document.getElementById('stream-url').value;
+    if (url) {
+      var dot = document.getElementById('status-dot');
+      var text = document.getElementById('status-text');
+      dot.className = 'status-dot connecting';
+      text.textContent = 'Connecting…';
+      setTimeout(function() {
+        dot.className = 'status-dot connected';
+        document.getElementById('conn-dot').className = 'status-dot connected';
+        text.textContent = 'Connected — 12 ms latency';
+      }, 2000);
+    }
+  });
+
+  document.getElementById('btn-test').addEventListener('click', function() {
+    var dot = document.getElementById('status-dot');
+    var text = document.getElementById('status-text');
+    dot.className = 'status-dot connecting';
+    text.textContent = 'Testing connection…';
+    setTimeout(function() {
+      dot.className = 'status-dot connected';
+      text.textContent = 'Connected — 8 ms latency';
+    }, 1500);
+  });
+
+  document.getElementById('btn-clear').addEventListener('click', function() {
+    document.getElementById('stream-url').value = '';
+  });
+
+  document.querySelectorAll('.toggle').forEach(function(t) {
+    t.addEventListener('click', function() { this.classList.toggle('on'); });
+  });
+
+  document.querySelectorAll('.select-opt').forEach(function(opt) {
+    opt.addEventListener('click', function() {
+      document.querySelectorAll('.select-opt').forEach(function(o) { o.classList.remove('active'); });
+      this.classList.add('active');
+    });
+  });
+
+  // Auto-hide hints
+  setTimeout(function() {
+    document.getElementById('remote-hints').classList.add('hidden');
+  }, 6000);
+})();
+</script>
+</body>
+</html>
