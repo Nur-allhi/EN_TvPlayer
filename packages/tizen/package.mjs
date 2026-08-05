@@ -19,7 +19,7 @@ const APP_VERSION = playerPkg.version;
 const commitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim();
 const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
 const versionType = branch === 'main' ? 'stable' : 'beta';
-const WGT_NAME = `EN-IPTV_Player_${versionType}_${APP_VERSION}(${commitHash}).wgt`;
+const WGT_NAME = `EN-IPTV_Player_${versionType}_${APP_VERSION}_${commitHash}.wgt`;
 
 function findOpenSSL() {
   const candidates = [
