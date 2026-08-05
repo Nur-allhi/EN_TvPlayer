@@ -8,7 +8,6 @@ let editIndex = -1;
 let activeSection = 'source';
 let focusIdx = 0;
 let focusOrder = [];
-let resizeBound = false;
 let addMode = false;
 let editMode = false;
 
@@ -34,11 +33,6 @@ export function show() {
   container.classList.remove('hidden');
   render();
   applyFocus();
-  scheduleFit();
-  if (!resizeBound) {
-    window.addEventListener('resize', fit);
-    resizeBound = true;
-  }
 }
 
 export function hide() {
@@ -90,6 +84,7 @@ export function navigateNav(dir) {
   const cur = document.querySelector('[data-focused]');
   if (!cur) return;
 
+  buildFocusOrder();
   const navCount = document.querySelectorAll('.nav-item').length;
   const curIdx = focusOrder.indexOf(cur);
   const inNavZone = curIdx >= 0 && curIdx < navCount;
@@ -200,6 +195,10 @@ export function selectFocused() {
       playlists.push({ name: name || 'Unnamed', url });
       saveSettings({ playlists, activePlaylistIndex: playlists.length - 1 });
       addMode = false;
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+        activeEl.blur();
+      }
       render();
       applyFocus();
     }
@@ -208,6 +207,10 @@ export function selectFocused() {
 
   if (el.id === 'pl-add-cancel') {
     addMode = false;
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+      activeEl.blur();
+    }
     render();
     applyFocus();
     return;
@@ -224,6 +227,10 @@ export function selectFocused() {
       saveSettings({ playlists });
       editMode = false;
       editIndex = -1;
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+        activeEl.blur();
+      }
       render();
       applyFocus();
     }
@@ -233,6 +240,10 @@ export function selectFocused() {
   if (el.id === 'pl-edit-cancel') {
     editMode = false;
     editIndex = -1;
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+      activeEl.blur();
+    }
     render();
     applyFocus();
     return;
@@ -353,7 +364,6 @@ function render() {
       '<div class="hint-group"><kbd>Back</kbd> <span class="sep">|</span> Close</div>' +
     '</div>';
 
-  scheduleFit();
   buildFocusOrder();
 
   document.getElementById('btn-back').addEventListener('click', () => {
@@ -602,29 +612,6 @@ function renderAboutCard() {
   html += '</div>';
   html += '</div></div>';
   return html;
-}
-
-function fit() {
-  const app = document.getElementById('settings-page');
-  if (!app) return;
-  let sw = window.innerWidth;
-  let sh = window.innerHeight;
-  if (!sw || !sh) {
-    sw = screen.width || 1920;
-    sh = screen.height || 1080;
-  }
-  const scale = Math.min(sw / 1920, sh / 1080);
-  if (!isFinite(scale) || scale <= 0) return;
-  const tx = (sw - 1920 * scale) / 2;
-  const ty = (sh - 1080 * scale) / 2;
-  app.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
-}
-
-function scheduleFit() {
-  fit();
-  setTimeout(fit, 100);
-  setTimeout(fit, 500);
-  setTimeout(fit, 1000);
 }
 
 async function handleFetch() {
