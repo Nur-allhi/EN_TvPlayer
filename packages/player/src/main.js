@@ -471,8 +471,10 @@ function handleRemoteAction(action, value) {
         settings.navigate(1);
         break;
       case 'left':
+        settings.navigateNav(-1);
+        break;
       case 'right':
-        settings.navigate(action === 'left' ? -1 : 1);
+        settings.navigateNav(1);
         break;
       case 'select':
         settings.selectFocused();

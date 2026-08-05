@@ -9,6 +9,7 @@ let activeSection = 'source';
 let focusIdx = 0;
 let focusOrder = [];
 let resizeBound = false;
+let addMode = false;
 
 const NAV_ITEMS = [
   { id: 'source', icon: '\u{1F4E1}', label: 'Channel Source' },
@@ -88,10 +89,55 @@ export function selectFocused() {
     return;
   }
 
+  if (el.id === 'pl-add-btn') {
+    addMode = true;
+    render();
+    applyFocus();
+    return;
+  }
+
+  if (el.id === 'pl-add-save') {
+    const nameEl = document.getElementById('pl-add-name');
+    const urlEl = document.getElementById('pl-add-url');
+    const name = nameEl ? nameEl.value.trim() : '';
+    const url = urlEl ? urlEl.value.trim() : '';
+    if (url) {
+      const playlists = getSettings().playlists;
+      playlists.push({ name: name || 'Unnamed', url });
+      saveSettings({ playlists, activePlaylistIndex: playlists.length - 1 });
+      addMode = false;
+      render();
+      applyFocus();
+    }
+    return;
+  }
+
+  if (el.id === 'pl-add-cancel') {
+    addMode = false;
+    render();
+    applyFocus();
+    return;
+  }
+
   if (el.classList.contains('btn') || el.classList.contains('playlist-entry')) {
     el.click();
     return;
   }
+}
+
+export function navigateNav(dir) {
+  const tabs = Array.from(document.querySelectorAll('.nav-item'));
+  const cur = document.querySelector('[data-focused]');
+  if (!cur || !cur.classList.contains('nav-item')) return;
+  const idx = tabs.indexOf(cur);
+  if (idx < 0) return;
+  const newIdx = (idx + dir + tabs.length) % tabs.length;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  tabs[newIdx].classList.add('active');
+  activeSection = tabs[newIdx].dataset.section;
+  focusIdx = 0;
+  render();
+  applyFocus();
 }
 
 function buildFocusOrder() {
@@ -100,14 +146,21 @@ function buildFocusOrder() {
   focusOrder.push(document.getElementById('btn-back'));
 
   if (activeSection === 'source') {
-    const s = getSettings();
-    for (let i = 0; i < s.playlists.length; i++) {
-      const entry = document.getElementById('playlist-entry-' + i);
-      if (entry) focusOrder.push(entry);
+    if (addMode) {
+      focusOrder.push(document.getElementById('pl-add-name'));
+      focusOrder.push(document.getElementById('pl-add-url'));
+      focusOrder.push(document.getElementById('pl-add-save'));
+      focusOrder.push(document.getElementById('pl-add-cancel'));
+    } else {
+      const s = getSettings();
+      for (let i = 0; i < s.playlists.length; i++) {
+        const entry = document.getElementById('playlist-entry-' + i);
+        if (entry) focusOrder.push(entry);
+      }
+      const addBtn = document.getElementById('pl-add-btn');
+      if (addBtn) focusOrder.push(addBtn);
+      focusOrder.push(document.getElementById('settings-fetch-btn'));
     }
-    const addBtn = document.getElementById('pl-add-btn');
-    if (addBtn) focusOrder.push(addBtn);
-    focusOrder.push(document.getElementById('settings-fetch-btn'));
   } else if (activeSection === 'connection') {
     focusOrder.push(document.getElementById('settings-proxy-url'));
     focusOrder.push(document.getElementById('settings-proxy-save-btn'));
@@ -219,10 +272,32 @@ function render() {
     const addBtn = document.getElementById('pl-add-btn');
     if (addBtn) {
       addBtn.addEventListener('click', () => {
-        const playlists = getSettings().playlists;
-        playlists.push({ name: 'New Playlist', url: '' });
-        const newIdx = playlists.length - 1;
-        saveSettings({ playlists, activePlaylistIndex: newIdx });
+        addMode = true;
+        render();
+        applyFocus();
+      });
+    }
+    const saveBtn = document.getElementById('pl-add-save');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', () => {
+        const nameEl = document.getElementById('pl-add-name');
+        const urlEl = document.getElementById('pl-add-url');
+        const name = nameEl ? nameEl.value.trim() : '';
+        const url = urlEl ? urlEl.value.trim() : '';
+        if (url) {
+          const playlists = getSettings().playlists;
+          playlists.push({ name: name || 'Unnamed', url });
+          saveSettings({ playlists, activePlaylistIndex: playlists.length - 1 });
+          addMode = false;
+          render();
+          applyFocus();
+        }
+      });
+    }
+    const cancelBtn = document.getElementById('pl-add-cancel');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        addMode = false;
         render();
         applyFocus();
       });
@@ -254,23 +329,38 @@ function renderSourceCard(s, lastFetched) {
   html += '<div class="card-header"><h3><span class="card-icon">\u{1F4E1}</span> Channel Source</h3></div>';
   html += '<div class="card-body">';
   html += '<p class="hint" style="margin-bottom:16px;">Saved playlists (' + s.playlists.length + '/8). Select one, then click Fetch.</p>';
-  html += '<div class="playlist-list">';
-  for (let i = 0; i < s.playlists.length; i++) {
-    const p = s.playlists[i];
-    const isActive = i === s.activePlaylistIndex;
-    html += '<div id="playlist-entry-' + i + '" class="playlist-entry' + (isActive ? ' active' : '') + '">';
-    html += '<span class="playlist-indicator">' + (isActive ? '\u25B6' : '\u25CB') + '</span>';
-    html += '<span class="playlist-name">' + escapeHtml(p.name || 'Unnamed') + '</span>';
-    html += '<span class="playlist-url">' + escapeHtml(p.url || '') + '</span>';
+  if (addMode) {
+    html += '<div class="input-group">';
+    html += '<label for="pl-add-name">Playlist Name</label>';
+    html += '<input id="pl-add-name" class="input-field" type="text" placeholder="My Playlist" />';
     html += '</div>';
+    html += '<div class="input-group">';
+    html += '<label for="pl-add-url">Playlist URL</label>';
+    html += '<input id="pl-add-url" class="input-field" type="text" placeholder="https://..." />';
+    html += '</div>';
+    html += '<div class="btn-group">';
+    html += '<button id="pl-add-save" class="btn btn-primary">Save</button>';
+    html += '<button id="pl-add-cancel" class="btn btn-secondary">Cancel</button>';
+    html += '</div>';
+  } else {
+    html += '<div class="playlist-list">';
+    for (let i = 0; i < s.playlists.length; i++) {
+      const p = s.playlists[i];
+      const isActive = i === s.activePlaylistIndex;
+      html += '<div id="playlist-entry-' + i + '" class="playlist-entry' + (isActive ? ' active' : '') + '">';
+      html += '<span class="playlist-indicator">' + (isActive ? '\u25B6' : '\u25CB') + '</span>';
+      html += '<span class="playlist-name">' + escapeHtml(p.name || 'Unnamed') + '</span>';
+      html += '<span class="playlist-url">' + escapeHtml(p.url || '') + '</span>';
+      html += '</div>';
+    }
+    html += '</div>';
+    if (s.playlists.length < 8) {
+      html += '<button id="pl-add-btn" class="btn btn-secondary">+ Add Playlist</button>';
+    }
+    html += '<button id="settings-fetch-btn" class="btn btn-primary">Fetch Active</button>';
+    html += '<div id="settings-fetch-status" class="status-info hidden" style="margin-top:12px;"></div>';
+    html += '<p class="hint" style="margin-top:16px;">Last fetched: ' + lastFetched + '</p>';
   }
-  html += '</div>';
-  if (s.playlists.length < 8) {
-    html += '<button id="pl-add-btn" class="btn btn-secondary">+ Add Playlist</button>';
-  }
-  html += '<button id="settings-fetch-btn" class="btn btn-primary">Fetch Active</button>';
-  html += '<div id="settings-fetch-status" class="status-info hidden" style="margin-top:12px;"></div>';
-  html += '<p class="hint" style="margin-top:16px;">Last fetched: ' + lastFetched + '</p>';
   html += '</div></div>';
   return html;
 }
