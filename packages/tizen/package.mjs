@@ -15,6 +15,12 @@ const PKG = 'IPTVPlayer'; // Must be EXACTLY 10 chars!
 const playerPkg = JSON.parse(readFileSync(join(ROOT, 'packages', 'player', 'package.json'), 'utf-8'));
 const APP_VERSION = playerPkg.version;
 
+// Get git info for build naming
+const commitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim();
+const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
+const versionType = branch === 'main' ? 'stable' : 'beta';
+const WGT_NAME = `EN-IPTV_Player_${versionType}_${APP_VERSION}(${commitHash}).wgt`;
+
 function findOpenSSL() {
   const candidates = [
     'openssl',
@@ -100,7 +106,7 @@ if (!existsSync(KEY_FILE) || !existsSync(CERT_FILE)) {
 // ─── Step 4: Build and sign the WGT ──────────────────────────────────────
 
 const TEMP = join(TIZEN, 'temp-wgt');
-const OUTPUT = join(TIZEN, 'IPTV-Player.wgt');
+const OUTPUT = join(TIZEN, WGT_NAME);
 const UNSIGNED = join(TIZEN, 'unsigned.zip');
 
 for (const p of [TEMP, OUTPUT]) {
@@ -175,5 +181,5 @@ rmSync(TEMP, { recursive: true, force: true });
 rmSync(UNSIGNED, { force: true });
 
 const size = (readFileSync(OUTPUT).length / 1024).toFixed(1);
-console.log(`\n Done!  IPTV-Player.wgt  (${size} KB)`);
+console.log(`\n Done!  ${WGT_NAME}  (${size} KB)`);
 console.log(`   ${OUTPUT}\n`);
