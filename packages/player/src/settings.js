@@ -10,6 +10,7 @@ let focusIdx = 0;
 let focusOrder = [];
 let resizeBound = false;
 let addMode = false;
+let editMode = false;
 
 const NAV_ITEMS = [
   { id: 'source', icon: '\u{1F4E1}', label: 'Channel Source' },
@@ -168,6 +169,27 @@ export function selectFocused() {
     return;
   }
 
+  if (el.id && el.id.startsWith('pl-edit-')) {
+    const idx = parseInt(el.id.split('-')[2], 10);
+    editMode = true;
+    editIndex = idx;
+    render();
+    applyFocus();
+    return;
+  }
+
+  if (el.id && el.id.startsWith('pl-delete-')) {
+    const idx = parseInt(el.id.split('-')[2], 10);
+    const playlists = getSettings().playlists.filter((_, j) => j !== idx);
+    let active = getSettings().activePlaylistIndex;
+    if (active >= playlists.length) active = playlists.length - 1;
+    if (active < 0) active = -1;
+    saveSettings({ playlists, activePlaylistIndex: active });
+    render();
+    applyFocus();
+    return;
+  }
+
   if (el.id === 'pl-add-save') {
     const nameEl = document.getElementById('pl-add-name');
     const urlEl = document.getElementById('pl-add-url');
@@ -191,6 +213,31 @@ export function selectFocused() {
     return;
   }
 
+  if (el.id === 'pl-edit-save') {
+    const nameEl = document.getElementById('pl-edit-name');
+    const urlEl = document.getElementById('pl-edit-url');
+    const name = nameEl ? nameEl.value.trim() : '';
+    const url = urlEl ? urlEl.value.trim() : '';
+    if (url && editIndex >= 0) {
+      const playlists = getSettings().playlists;
+      playlists[editIndex] = { name: name || 'Unnamed', url };
+      saveSettings({ playlists });
+      editMode = false;
+      editIndex = -1;
+      render();
+      applyFocus();
+    }
+    return;
+  }
+
+  if (el.id === 'pl-edit-cancel') {
+    editMode = false;
+    editIndex = -1;
+    render();
+    applyFocus();
+    return;
+  }
+
   if (el.classList.contains('btn') || el.classList.contains('playlist-entry')) {
     el.click();
     return;
@@ -208,11 +255,20 @@ function buildFocusOrder() {
       focusOrder.push(document.getElementById('pl-add-url'));
       focusOrder.push(document.getElementById('pl-add-save'));
       focusOrder.push(document.getElementById('pl-add-cancel'));
+    } else if (editMode && editIndex >= 0) {
+      focusOrder.push(document.getElementById('pl-edit-name'));
+      focusOrder.push(document.getElementById('pl-edit-url'));
+      focusOrder.push(document.getElementById('pl-edit-save'));
+      focusOrder.push(document.getElementById('pl-edit-cancel'));
     } else {
       const s = getSettings();
       for (let i = 0; i < s.playlists.length; i++) {
         const entry = document.getElementById('playlist-entry-' + i);
         if (entry) focusOrder.push(entry);
+        const editBtn = document.getElementById('pl-edit-' + i);
+        if (editBtn) focusOrder.push(editBtn);
+        const deleteBtn = document.getElementById('pl-delete-' + i);
+        if (deleteBtn) focusOrder.push(deleteBtn);
       }
       const addBtn = document.getElementById('pl-add-btn');
       if (addBtn) focusOrder.push(addBtn);
@@ -325,6 +381,29 @@ function render() {
           applyFocus();
         });
       }
+      const editBtn = document.getElementById('pl-edit-' + i);
+      if (editBtn) {
+        editBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          editMode = true;
+          editIndex = i;
+          render();
+          applyFocus();
+        });
+      }
+      const deleteBtn = document.getElementById('pl-delete-' + i);
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const playlists = getSettings().playlists.filter((_, j) => j !== i);
+          let active = getSettings().activePlaylistIndex;
+          if (active >= playlists.length) active = playlists.length - 1;
+          if (active < 0) active = -1;
+          saveSettings({ playlists, activePlaylistIndex: active });
+          render();
+          applyFocus();
+        });
+      }
     }
     const addBtn = document.getElementById('pl-add-btn');
     if (addBtn) {
@@ -355,6 +434,33 @@ function render() {
     if (cancelBtn) {
       cancelBtn.addEventListener('click', () => {
         addMode = false;
+        render();
+        applyFocus();
+      });
+    }
+    const editSaveBtn = document.getElementById('pl-edit-save');
+    if (editSaveBtn) {
+      editSaveBtn.addEventListener('click', () => {
+        const nameEl = document.getElementById('pl-edit-name');
+        const urlEl = document.getElementById('pl-edit-url');
+        const name = nameEl ? nameEl.value.trim() : '';
+        const url = urlEl ? urlEl.value.trim() : '';
+        if (url && editIndex >= 0) {
+          const playlists = getSettings().playlists;
+          playlists[editIndex] = { name: name || 'Unnamed', url };
+          saveSettings({ playlists });
+          editMode = false;
+          editIndex = -1;
+          render();
+          applyFocus();
+        }
+      });
+    }
+    const editCancelBtn = document.getElementById('pl-edit-cancel');
+    if (editCancelBtn) {
+      editCancelBtn.addEventListener('click', () => {
+        editMode = false;
+        editIndex = -1;
         render();
         applyFocus();
       });
@@ -404,17 +510,40 @@ function renderSourceCard(s, lastFetched) {
     for (let i = 0; i < s.playlists.length; i++) {
       const p = s.playlists[i];
       const isActive = i === s.activePlaylistIndex;
-      html += '<div id="playlist-entry-' + i + '" class="playlist-entry' + (isActive ? ' active' : '') + '">';
-      html += '<span class="playlist-indicator">' + (isActive ? '\u25B6' : '\u25CB') + '</span>';
-      html += '<span class="playlist-name">' + escapeHtml(p.name || 'Unnamed') + '</span>';
-      html += '<span class="playlist-url">' + escapeHtml(p.url || '') + '</span>';
-      html += '</div>';
+      if (editMode && editIndex === i) {
+        html += '<div id="playlist-entry-' + i + '" class="playlist-entry active">';
+        html += '<div class="input-group">';
+        html += '<label for="pl-edit-name">Playlist Name</label>';
+        html += '<input id="pl-edit-name" class="input-field" type="text" value="' + escapeHtml(p.name || '') + '" placeholder="My Playlist" />';
+        html += '</div>';
+        html += '<div class="input-group">';
+        html += '<label for="pl-edit-url">Playlist URL</label>';
+        html += '<input id="pl-edit-url" class="input-field" type="text" value="' + escapeHtml(p.url || '') + '" placeholder="https://..." />';
+        html += '</div>';
+        html += '<div class="btn-group">';
+        html += '<button id="pl-edit-save" class="btn btn-primary">Save</button>';
+        html += '<button id="pl-edit-cancel" class="btn btn-secondary">Cancel</button>';
+        html += '</div>';
+        html += '</div>';
+      } else {
+        html += '<div id="playlist-entry-' + i + '" class="playlist-entry' + (isActive ? ' active' : '') + '">';
+        html += '<span class="playlist-indicator">' + (isActive ? '\u25B6' : '\u25CB') + '</span>';
+        html += '<span class="playlist-name">' + escapeHtml(p.name || 'Unnamed') + '</span>';
+        html += '<span class="playlist-url">' + escapeHtml(p.url || '') + '</span>';
+        html += '<div class="btn-group">';
+        html += '<button id="pl-edit-' + i + '" class="btn btn-secondary">Edit</button>';
+        html += '<button id="pl-delete-' + i + '" class="btn btn-secondary">Delete</button>';
+        html += '</div>';
+        html += '</div>';
+      }
     }
     html += '</div>';
+    html += '<div class="btn-group">';
     if (s.playlists.length < 8) {
       html += '<button id="pl-add-btn" class="btn btn-secondary">+ Add Playlist</button>';
     }
     html += '<button id="settings-fetch-btn" class="btn btn-primary">Fetch Active</button>';
+    html += '</div>';
     html += '<div id="settings-fetch-status" class="status-info hidden" style="margin-top:12px;"></div>';
     html += '<p class="hint" style="margin-top:16px;">Last fetched: ' + lastFetched + '</p>';
   }
