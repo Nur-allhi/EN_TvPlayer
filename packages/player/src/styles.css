@@ -1099,6 +1099,8 @@ html, body {
 
 .settings-page .playlist-entry .btn-group {
   margin-top: 0.6vw;
+  display: flex;
+  gap: 0.8vw;
 }
 
 .settings-page .playlist-indicator {
@@ -1131,6 +1133,8 @@ html, body {
 /* Standalone btn-group (Add Playlist + Fetch) */
 .settings-main > .btn-group {
   margin-top: 0.8vw;
+  display: flex;
+  gap: 0.8vw;
 }
 
 .settings-page .playlist-actions {
