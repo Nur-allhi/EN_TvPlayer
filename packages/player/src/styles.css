@@ -1089,7 +1089,7 @@ html, body {
 }
 
 .settings-page .playlist-entry.active {
-  border-color: #ED421F;
+  border-color: #333;
 }
 
 .settings-page .playlist-entry[data-focused] {
@@ -1109,7 +1109,27 @@ html, body {
 }
 
 .settings-page .playlist-entry.active .playlist-indicator {
-  color: #ED421F;
+  color: #555;
+}
+
+.settings-page .selected-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3vw;
+  font-size: 0.75vw;
+  font-weight: 600;
+  color: #2ea043;
+  background: rgba(46, 160, 67, 0.1);
+  border: 1px solid rgba(46, 160, 67, 0.3);
+  border-radius: 1vw;
+  padding: 0.15vw 0.6vw;
+  margin-left: auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.settings-page .playlist-entry.active .selected-badge {
+  display: inline-flex;
 }
 
 .settings-page .playlist-name {

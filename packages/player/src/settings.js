@@ -555,6 +555,9 @@ function renderSourceCard(s, lastFetched) {
         html += '<div id="playlist-entry-' + i + '" class="playlist-entry' + (isActive ? ' active' : '') + '">';
         html += '<span class="playlist-indicator">' + (isActive ? '\u25B6' : '\u25CB') + '</span>';
         html += '<span class="playlist-name">' + escapeHtml(p.name || 'Unnamed') + '</span>';
+        if (isActive) {
+          html += '<span class="selected-badge">\u2713 Selected</span>';
+        }
         html += '<span class="playlist-url">' + escapeHtml(p.url || '') + '</span>';
         html += '<div class="btn-group">';
         html += '<button id="pl-edit-' + i + '" class="btn btn-secondary">Edit</button>';
