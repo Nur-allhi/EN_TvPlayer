@@ -53,12 +53,19 @@ export function navigate(dir) {
   const cur = document.querySelector('[data-focused]');
   const curIdx = focusOrder.indexOf(cur);
   const inNavZone = curIdx >= 0 && curIdx < navCount;
+  const onBackButton = curIdx === navCount;
   const contentStart = navCount + 1; // +1 for back button
 
   if (dir > 0) {
     // DOWN
     if (inNavZone) {
-      focusIdx = (curIdx + 1) % navCount;
+      if (curIdx === navCount - 1) {
+        focusIdx = navCount;
+      } else {
+        focusIdx = curIdx + 1;
+      }
+    } else if (onBackButton) {
+      focusIdx = contentStart;
     } else if (curIdx >= contentStart) {
       focusIdx = curIdx + 1;
       if (focusIdx >= total) focusIdx = contentStart;
@@ -68,7 +75,13 @@ export function navigate(dir) {
   } else {
     // UP
     if (inNavZone) {
-      focusIdx = (curIdx - 1 + navCount) % navCount;
+      if (curIdx === 0) {
+        focusIdx = total - 1;
+      } else {
+        focusIdx = curIdx - 1;
+      }
+    } else if (onBackButton) {
+      focusIdx = navCount - 1;
     } else if (curIdx >= contentStart) {
       focusIdx = curIdx - 1;
       if (focusIdx < contentStart) focusIdx = total - 1;
@@ -98,9 +111,19 @@ export function navigateNav(dir) {
       if (dir > 0 && btnIdx < buttons.length - 1) {
         const newIdx = focusOrder.indexOf(buttons[btnIdx + 1]);
         if (newIdx >= 0) { focusIdx = newIdx; applyFocus(); }
+        return;
       } else if (dir < 0 && btnIdx > 0) {
         const newIdx = focusOrder.indexOf(buttons[btnIdx - 1]);
         if (newIdx >= 0) { focusIdx = newIdx; applyFocus(); }
+        return;
+      }
+      if (dir < 0 && btnIdx === 0) {
+        const tabs = Array.from(document.querySelectorAll('.nav-item'));
+        const activeTab = document.querySelector('.nav-item.active');
+        const idx = tabs.indexOf(activeTab);
+        focusIdx = idx >= 0 ? idx : 0;
+        applyFocus();
+        return;
       }
       return;
     }
@@ -113,8 +136,8 @@ export function navigateNav(dir) {
     }
   } else {
     if (curIdx >= contentStart) {
-      const activeTab = document.querySelector('.settings-tab.active');
       const tabs = Array.from(document.querySelectorAll('.nav-item'));
+      const activeTab = document.querySelector('.nav-item.active');
       const idx = tabs.indexOf(activeTab);
       focusIdx = idx >= 0 ? idx : 0;
       applyFocus();
