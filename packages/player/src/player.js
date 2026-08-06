@@ -376,6 +376,8 @@ function isRecoverable(error) {
   }
   // Manifest request timeout — always retry (no response at all)
   if (error.code === 1005) return true;
+  // MediaSource operation errors — recover by reloading (destroys corrupted MediaSource)
+  if (error.code === 3014 || error.code === 3015 || error.code === 3016) return true;
   return false;
 }
 
