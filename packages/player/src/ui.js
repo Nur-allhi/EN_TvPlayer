@@ -157,6 +157,10 @@ export function jumpToNumber(num, skipFullscreen) {
 }
 
 export function toggleSidebar() {
+  if (rightSidebarOpen) {
+    rightSidebarOpen = false;
+    applyRightSidebar();
+  }
   sidebarOpen = !sidebarOpen;
   applySidebar();
 }
@@ -305,6 +309,10 @@ export function setAutoCloseCallback(callback) {
 }
 
 export function toggleRightSidebar() {
+  if (sidebarOpen) {
+    sidebarOpen = false;
+    applySidebar();
+  }
   rightSidebarOpen = !rightSidebarOpen;
   applyRightSidebar();
   if (rightSidebarOpen) {
