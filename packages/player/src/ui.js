@@ -123,6 +123,10 @@ export function getSelectedGroup() {
   return selectedGroup;
 }
 
+export function getCurrentIndex() {
+  return currentIndex;
+}
+
 export function renderGroupList() {
   const container = document.getElementById('group-list');
   if (!container) return;
@@ -210,7 +214,7 @@ export function renderChannelList() {
     item.dataset.index = displayIndex;
 
     item.innerHTML =
-      '<span class="channel-number">' + (channel.channelNumber || originalIndex + 1) + '</span>' +
+      '<span class="channel-number">' + (displayIndex + 1) + '</span>' +
       '<span class="channel-name">' + escapeHtml(channel.name) + '</span>' +
       (channel.useProxy ? '<span class="channel-proxy">Use Proxied</span>' : '');
 
@@ -287,7 +291,7 @@ export function getDisplayChannels() {
 
 export function jumpToNumber(num, skipFullscreen) {
   const displayChannels = getDisplayChannels();
-  const channel = displayChannels.find(ch => ch.channelNumber === num);
+  const channel = displayChannels[num - 1];
   if (channel) {
     selectChannel(channels.indexOf(channel), skipFullscreen);
   }
@@ -686,8 +690,10 @@ export function refreshChannelList(newChannels) {
 
 function updateActiveChannel() {
   const items = document.querySelectorAll('.channel-item');
+  const displayChannels = getDisplayChannels();
+  const playingDisplayIdx = displayChannels.indexOf(channels[currentIndex]);
   items.forEach((item, index) => {
-    item.classList.toggle('active', index === currentIndex);
+    item.classList.toggle('active', index === playingDisplayIdx);
   });
 }
 

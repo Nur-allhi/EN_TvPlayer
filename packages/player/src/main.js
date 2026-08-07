@@ -455,6 +455,7 @@ function handleRemoteAction(action, value) {
       }
     }
     selectedGroup = ui.getSelectedGroup();
+    currentIndex = ui.getCurrentIndex();
     return;
   }
 
