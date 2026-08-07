@@ -27,6 +27,18 @@ export function processStreamUrl(rawUrl) {
   return { url: finalUrl, extraHeaders: Object.keys(extraHeaders).length > 0 ? extraHeaders : null };
 }
 
+function findNameSeparator(line) {
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] === '"') {
+      inQuotes = !inQuotes;
+    } else if (line[i] === ',' && !inQuotes) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 export function parseM3u(text) {
   const lines = text.split('\n');
   const result = [];
@@ -34,10 +46,11 @@ export function parseM3u(text) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (line.startsWith('#EXTINF:')) {
-      const nameMatch = line.match(/,(.+)$/);
-      const name = nameMatch ? nameMatch[1].trim() : 'Channel ' + (index + 1);
-      const proxyMatch = line.match(/\bproxy="([^"]*)"/);
-      const groupMatch = line.match(/\bgroup-title="([^"]*)"/);
+      const sepIdx = findNameSeparator(line);
+      const name = sepIdx >= 0 ? line.slice(sepIdx + 1).trim() : 'Channel ' + (index + 1);
+      const attrPart = sepIdx >= 0 ? line.slice(0, sepIdx) : line;
+      const proxyMatch = attrPart.match(/\bproxy="([^"]*)"/);
+      const groupMatch = attrPart.match(/\bgroup-title="([^"]*)"/);
       let drm = null;
       let userAgent = null;
       let customHeaders = null;
