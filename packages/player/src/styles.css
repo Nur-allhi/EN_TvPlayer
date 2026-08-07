@@ -74,7 +74,6 @@ html, body {
   left: 0;
   bottom: 0;
   width: 440px;
-  width: 28vw;
   background: #111;
   display: flex;
   flex-direction: column;
@@ -89,7 +88,6 @@ html, body {
 
 .sidebar-header {
   padding: 20px 28px;
-  padding: 2vw 3vw;
   background: #1a1a1a;
   border-bottom: 1px solid #222;
 }
@@ -101,7 +99,6 @@ html, body {
 
   gap: 10px;
   font-size: 26px;
-  font-size: 2.5vw;
   font-weight: 700;
   color: #4fc3f7;
   letter-spacing: 2px;
@@ -125,7 +122,6 @@ html, body {
   display: flex;
   align-items: center;
   padding: 18px 28px;
-  padding: 1.5vw 3vw;
   cursor: pointer;
   border-bottom: 1px solid #1a1a1a;
   transition: background 0.1s;
@@ -161,9 +157,7 @@ html, body {
 
 .channel-number {
   width: 52px;
-  width: 4vw;
   font-size: 20px;
-  font-size: 1.8vw;
   color: #888;
   font-weight: 600;
 }
@@ -171,7 +165,6 @@ html, body {
 .channel-name {
   flex: 1;
   font-size: 21px;
-  font-size: 2vw;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -214,7 +207,6 @@ html, body {
   align-items: center;
   justify-content: space-between;
   padding: 18px 28px;
-  padding: 1.5vw 3vw;
   cursor: pointer;
   border-bottom: 1px solid #1a1a1a;
   transition: background 0.1s;
@@ -230,14 +222,12 @@ html, body {
 .group-item .group-name {
   flex: 1;
   font-size: 21px;
-  font-size: 2vw;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .group-item .group-count {
   font-size: 18px;
-  font-size: 1.6vw;
   color: #4fc3f7;
   font-weight: 600;
   margin-left: 10px;
@@ -388,7 +378,6 @@ html, body {
   top: 0;
   bottom: 0;
   width: 400px;
-  width: 28vw;
   background: #111;
   display: flex;
   flex-direction: column;
@@ -403,14 +392,12 @@ html, body {
 
 .right-sidebar-header {
   padding: 22px 28px;
-  padding: 2vw 3vw;
   background: #1a1a1a;
   border-bottom: 1px solid #222;
 }
 
 .right-sidebar-title {
   font-size: 24px;
-  font-size: 2.5vw;
   font-weight: 700;
   color: #4fc3f7;
   letter-spacing: 1px;
@@ -428,9 +415,7 @@ html, body {
 
 .section-label {
   padding: 20px 28px 8px;
-  padding: 2vw 3vw 0.8vw;
   font-size: 13px;
-  font-size: 1.5vw;
   text-transform: uppercase;
   letter-spacing: 1.5px;
   color: #666;
@@ -442,9 +427,7 @@ html, body {
 
 .resolution-item-right {
   padding: 14px 28px;
-  padding: 1.5vw 3vw;
   font-size: 20px;
-  font-size: 2vw;
   cursor: pointer;
   border-bottom: 1px solid #1a1a1a;
   transition: background 0.1s;
@@ -465,9 +448,7 @@ html, body {
   display: block;
   width: 100%;
   padding: 16px 28px;
-  padding: 1.5vw 3vw;
   font-size: 20px;
-  font-size: 2vw;
   text-align: left;
   background: none;
   color: #c9d1d9;
@@ -576,13 +557,11 @@ html, body {
 /* Now Playing Bar */
 .now-playing {
   height: 68px;
-  height: 6vh;
   background: #111;
   border-top: 1px solid #222;
   display: flex;
   align-items: center;
   padding: 0 28px;
-  padding: 0 3vw;
   -webkit-gap: 16px;
 
   gap: 16px;
@@ -590,14 +569,12 @@ html, body {
 
 .now-playing .channel-name {
   font-size: 24px;
-  font-size: 2.5vw;
   font-weight: 600;
   color: #fff;
 }
 
 .now-playing .channel-info {
   font-size: 18px;
-  font-size: 2vw;
   color: #888;
 }
 
@@ -607,19 +584,19 @@ html, body {
   top: 0;
   left: 0;
   z-index: 100;
-  width: 100vw;
+  width: 1920px;
   height: 100vh;
   background: linear-gradient(135deg, #0a0e14 0%, #0d1117 50%, #0a0e14 100%);
   overflow: hidden;
-  font-size: 1.4vw;
+  font-size: 27px;
 }
 
 .settings-page .bg-glow {
   position: absolute;
-  top: -15vw;
-  left: -10vw;
-  width: 30vw;
-  height: 30vw;
+  top: -288px;
+  left: -192px;
+  width: 576px;
+  height: 576px;
   background: radial-gradient(circle, rgba(237,66,31,0.04) 0%, transparent 70%);
   pointer-events: none;
 }
@@ -632,43 +609,43 @@ html, body {
 
 /* === Left nav === */
 .settings-nav {
-  width: 20vw;
+  width: 384px;
   border-right: 1px solid #222;
-  padding: 5vw 0 0;
+  padding: 96px 0 0;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
 }
 
 .nav-header {
-  padding: 0 1.5vw 1.5vw;
+  padding: 0 29px 29px;
   border-bottom: 1px solid #1a1a1a;
 }
 
 .nav-logo {
   display: flex;
   align-items: center;
-  -webkit-gap: 0.6vw;
+  -webkit-gap: 12px;
 
-  gap: 0.6vw;
-  margin-bottom: 0.4vw;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 
 .nav-logo .icon {
-  width: 1.8vw;
-  height: 1.8vw;
+  width: 35px;
+  height: 35px;
   background: #ED421F;
-  border-radius: 0.3vw;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.7vw;
+  font-size: 13px;
   font-weight: 700;
   color: #fff;
 }
 
 .nav-logo .text {
-  font-size: 1.1vw;
+  font-size: 21px;
   font-weight: 590;
   letter-spacing: -0.01em;
 }
@@ -678,35 +655,35 @@ html, body {
 }
 
 .nav-sub {
-  font-size: 0.8vw;
+  font-size: 15px;
   color: #555;
   letter-spacing: 0.02em;
 }
 
 .nav-items {
-  padding: 0.8vw 0;
+  padding: 15px 0;
   flex: 1;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  -webkit-gap: 0.7vw;
+  -webkit-gap: 13px;
 
-  gap: 0.7vw;
-  padding: 0.8vw 1.5vw;
-  font-size: 1.1vw;
+  gap: 13px;
+  padding: 15px 29px;
+  font-size: 21px;
   font-weight: 450;
   color: #8b949e;
   cursor: pointer;
   transition: all 0.15s;
   border-left: 4px solid transparent;
-  min-height: 2.8vw;
+  min-height: 54px;
 }
 
 .nav-item .nav-icon {
-  font-size: 1vw;
-  width: 1.2vw;
+  font-size: 19px;
+  width: 23px;
   text-align: center;
 }
 
@@ -724,7 +701,7 @@ html, body {
   color: #fff;
   background: rgba(237,66,31,0.1);
   border-left-color: #ED421F;
-  box-shadow: inset 0 0 0.6vw rgba(237,66,31,0.15);
+  box-shadow: inset 0 0 12px rgba(237,66,31,0.15);
 }
 
 .nav-item:hover {
@@ -735,32 +712,32 @@ html, body {
 /* === Main panel === */
 .settings-main {
   flex: 1;
-  padding: 5vw 3vw 3vw;
+  padding: 96px 58px 58px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #333 transparent;
 }
 
 .page-title {
-  font-size: 1.6vw;
+  font-size: 31px;
   font-weight: 590;
   letter-spacing: -0.01em;
-  margin-bottom: 2vw;
+  margin-bottom: 38px;
   display: flex;
   align-items: center;
-  -webkit-gap: 0.7vw;
+  -webkit-gap: 13px;
 
-  gap: 0.7vw;
+  gap: 13px;
 }
 
 .page-title .back-btn {
-  width: 2.4vw;
-  height: 2.4vw;
+  width: 46px;
+  height: 46px;
   background: transparent;
   border: 1px solid #333;
-  border-radius: 0.4vw;
+  border-radius: 8px;
   color: #8b949e;
-  font-size: 1.2vw;
+  font-size: 23px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -771,7 +748,7 @@ html, body {
 .page-title .back-btn[data-focused] {
   border-color: #ED421F;
   color: #ED421F;
-  box-shadow: inset 0 0 0 0.2vw #ED421F;
+  box-shadow: inset 0 0 0 4px #ED421F;
 }
 
 .page-title .back-btn:hover {
@@ -783,13 +760,13 @@ html, body {
 .setting-card {
   background: #161b22;
   border: 1px solid #222;
-  border-radius: 0.5vw;
-  margin-bottom: 1.2vw;
+  border-radius: 10px;
+  margin-bottom: 23px;
   overflow: hidden;
 }
 
 .card-header {
-  padding: 1vw 1.4vw;
+  padding: 19px 27px;
   border-bottom: 1px solid #1a1a1a;
   display: flex;
   align-items: center;
@@ -797,35 +774,35 @@ html, body {
 }
 
 .card-header h3 {
-  font-size: 1.1vw;
+  font-size: 21px;
   font-weight: 590;
   letter-spacing: -0.01em;
   display: flex;
   align-items: center;
-  -webkit-gap: 0.5vw;
+  -webkit-gap: 10px;
 
-  gap: 0.5vw;
+  gap: 10px;
 }
 
 .card-header .card-icon {
-  width: 1.6vw;
-  height: 1.6vw;
+  width: 31px;
+  height: 31px;
   background: rgba(237,66,31,0.1);
-  border-radius: 0.3vw;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8vw;
+  font-size: 15px;
   color: #ED421F;
 }
 
 .card-body {
-  padding: 1.2vw 1.4vw 1.4vw;
+  padding: 23px 27px 27px;
 }
 
 /* Input groups */
 .input-group {
-  margin-bottom: 1vw;
+  margin-bottom: 19px;
 }
 
 .input-group:last-child {
@@ -834,33 +811,33 @@ html, body {
 
 .input-group label {
   display: block;
-  font-size: 1vw;
+  font-size: 19px;
   font-weight: 510;
   color: #c9d1d9;
-  margin-bottom: 0.4vw;
+  margin-bottom: 8px;
 }
 
 .input-group .hint {
-  font-size: 0.8vw;
+  font-size: 15px;
   color: #555;
-  margin-top: 0.3vw;
+  margin-top: 6px;
 }
 
 .input-row {
   display: flex;
-  -webkit-gap: 0.6vw;
+  -webkit-gap: 12px;
 
-  gap: 0.6vw;
+  gap: 12px;
   align-items: center;
 }
 
 .input-field {
   flex: 1;
-  padding: 0.8vw 1vw;
-  font-size: 1.1vw;
+  padding: 15px 19px;
+  font-size: 21px;
   background: #0d1117;
   border: 2px solid #333;
-  border-radius: 0.4vw;
+  border-radius: 8px;
   color: #fff;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -871,20 +848,20 @@ html, body {
 .input-field:focus,
 .input-field[data-focused] {
   border-color: #ED421F;
-  box-shadow: 0 0 0 0.15vw #ED421F;
+  box-shadow: 0 0 0 3px #ED421F;
 }
 
 /* Buttons */
 .btn {
-  padding: 0.8vw 1.6vw;
-  font-size: 1vw;
+  padding: 15px 31px;
+  font-size: 19px;
   font-weight: 590;
   border: none;
-  border-radius: 0.4vw;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
-  min-height: 2.8vw;
+  min-height: 54px;
   font-family: inherit;
 }
 
@@ -894,13 +871,13 @@ html, body {
 }
 
 .btn-primary[data-focused] {
-  box-shadow: 0 0 1vw rgba(237,66,31,0.5);
+  box-shadow: 0 0 19px rgba(237,66,31,0.5);
   outline: 3px solid #ED421F;
   outline-offset: 3px;
 }
 
 .btn-primary:hover {
-  box-shadow: 0 0 0.8vw rgba(237,66,31,0.4);
+  box-shadow: 0 0 15px rgba(237,66,31,0.4);
 }
 
 .btn-secondary {
@@ -911,7 +888,7 @@ html, body {
 
 .btn-secondary[data-focused] {
   border-color: #ED421F;
-  box-shadow: inset 0 0 0 0.2vw #ED421F;
+  box-shadow: inset 0 0 0 4px #ED421F;
 }
 
 .btn-secondary:hover {
@@ -920,28 +897,28 @@ html, body {
 
 .btn-group {
   display: flex;
-  -webkit-gap: 0.6vw;
+  -webkit-gap: 12px;
 
-  gap: 0.6vw;
+  gap: 12px;
 }
 
 /* Status row */
 .status-row {
   display: flex;
   align-items: center;
-  -webkit-gap: 0.8vw;
+  -webkit-gap: 15px;
 
-  gap: 0.8vw;
-  padding: 0.8vw 1vw;
+  gap: 15px;
+  padding: 15px 19px;
   background: #0d1117;
   border: 1px solid #333;
-  border-radius: 0.4vw;
-  margin-bottom: 0.8vw;
+  border-radius: 8px;
+  margin-bottom: 15px;
 }
 
 .status-dot {
-  width: 0.7vw;
-  height: 0.7vw;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
   flex-shrink: 0;
   background: #555;
@@ -949,12 +926,12 @@ html, body {
 
 .status-dot.connected {
   background: #2ea043;
-  box-shadow: 0 0 0.5vw rgba(46,160,67,0.5);
+  box-shadow: 0 0 10px rgba(46,160,67,0.5);
 }
 
 .status-dot.error {
   background: #ED421F;
-  box-shadow: 0 0 0.5vw rgba(237,66,31,0.5);
+  box-shadow: 0 0 10px rgba(237,66,31,0.5);
 }
 
 .status-dot.connecting {
@@ -968,12 +945,12 @@ html, body {
 }
 
 .status-info {
-  font-size: 1vw;
+  font-size: 19px;
   color: #c9d1d9;
 }
 
 .status-label {
-  font-size: 0.8vw;
+  font-size: 15px;
   color: #555;
 }
 
@@ -982,7 +959,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.8vw 0;
+  padding: 15px 0;
   border-bottom: 1px solid #1a1a1a;
 }
 
@@ -991,20 +968,20 @@ html, body {
 }
 
 .toggle-row .toggle-label {
-  font-size: 1vw;
+  font-size: 19px;
   font-weight: 450;
   color: #c9d1d9;
 }
 
 .toggle-row .toggle-desc {
-  font-size: 0.8vw;
+  font-size: 15px;
   color: #555;
-  margin-top: 0.1vw;
+  margin-top: 2px;
 }
 
 .toggle {
-  width: 2.8vw;
-  height: 1.6vw;
+  width: 54px;
+  height: 31px;
   background: #333;
   border-radius: 999px;
   position: relative;
@@ -1018,45 +995,45 @@ html, body {
 }
 
 .toggle .knob {
-  width: 1.2vw;
-  height: 1.2vw;
+  width: 23px;
+  height: 23px;
   background: #fff;
   border-radius: 50%;
   position: absolute;
-  top: 0.2vw;
-  left: 0.2vw;
+  top: 4px;
+  left: 4px;
   transition: transform 0.2s;
 }
 
 .toggle.on .knob {
-  transform: translateX(1.2vw);
+  transform: translateX(23px);
 }
 
 .toggle[data-focused] {
-  box-shadow: 0 0 0 0.15vw #ED421F;
+  box-shadow: 0 0 0 3px #ED421F;
 }
 
 /* Select group */
 .select-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  -webkit-gap: 0.4vw;
+  -webkit-gap: 8px;
 
-  gap: 0.4vw;
+  gap: 8px;
 }
 
 .select-opt {
-  padding: 0.7vw 0.8vw;
-  font-size: 1vw;
+  padding: 13px 15px;
+  font-size: 19px;
   font-weight: 510;
   color: #c9d1d9;
   background: #0d1117;
   border: 2px solid #333;
-  border-radius: 0.4vw;
+  border-radius: 8px;
   cursor: pointer;
   text-align: center;
   transition: all 0.15s;
-  min-height: 2.6vw;
+  min-height: 50px;
   letter-spacing: 0.02em;
 }
 
@@ -1069,7 +1046,7 @@ html, body {
 .select-opt[data-focused] {
   border-color: #ED421F;
   color: #fff;
-  box-shadow: 0 0 0.6vw rgba(237,66,31,0.3);
+  box-shadow: 0 0 12px rgba(237,66,31,0.3);
 }
 
 .select-opt:hover {
@@ -1078,8 +1055,8 @@ html, body {
 
 /* Footer */
 .settings-footer {
-  margin-top: 1.6vw;
-  padding-top: 1vw;
+  margin-top: 31px;
+  padding-top: 19px;
   border-top: 1px solid #1a1a1a;
   display: flex;
   align-items: center;
@@ -1087,13 +1064,13 @@ html, body {
 }
 
 .footer-info {
-  font-size: 0.8vw;
+  font-size: 15px;
   color: #444;
   letter-spacing: 0.02em;
 }
 
 .footer-version {
-  font-size: 0.8vw;
+  font-size: 15px;
   color: #444;
   font-variant-numeric: tabular-nums;
 }
@@ -1101,17 +1078,17 @@ html, body {
 /* === Remote hints === */
 .settings-page #remote-hints {
   position: absolute;
-  bottom: 0.9vw;
+  bottom: 17px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  -webkit-gap: 1vw;
+  -webkit-gap: 19px;
 
-  gap: 1vw;
+  gap: 19px;
   align-items: center;
-  padding: 0.4vw 1vw;
+  padding: 8px 19px;
   background: rgba(0,0,0,0.5);
-  border-radius: 0.4vw;
+  border-radius: 8px;
   z-index: 200;
   pointer-events: none;
   transition: opacity 0.5s;
@@ -1124,22 +1101,22 @@ html, body {
 .hint-group {
   display: flex;
   align-items: center;
-  -webkit-gap: 0.3vw;
+  -webkit-gap: 6px;
 
-  gap: 0.3vw;
-  font-size: 0.65vw;
+  gap: 6px;
+  font-size: 12px;
   color: rgba(255,255,255,0.5);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .hint-group kbd {
-  font: 0.6vw/1 ui-monospace, monospace;
+  font: 12px/1 ui-monospace, monospace;
   color: rgba(255,255,255,0.6);
   background: rgba(255,255,255,0.08);
-  padding: 0.1vw 0.3vw;
-  border-radius: 0.15vw;
-  min-width: 1.1vw;
+  padding: 2px 6px;
+  border-radius: 3px;
+  min-width: 21px;
   text-align: center;
 }
 
@@ -1151,22 +1128,22 @@ html, body {
 .settings-page .playlist-list {
   display: flex;
   flex-direction: column;
-  -webkit-gap: 1vw;
+  -webkit-gap: 19px;
 
-  gap: 1vw;
-  margin-bottom: 1.2vw;
+  gap: 19px;
+  margin-bottom: 23px;
 }
 
 .settings-page .playlist-entry {
   display: flex;
   flex-direction: column;
-  -webkit-gap: 0.2vw;
+  -webkit-gap: 4px;
 
-  gap: 0.2vw;
-  padding: 0.8vw 1vw;
+  gap: 4px;
+  padding: 15px 19px;
   background: #0d1117;
   border: 2px solid #333;
-  border-radius: 0.4vw;
+  border-radius: 8px;
 }
 
 .settings-page .playlist-entry.active {
@@ -1175,19 +1152,19 @@ html, body {
 
 .settings-page .playlist-entry[data-focused] {
   border-color: #ED421F;
-  box-shadow: 0 0 0 0.15vw rgba(237,66,31,0.3);
+  box-shadow: 0 0 0 3px rgba(237,66,31,0.3);
 }
 
 .settings-page .playlist-entry .btn-group {
-  margin-top: 0.6vw;
+  margin-top: 12px;
   display: flex;
-  -webkit-gap: 0.8vw;
+  -webkit-gap: 15px;
 
-  gap: 0.8vw;
+  gap: 15px;
 }
 
 .settings-page .playlist-indicator {
-  font-size: 0.8vw;
+  font-size: 15px;
   color: #555;
 }
 
@@ -1198,16 +1175,16 @@ html, body {
 .settings-page .selected-badge {
   display: inline-flex;
   align-items: center;
-  -webkit-gap: 0.3vw;
+  -webkit-gap: 6px;
 
-  gap: 0.3vw;
-  font-size: 0.75vw;
+  gap: 6px;
+  font-size: 14px;
   font-weight: 600;
   color: #2ea043;
   background: rgba(46, 160, 67, 0.1);
   border: 1px solid rgba(46, 160, 67, 0.3);
-  border-radius: 1vw;
-  padding: 0.15vw 0.6vw;
+  border-radius: 19px;
+  padding: 3px 12px;
   margin-left: auto;
   white-space: nowrap;
   flex-shrink: 0;
@@ -1218,7 +1195,7 @@ html, body {
 }
 
 .settings-page .playlist-name {
-  font-size: 1vw;
+  font-size: 19px;
   font-weight: 590;
   color: #fff;
   overflow: hidden;
@@ -1227,7 +1204,7 @@ html, body {
 }
 
 .settings-page .playlist-url {
-  font-size: 0.8vw;
+  font-size: 15px;
   color: #555;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1237,23 +1214,23 @@ html, body {
 
 /* Standalone btn-group (Add Playlist + Fetch) */
 .settings-main > .btn-group {
-  margin-top: 0.8vw;
+  margin-top: 15px;
   display: flex;
-  -webkit-gap: 0.8vw;
+  -webkit-gap: 15px;
 
-  gap: 0.8vw;
+  gap: 15px;
 }
 
 .settings-page .playlist-actions {
   display: flex;
-  -webkit-gap: 0.6vw;
+  -webkit-gap: 12px;
 
-  gap: 0.6vw;
-  margin-top: 0.5vw;
+  gap: 12px;
+  margin-top: 10px;
 }
 
 .settings-page .playlist-actions .btn {
-  padding: 0.6vw 1.2vw;
-  font-size: 0.9vw;
-  min-height: 2.4vw;
+  padding: 12px 23px;
+  font-size: 17px;
+  min-height: 46px;
 }

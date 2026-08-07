@@ -548,7 +548,7 @@ function renderSourceCard(s, lastFetched) {
   html += '<div class="setting-card">';
   html += '<div class="card-header"><h3><span class="card-icon">\u{1F4E1}</span> Channel Source</h3></div>';
   html += '<div class="card-body">';
-  html += '<p class="hint" style="margin-bottom:2vw;">Saved playlists (' + s.playlists.length + '/8). Select one, then click Fetch.</p>';
+  html += '<p class="hint" style="margin-bottom:38px;">Saved playlists (' + s.playlists.length + '/8). Select one, then click Fetch.</p>';
   if (addMode) {
     html += '<div class="input-group">';
     html += '<label for="pl-add-name">Playlist Name</label>';
@@ -604,7 +604,7 @@ function renderSourceCard(s, lastFetched) {
     }
     html += '<button id="settings-fetch-btn" class="btn btn-primary">Fetch Active</button>';
     html += '</div>';
-    html += '<div id="settings-fetch-status" class="status-info hidden" style="margin-top:1.5vw;"></div>';
+    html += '<div id="settings-fetch-status" class="status-info hidden" style="margin-top:29px;"></div>';
     html += '<p class="hint" style="margin-top:16px;">Last fetched: ' + lastFetched + '</p>';
   }
   html += '</div></div>';
