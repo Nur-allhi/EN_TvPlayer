@@ -222,7 +222,9 @@ export function selectChannel(index, skipFullscreen) {
   if (index < 0 || index >= channels.length) return;
 
   currentIndex = index;
-  focusedIndex = index;
+  const displayChannels = getDisplayChannels();
+  focusedIndex = displayChannels.indexOf(channels[index]);
+  if (focusedIndex < 0) focusedIndex = 0;
   updateActiveChannel();
   updateFocus();
 
@@ -296,7 +298,10 @@ export function toggleSidebar() {
   if (sidebarOpen) {
     if (groups.length > 0 && selectedGroup !== null) {
       sidebarMode = 'channels';
-      focusedIndex = 0;
+      const displayChannels = getDisplayChannels();
+      const playingChannel = channels[currentIndex];
+      const idx = playingChannel ? displayChannels.indexOf(playingChannel) : -1;
+      focusedIndex = idx >= 0 ? idx : 0;
       const groupList = document.getElementById('group-list');
       const channelList = document.getElementById('channel-list');
       if (groupList) groupList.classList.add('hidden');
@@ -308,6 +313,7 @@ export function toggleSidebar() {
     } else {
       selectedGroup = null;
       sidebarMode = 'channels';
+      focusedIndex = currentIndex >= 0 ? currentIndex : 0;
       renderChannelList();
     }
   }
