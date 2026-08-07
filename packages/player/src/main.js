@@ -7,6 +7,12 @@ import { processStreamUrl, parseM3u, fetchPlaylist as fetchFromPlaylistUrl } fro
 
 let currentIndex = 0;
 let channels;
+let selectedGroup = null;
+
+function getDisplayChannels() {
+  if (selectedGroup === 'all' || !selectedGroup) return channels;
+  return channels.filter(ch => (ch.group || 'Ungrouped') === selectedGroup);
+}
 
 async function init() {
   const videoEl = document.getElementById('video');
@@ -448,20 +454,29 @@ function handleRemoteAction(action, value) {
           break;
       }
     }
+    selectedGroup = ui.getSelectedGroup();
     return;
   }
 
   switch (action) {
     case 'up': {
-      const prev = (currentIndex - 1 + channels.length) % channels.length;
-      ui.selectChannel(prev, true);
-      ui.showChannelOsd(channels[prev]);
+      const displayChannels = getDisplayChannels();
+      const currentDisplayIdx = displayChannels.indexOf(channels[currentIndex]);
+      const idx = currentDisplayIdx >= 0 ? currentDisplayIdx : 0;
+      const prev = (idx - 1 + displayChannels.length) % displayChannels.length;
+      currentIndex = channels.indexOf(displayChannels[prev]);
+      ui.selectChannel(currentIndex, true);
+      ui.showChannelOsd(displayChannels[prev]);
       break;
     }
     case 'down': {
-      const next = (currentIndex + 1) % channels.length;
-      ui.selectChannel(next, true);
-      ui.showChannelOsd(channels[next]);
+      const displayChannels = getDisplayChannels();
+      const currentDisplayIdx = displayChannels.indexOf(channels[currentIndex]);
+      const idx = currentDisplayIdx >= 0 ? currentDisplayIdx : 0;
+      const next = (idx + 1) % displayChannels.length;
+      currentIndex = channels.indexOf(displayChannels[next]);
+      ui.selectChannel(currentIndex, true);
+      ui.showChannelOsd(displayChannels[next]);
       break;
     }
     case 'left':

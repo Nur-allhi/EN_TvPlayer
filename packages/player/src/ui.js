@@ -119,6 +119,10 @@ export function getGroups() {
   return groups;
 }
 
+export function getSelectedGroup() {
+  return selectedGroup;
+}
+
 export function renderGroupList() {
   const container = document.getElementById('group-list');
   if (!container) return;
