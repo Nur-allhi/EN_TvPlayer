@@ -3,6 +3,20 @@
   padding: 0;
   box-sizing: border-box;
 }
+:root {
+    --space-xs: 8px;
+    --space-sm: 12px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --space-2xl: 48px;
+    --space-3xl: 64px;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+}
+
+
 
 html, body {
   width: 100%;
@@ -11,7 +25,7 @@ html, body {
   background: #000;
   color: #fff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 16px;
+  font-size: 26px;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -26,6 +40,7 @@ html, body {
 #app.fullscreen .now-playing {
   display: none;
 }
+.now-playing > * + * { margin-left: 16px; }
 
 /* Left-edge hover zone (fullscreen only) that reveals the channel list */
 .sidebar-hover-zone {
@@ -73,7 +88,7 @@ html, body {
   top: 0;
   left: 0;
   bottom: 0;
-  width: 440px;
+  width: 480px;
   background: #111;
   display: flex;
   flex-direction: column;
@@ -95,14 +110,12 @@ html, body {
 .logo {
   display: flex;
   align-items: center;
-  -webkit-gap: 10px;
-
-  gap: 10px;
   font-size: 26px;
   font-weight: 700;
   color: #4fc3f7;
   letter-spacing: 2px;
 }
+.logo > * + * { margin-left: 10px; }
 
 .logo-icon {
   flex-shrink: 0;
@@ -269,10 +282,8 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  -webkit-gap: 12px;
-
-  gap: 12px;
 }
+.loading > * + * { margin-left: 12px; }
 
 .spinner {
   width: 56px;
@@ -299,9 +310,6 @@ html, body {
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  -webkit-gap: 12px;
-
-  gap: 12px;
   background: rgba(0, 0, 0, 0.7);
   padding: 10px 20px;
   border-radius: 24px;
@@ -358,11 +366,9 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  -webkit-gap: 18px;
-
-  gap: 18px;
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
 }
+.play-state-icon > * + * { margin-left: 18px; }
 
 .play-state-icon span {
   width: 22px;
@@ -500,9 +506,6 @@ html, body {
   right: 20px;
   display: flex;
   align-items: center;
-  -webkit-gap: 10px;
-
-  gap: 10px;
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -515,6 +518,7 @@ html, body {
   pointer-events: none;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
+.progress-toast > * + * { margin-left: 10px; }
 
 .progress-spinner {
   width: 18px;
@@ -562,10 +566,8 @@ html, body {
   display: flex;
   align-items: center;
   padding: 0 28px;
-  -webkit-gap: 16px;
-
-  gap: 16px;
 }
+.now-playing > * + * { margin-left: 16px; }
 
 .now-playing .channel-name {
   font-size: 24px;
@@ -625,9 +627,6 @@ html, body {
 .nav-logo {
   display: flex;
   align-items: center;
-  -webkit-gap: 12px;
-
-  gap: 12px;
   margin-bottom: 8px;
 }
 
@@ -668,9 +667,6 @@ html, body {
 .nav-item {
   display: flex;
   align-items: center;
-  -webkit-gap: 13px;
-
-  gap: 13px;
   padding: 15px 29px;
   font-size: 21px;
   font-weight: 450;
@@ -725,9 +721,6 @@ html, body {
   margin-bottom: 38px;
   display: flex;
   align-items: center;
-  -webkit-gap: 13px;
-
-  gap: 13px;
 }
 
 .page-title .back-btn {
@@ -779,9 +772,6 @@ html, body {
   letter-spacing: -0.01em;
   display: flex;
   align-items: center;
-  -webkit-gap: 10px;
-
-  gap: 10px;
 }
 
 .card-header .card-icon {
@@ -825,11 +815,9 @@ html, body {
 
 .input-row {
   display: flex;
-  -webkit-gap: 12px;
-
-  gap: 12px;
   align-items: center;
 }
+.input-row > * + * { margin-left: 12px; }
 
 .input-field {
   flex: 1;
@@ -897,18 +885,13 @@ html, body {
 
 .btn-group {
   display: flex;
-  -webkit-gap: 12px;
-
-  gap: 12px;
 }
+.btn-group > * + * { margin-left: 24px; }
 
 /* Status row */
 .status-row {
   display: flex;
   align-items: center;
-  -webkit-gap: 15px;
-
-  gap: 15px;
   padding: 15px 19px;
   background: #0d1117;
   border: 1px solid #333;
@@ -1017,9 +1000,6 @@ html, body {
 .select-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  -webkit-gap: 8px;
-
-  gap: 8px;
 }
 
 .select-opt {
@@ -1082,9 +1062,6 @@ html, body {
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  -webkit-gap: 19px;
-
-  gap: 19px;
   align-items: center;
   padding: 8px 19px;
   background: rgba(0,0,0,0.5);
@@ -1101,9 +1078,6 @@ html, body {
 .hint-group {
   display: flex;
   align-items: center;
-  -webkit-gap: 6px;
-
-  gap: 6px;
   font-size: 12px;
   color: rgba(255,255,255,0.5);
   letter-spacing: 0.06em;
@@ -1128,18 +1102,12 @@ html, body {
 .settings-page .playlist-list {
   display: flex;
   flex-direction: column;
-  -webkit-gap: 19px;
-
-  gap: 19px;
   margin-bottom: 23px;
 }
 
 .settings-page .playlist-entry {
   display: flex;
   flex-direction: column;
-  -webkit-gap: 4px;
-
-  gap: 4px;
   padding: 15px 19px;
   background: #0d1117;
   border: 2px solid #333;
@@ -1156,12 +1124,10 @@ html, body {
 }
 
 .settings-page .playlist-entry .btn-group {
-  margin-top: 12px;
+  margin-top: 20px;
   display: flex;
-  -webkit-gap: 15px;
-
-  gap: 15px;
 }
+.btn-group > * + * { margin-left: 24px; }
 
 .settings-page .playlist-indicator {
   font-size: 15px;
@@ -1175,9 +1141,6 @@ html, body {
 .settings-page .selected-badge {
   display: inline-flex;
   align-items: center;
-  -webkit-gap: 6px;
-
-  gap: 6px;
   font-size: 14px;
   font-weight: 600;
   color: #2ea043;
@@ -1214,18 +1177,13 @@ html, body {
 
 /* Standalone btn-group (Add Playlist + Fetch) */
 .settings-main > .btn-group {
-  margin-top: 15px;
+  margin-top: 24px;
   display: flex;
-  -webkit-gap: 15px;
-
-  gap: 15px;
 }
+.btn-group > * + * { margin-left: 24px; }
 
 .settings-page .playlist-actions {
   display: flex;
-  -webkit-gap: 12px;
-
-  gap: 12px;
   margin-top: 10px;
 }
 
