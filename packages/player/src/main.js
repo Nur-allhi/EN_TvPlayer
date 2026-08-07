@@ -14,28 +14,7 @@ function getDisplayChannels() {
   return channels.filter(ch => (ch.group || 'Ungrouped') === selectedGroup);
 }
 
-function setupTVScaling() {
-  const screenWidth = window.screen.width || window.innerWidth;
-  const dpr = window.devicePixelRatio || 1;
-  let scale = 1;
-  if (screenWidth >= 3000 || dpr >= 2) {
-    scale = 2;
-  } else if (screenWidth >= 2000 || dpr >= 1.5) {
-    scale = 1.5;
-  }
-  if (scale > 1) {
-    const app = document.getElementById('app');
-    if (app) {
-      app.style.transform = `scale(${scale})`;
-      app.style.transformOrigin = 'top left';
-      app.style.width = `${100 / scale}%`;
-      app.style.height = `${100 / scale}%`;
-    }
-  }
-}
-
 async function init() {
-  setupTVScaling();
   const videoEl = document.getElementById('video');
   if (!player.initPlayer(videoEl)) {
     document.body.innerHTML =
