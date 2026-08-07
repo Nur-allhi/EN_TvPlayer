@@ -2,7 +2,7 @@
 <widget xmlns:tizen="http://tizen.org/ns/widgets"
         xmlns="http://www.w3.org/ns/widgets"
         id="https://iptvplayer"
-        version="0.5.0"
+        version="0.8.0"
         viewmodes="maximized">
   <access origin="*" subdomains="true"/>
   <tizen:application id="IPTVPlayer.IPTV" package="IPTVPlayer" required_version="5.0"/>
