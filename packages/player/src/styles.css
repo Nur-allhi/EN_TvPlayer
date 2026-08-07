@@ -316,6 +316,7 @@ html, body {
   font-size: 18px;
   z-index: 40;
 }
+.buffering-indicator > * + * { margin-left: 12px; }
 
 .spinner.small {
   width: 24px;
@@ -629,6 +630,7 @@ html, body {
   align-items: center;
   margin-bottom: 8px;
 }
+.nav-logo > * + * { margin-left: 12px; }
 
 .nav-logo .icon {
   width: 35px;
@@ -676,6 +678,7 @@ html, body {
   border-left: 4px solid transparent;
   min-height: 54px;
 }
+.nav-item > * + * { margin-left: 13px; }
 
 .nav-item .nav-icon {
   font-size: 19px;
@@ -722,6 +725,7 @@ html, body {
   display: flex;
   align-items: center;
 }
+.page-title > * + * { margin-left: 13px; }
 
 .page-title .back-btn {
   width: 46px;
@@ -765,6 +769,7 @@ html, body {
   align-items: center;
   justify-content: space-between;
 }
+.card-header > * + * { margin-left: 10px; }
 
 .card-header h3 {
   font-size: 21px;
@@ -898,6 +903,7 @@ html, body {
   border-radius: 8px;
   margin-bottom: 15px;
 }
+.status-row > * + * { margin-left: 12px; }
 
 .status-dot {
   width: 13px;
@@ -945,6 +951,7 @@ html, body {
   padding: 15px 0;
   border-bottom: 1px solid #1a1a1a;
 }
+.toggle-row > * + * { margin-left: 15px; }
 
 .toggle-row:last-child {
   border-bottom: none;
@@ -1001,6 +1008,7 @@ html, body {
   display: grid;
   grid-template-columns: 1fr 1fr;
 }
+.select-grid { grid-gap: 8px; }
 
 .select-opt {
   padding: 13px 15px;
@@ -1083,6 +1091,7 @@ html, body {
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+.hint-group > * + * { margin-left: 6px; }
 
 .hint-group kbd {
   font: 12px/1 ui-monospace, monospace;
@@ -1104,6 +1113,7 @@ html, body {
   flex-direction: column;
   margin-bottom: 23px;
 }
+.playlist-list > * + * { margin-left: 19px; }
 
 .settings-page .playlist-entry {
   display: flex;
@@ -1113,6 +1123,7 @@ html, body {
   border: 2px solid #333;
   border-radius: 8px;
 }
+.playlist-entry > * + * { margin-left: 4px; }
 
 .settings-page .playlist-entry.active {
   border-color: #333;
@@ -1152,10 +1163,12 @@ html, body {
   white-space: nowrap;
   flex-shrink: 0;
 }
+.selected-badge > * + * { margin-left: 6px; }
 
 .settings-page .playlist-entry.active .selected-badge {
   display: inline-flex;
 }
+.selected-badge > * + * { margin-left: 6px; }
 
 .settings-page .playlist-name {
   font-size: 19px;
@@ -1186,6 +1199,7 @@ html, body {
   display: flex;
   margin-top: 10px;
 }
+.playlist-actions > * + * { margin-left: 12px; }
 
 .settings-page .playlist-actions .btn {
   padding: 12px 23px;
