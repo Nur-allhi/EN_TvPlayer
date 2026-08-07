@@ -14,7 +14,17 @@ function getDisplayChannels() {
   return channels.filter(ch => (ch.group || 'Ungrouped') === selectedGroup);
 }
 
+function setupTVScaling() {
+  const screenWidth = window.screen.width || window.innerWidth;
+  if (screenWidth > 2560) {
+    document.documentElement.style.zoom = '2';
+  } else if (screenWidth > 1920) {
+    document.documentElement.style.zoom = '1.5';
+  }
+}
+
 async function init() {
+  setupTVScaling();
   const videoEl = document.getElementById('video');
   if (!player.initPlayer(videoEl)) {
     document.body.innerHTML =

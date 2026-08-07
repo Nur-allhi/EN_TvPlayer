@@ -717,8 +717,8 @@ html, body {
   margin-bottom: 38px;
   display: flex;
   align-items: center;
-  -webkit-gap: 13px;
-  gap: 13px;
+  -webkit-gap: 24px;
+  gap: 24px;
 }
 
 .page-title .back-btn {
@@ -886,8 +886,8 @@ html, body {
 
 .btn-group {
   display: flex;
-  -webkit-gap: 12px;
-  gap: 12px;
+  -webkit-gap: 24px;
+  gap: 24px;
 }
 
 /* Status row */
@@ -1138,10 +1138,10 @@ html, body {
 }
 
 .settings-page .playlist-entry .btn-group {
-  margin-top: 12px;
+  margin-top: 20px;
   display: flex;
-  -webkit-gap: 15px;
-  gap: 15px;
+  -webkit-gap: 30px;
+  gap: 30px;
 }
 
 .settings-page .playlist-indicator {
@@ -1194,10 +1194,10 @@ html, body {
 
 /* Standalone btn-group (Add Playlist + Fetch) */
 .settings-main > .btn-group {
-  margin-top: 15px;
+  margin-top: 24px;
   display: flex;
-  -webkit-gap: 15px;
-  gap: 15px;
+  -webkit-gap: 30px;
+  gap: 30px;
 }
 
 .settings-page .playlist-actions {
