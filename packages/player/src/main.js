@@ -3,6 +3,7 @@ import * as player from './player.js';
 import * as ui from './ui.js';
 import * as remote from './remote.js';
 import * as settings from './settings.js';
+import { processStreamUrl, parseM3u, fetchPlaylist as fetchFromPlaylistUrl } from './utils.js';
 
 let currentIndex = 0;
 let channels;
@@ -258,140 +259,6 @@ function showSettingsPage() {
   settings.show();
 }
 
-async function fetchFromPlaylistUrl(url) {
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error('HTTP ' + resp.status);
-  const contentType = resp.headers.get('content-type') || '';
-  const text = await resp.text();
-  if (contentType.includes('json') || text.trim().startsWith('[') || text.trim().startsWith('{')) {
-    const data = JSON.parse(text);
-    if (Array.isArray(data)) return data;
-    if (data && Array.isArray(data.channels)) {
-      const topProxy = data.proxyUrl;
-      if (topProxy) {
-        for (const ch of data.channels) {
-          if (ch.useProxy === true && !ch.proxyUrl) ch.proxyUrl = topProxy;
-        }
-      }
-      return data.channels;
-    }
-    throw new Error('Invalid JSON format — expected array or { proxyUrl, channels }');
-  }
-  if (text.includes('#EXTM3U')) {
-    return parseM3u(text);
-  }
-  throw new Error('Unknown playlist format');
-}
-
-function processStreamUrl(rawUrl) {
-  const pipeIdx = rawUrl.indexOf('|');
-  if (pipeIdx === -1) return { url: rawUrl, extraHeaders: null };
-
-  const baseUrl = rawUrl.slice(0, pipeIdx);
-  const suffix = rawUrl.slice(pipeIdx + 1);
-  const extraHeaders = {};
-  const extraParams = [];
-
-  for (const part of suffix.split('&')) {
-    const eqIdx = part.indexOf('=');
-    if (eqIdx === -1) continue;
-    const key = part.slice(0, eqIdx);
-    const value = part.slice(eqIdx + 1);
-    if (key.startsWith('edge-')) {
-      extraParams.push(key + '=' + value);
-    } else {
-      extraHeaders[key.toLowerCase()] = value;
-    }
-  }
-
-  let finalUrl = baseUrl;
-  if (extraParams.length > 0) {
-    finalUrl += (baseUrl.includes('?') ? '&' : '?') + extraParams.join('&');
-  }
-
-  return { url: finalUrl, extraHeaders: Object.keys(extraHeaders).length > 0 ? extraHeaders : null };
-}
-
-function parseM3u(text) {
-  const lines = text.split('\n');
-  const result = [];
-  let index = 0;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (line.startsWith('#EXTINF:')) {
-      const nameMatch = line.match(/,(.+)$/);
-      const name = nameMatch ? nameMatch[1].trim() : 'Channel ' + (index + 1);
-      const proxyMatch = line.match(/\bproxy="([^"]*)"/);
-      let drm = null;
-      let userAgent = null;
-      let customHeaders = null;
-      let urlIdx = i + 1;
-      while (urlIdx < lines.length) {
-        const next = lines[urlIdx].trim();
-        if (next.startsWith('#KODIPROP:')) {
-          if (next.includes('license_key=')) {
-            const keyMatch = next.match(/license_key=([a-fA-F0-9]+):([a-fA-F0-9]+)/);
-            if (keyMatch) {
-              drm = { keyId: keyMatch[1], key: keyMatch[2] };
-            }
-          }
-          urlIdx++;
-        } else if (next.startsWith('#EXTSYS')) {
-          urlIdx++;
-        } else if (next.startsWith('#EXTVLCOPT:')) {
-          const uaMatch = next.match(/http-user-agent=(.+)/);
-          if (uaMatch) {
-            userAgent = uaMatch[1].trim();
-          }
-          urlIdx++;
-        } else if (next.startsWith('#EXTHTTP:')) {
-          try {
-            const json = JSON.parse(next.slice('#EXTHTTP:'.length));
-            if (json && typeof json === 'object') {
-              customHeaders = {};
-              for (const [k, v] of Object.entries(json)) {
-                customHeaders[k] = String(v);
-              }
-            }
-          } catch (e) {}
-          urlIdx++;
-        } else {
-          break;
-        }
-      }
-      const rawUrl = lines[urlIdx] ? lines[urlIdx].trim() : '';
-      if (rawUrl && !rawUrl.startsWith('#')) {
-        if (!drm) {
-          const urlDrm = rawUrl.match(/[?&]drmLicense=([a-fA-F0-9]+):([a-fA-F0-9]+)/);
-          if (urlDrm) drm = { keyId: urlDrm[1].toLowerCase(), key: urlDrm[2].toLowerCase() };
-        }
-        const { url, extraHeaders } = processStreamUrl(rawUrl);
-        if (extraHeaders) {
-          customHeaders = { ...(customHeaders || {}), ...extraHeaders };
-        }
-        const ch = { name, url, channelNumber: index + 1, drm, userAgent, customHeaders };
-        if (proxyMatch) {
-          const pv = proxyMatch[1];
-          if (pv === 'false' || pv === 'no' || pv === '0') {
-            ch.useProxy = false;
-          } else if (pv === 'true' || pv === 'yes' || pv === '1') {
-            ch.useProxy = true;
-          } else {
-            ch.useProxy = true;
-            ch.proxyUrl = pv;
-          }
-        } else {
-          ch.useProxy = false;
-        }
-        result.push(ch);
-        index++;
-        i = urlIdx;
-      }
-    }
-  }
-  return result;
-}
-
 async function handleChannelSelect(channel) {
   ui.hideProxyToast();
   currentIndex = channels.indexOf(channel);
@@ -511,37 +378,75 @@ function handleRemoteAction(action, value) {
   }
 
   if (ui.isSidebarOpen()) {
-    switch (action) {
-      case 'up':
-        ui.navigateUp();
-        break;
-      case 'down':
-        ui.navigateDown();
-        break;
-      case 'select':
-        ui.selectFocused();
-        break;
-      case 'left':
-        ui.toggleSidebar();
-        break;
-      case 'right':
-        ui.toggleSidebar();
-        ui.toggleRightSidebar();
-        break;
-      case 'back':
-        ui.toggleSidebar();
-        break;
-      case 'playpause':
-        player.togglePlay();
-        break;
-      case 'number':
-        ui.jumpToNumber(value);
-        break;
-      case 'reload':
-        player.reloadChannel();
-        break;
-      default:
-        break;
+    const mode = ui.getSidebarMode();
+    if (mode === 'groups') {
+      switch (action) {
+        case 'up':
+          ui.navigateGroupUp();
+          break;
+        case 'down':
+          ui.navigateGroupDown();
+          break;
+        case 'select':
+          ui.selectFocusedGroup();
+          break;
+        case 'left':
+          ui.toggleSidebar();
+          break;
+        case 'right':
+          ui.toggleSidebar();
+          ui.toggleRightSidebar();
+          break;
+        case 'back':
+          ui.toggleSidebar();
+          break;
+        case 'number':
+          ui.jumpToNumber(value);
+          break;
+        default:
+          break;
+      }
+    } else {
+      switch (action) {
+        case 'up':
+          ui.navigateUp();
+          break;
+        case 'down':
+          ui.navigateDown();
+          break;
+        case 'select':
+          ui.selectFocused();
+          break;
+        case 'left':
+          if (ui.getGroups().length > 0) {
+            ui.showGroupList();
+          } else {
+            ui.toggleSidebar();
+          }
+          break;
+        case 'right':
+          ui.toggleSidebar();
+          ui.toggleRightSidebar();
+          break;
+        case 'back':
+          if (ui.getGroups().length > 0) {
+            ui.showGroupList();
+          } else {
+            ui.toggleSidebar();
+          }
+          break;
+        case 'playpause':
+          player.togglePlay();
+          break;
+        case 'number':
+          ui.jumpToNumber(value);
+          break;
+        case 'reload':
+          player.reloadChannel();
+          break;
+        default:
+          break;
+      }
     }
     return;
   }

@@ -9,6 +9,7 @@ const settingsDefaults = {
   proxyUrl: 'http://localhost:5000/proxy/',
   channels: [],
   channelsFetched: null,
+  autoQuality: true,
 };
 
 export function getSettings() {

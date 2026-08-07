@@ -1,4 +1,6 @@
 import { getSettings, saveSettings, getActivePlaylist, APP_VERSION } from './config.js';
+import { processStreamUrl, parseM3u, fetchPlaylist, escapeHtml } from './utils.js';
+import * as player from './player.js';
 
 let container = null;
 let onPlaylistFetched = null;
@@ -322,7 +324,6 @@ function buildFocusOrder() {
   } else if (activeSection === 'playback') {
     document.querySelectorAll('.select-opt').forEach(el => focusOrder.push(el));
     focusOrder.push(document.getElementById('toggle-autoq'));
-    focusOrder.push(document.getElementById('toggle-audio'));
   }
 }
 
@@ -528,7 +529,14 @@ function render() {
       });
     });
     document.querySelectorAll('.toggle').forEach(t => {
-      t.addEventListener('click', function() { this.classList.toggle('on'); });
+      t.addEventListener('click', function() {
+        this.classList.toggle('on');
+        if (this.id === 'toggle-autoq') {
+          const enabled = this.classList.contains('on');
+          saveSettings({ autoQuality: enabled });
+          player.setAutoQuality(enabled);
+        }
+      });
     });
   }
 
@@ -625,17 +633,15 @@ function renderConnectionCard(s) {
 }
 
 function renderPlaybackCard() {
+  const s = getSettings();
+  const autoQ = s.autoQuality !== false;
   let html = '';
   html += '<div class="setting-card">';
-  html += '<div class="card-header"><h3><span class="card-icon">\u25B6</span> Playback</h3></div>';
+  html += '<div class="card-header"><h3><span class="card-icon">&#x25B6;</span> Playback</h3></div>';
   html += '<div class="card-body">';
   html += '<div class="toggle-row">';
   html += '<div><div class="toggle-label">Auto quality</div><div class="toggle-desc">Automatically adjust resolution based on bandwidth</div></div>';
-  html += '<div class="toggle on" id="toggle-autoq"><div class="knob"></div></div>';
-  html += '</div>';
-  html += '<div class="toggle-row">';
-  html += '<div><div class="toggle-label">Audio passthrough</div><div class="toggle-desc">Pass through Dolby Digital / DTS to audio system</div></div>';
-  html += '<div class="toggle" id="toggle-audio"><div class="knob"></div></div>';
+  html += '<div class="toggle' + (autoQ ? ' on' : '') + '" id="toggle-autoq"><div class="knob"></div></div>';
   html += '</div>';
   html += '</div></div>';
   return html;
@@ -691,123 +697,6 @@ function handleProxySave() {
   setTimeout(() => statusEl.classList.add('hidden'), 2000);
 }
 
-async function fetchPlaylist(url) {
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error('HTTP ' + resp.status);
-  const contentType = resp.headers.get('content-type') || '';
-  const text = await resp.text();
-  if (contentType.includes('json') || text.trim().startsWith('[') || text.trim().startsWith('{')) {
-    const data = JSON.parse(text);
-    if (Array.isArray(data)) return data;
-    if (data && Array.isArray(data.channels)) {
-      const topProxy = data.proxyUrl;
-      if (topProxy) {
-        for (const ch of data.channels) {
-          if (ch.useProxy === true && !ch.proxyUrl) ch.proxyUrl = topProxy;
-        }
-      }
-      return data.channels;
-    }
-    throw new Error('Invalid JSON format');
-  }
-  if (text.includes('#EXTM3U')) {
-    return parseM3u(text);
-  }
-  throw new Error('Unknown playlist format');
-}
-
-function processStreamUrl(rawUrl) {
-  const pipeIdx = rawUrl.indexOf('|');
-  if (pipeIdx === -1) return { url: rawUrl, extraHeaders: null };
-  const baseUrl = rawUrl.slice(0, pipeIdx);
-  const suffix = rawUrl.slice(pipeIdx + 1);
-  const extraHeaders = {};
-  const extraParams = [];
-  for (const part of suffix.split('&')) {
-    const eqIdx = part.indexOf('=');
-    if (eqIdx === -1) continue;
-    const key = part.slice(0, eqIdx);
-    const value = part.slice(eqIdx + 1);
-    if (key.startsWith('edge-')) {
-      extraParams.push(key + '=' + value);
-    } else {
-      extraHeaders[key.toLowerCase()] = value;
-    }
-  }
-  let finalUrl = baseUrl;
-  if (extraParams.length > 0) {
-    finalUrl += (baseUrl.includes('?') ? '&' : '?') + extraParams.join('&');
-  }
-  return { url: finalUrl, extraHeaders: Object.keys(extraHeaders).length > 0 ? extraHeaders : null };
-}
-
-function parseM3u(text) {
-  const lines = text.split('\n');
-  const channels = [];
-  let index = 0;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (line.startsWith('#EXTINF:')) {
-      const nameMatch = line.match(/,(.+)$/);
-      const name = nameMatch ? nameMatch[1].trim() : 'Channel ' + (index + 1);
-      const proxyMatch = line.match(/\bproxy="([^"]*)"/);
-      let drm = null;
-      let userAgent = null;
-      let customHeaders = null;
-      let urlIdx = i + 1;
-      while (urlIdx < lines.length) {
-        const next = lines[urlIdx].trim();
-        if (next.startsWith('#KODIPROP:')) {
-          if (next.includes('license_key=')) {
-            const keyMatch = next.match(/license_key=([a-fA-F0-9]+):([a-fA-F0-9]+)/);
-            if (keyMatch) drm = { keyId: keyMatch[1], key: keyMatch[2] };
-          }
-          urlIdx++;
-        } else if (next.startsWith('#EXTSYS')) {
-          urlIdx++;
-        } else if (next.startsWith('#EXTVLCOPT:')) {
-          const uaMatch = next.match(/http-user-agent=(.+)/);
-          if (uaMatch) userAgent = uaMatch[1].trim();
-          urlIdx++;
-        } else if (next.startsWith('#EXTHTTP:')) {
-          try {
-            const json = JSON.parse(next.slice('#EXTHTTP:'.length));
-            if (json && typeof json === 'object') {
-              customHeaders = {};
-              for (const [k, v] of Object.entries(json)) customHeaders[k] = String(v);
-            }
-          } catch (e) {}
-          urlIdx++;
-        } else {
-          break;
-        }
-      }
-      const rawUrl = lines[urlIdx] ? lines[urlIdx].trim() : '';
-      if (rawUrl && !rawUrl.startsWith('#')) {
-        if (!drm) {
-          const urlDrm = rawUrl.match(/[?&]drmLicense=([a-fA-F0-9]+):([a-fA-F0-9]+)/);
-          if (urlDrm) drm = { keyId: urlDrm[1].toLowerCase(), key: urlDrm[2].toLowerCase() };
-        }
-        const { url, extraHeaders } = processStreamUrl(rawUrl);
-        if (extraHeaders) customHeaders = { ...(customHeaders || {}), ...extraHeaders };
-        const ch = { name, url, channelNumber: index + 1, drm, userAgent, customHeaders };
-        if (proxyMatch) {
-          const pv = proxyMatch[1];
-          if (pv === 'false' || pv === 'no' || pv === '0') ch.useProxy = false;
-          else if (pv === 'true' || pv === 'yes' || pv === '1') ch.useProxy = true;
-          else { ch.useProxy = true; ch.proxyUrl = pv; }
-        } else {
-          ch.useProxy = false;
-        }
-        channels.push(ch);
-        index++;
-        i = urlIdx;
-      }
-    }
-  }
-  return channels;
-}
-
 function timeAgo(isoString) {
   if (!isoString) return 'Never';
   const diff = Date.now() - new Date(isoString).getTime();
@@ -821,8 +710,4 @@ function timeAgo(isoString) {
   return new Date(isoString).toLocaleDateString();
 }
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
+

@@ -1,4 +1,5 @@
 import { setProxyOverride } from './config.js';
+import { escapeHtml } from './utils.js';
 
 let channels = [];
 let currentIndex = -1;
@@ -16,13 +17,28 @@ let rightSelectedResolution = 'auto';
 let rightResolutionCallback = null;
 let rightItems = [];
 
+/* Group sidebar state */
+let sidebarMode = 'channels';
+let groups = [];
+let selectedGroup = null;
+let groupFocusedIndex = 0;
+
 export function init(channelList, callback) {
   channels = channelList;
   onChannelSelect = callback;
   currentIndex = -1;
   focusedIndex = 0;
 
-  renderChannelList();
+  extractGroups(channels);
+  if (groups.length > 0) {
+    sidebarMode = 'groups';
+    selectedGroup = null;
+    renderGroupList();
+  } else {
+    sidebarMode = 'channels';
+    selectedGroup = null;
+    renderChannelList();
+  }
   updateFocus();
 
   // In fullscreen, reveal the sidebar when the mouse enters the left edge
@@ -77,24 +93,118 @@ export function init(channelList, callback) {
   }
 }
 
+export function extractGroups(channelList) {
+  const groupMap = {};
+  for (const ch of channelList) {
+    const g = ch.group || 'Ungrouped';
+    if (!groupMap[g]) groupMap[g] = [];
+    groupMap[g].push(ch);
+  }
+  groups = Object.keys(groupMap).sort().map(name => ({
+    name,
+    count: groupMap[name].length,
+    channels: groupMap[name],
+  }));
+}
+
+export function getSidebarMode() {
+  return sidebarMode;
+}
+
+export function getGroups() {
+  return groups;
+}
+
+export function renderGroupList() {
+  const container = document.getElementById('group-list');
+  if (!container) return;
+  container.innerHTML = '';
+  groups.forEach((group, index) => {
+    const item = document.createElement('div');
+    item.className = 'group-item';
+    item.dataset.index = index;
+    item.innerHTML =
+      '<span class="group-name">' + escapeHtml(group.name) + '</span>' +
+      '<span class="group-count">(' + group.count + ')</span>';
+    item.addEventListener('click', () => {
+      showGroupChannels(group.name);
+    });
+    container.appendChild(item);
+  });
+  updateGroupFocus();
+}
+
+export function updateGroupFocus() {
+  const items = document.querySelectorAll('#group-list .group-item');
+  items.forEach((item, idx) => {
+    item.classList.toggle('focused', idx === groupFocusedIndex);
+  });
+  if (items[groupFocusedIndex]) {
+    items[groupFocusedIndex].scrollIntoView({ block: 'nearest' });
+  }
+}
+
+export function navigateGroupUp() {
+  if (groups.length === 0) return;
+  groupFocusedIndex = (groupFocusedIndex - 1 + groups.length) % groups.length;
+  updateGroupFocus();
+}
+
+export function navigateGroupDown() {
+  if (groups.length === 0) return;
+  groupFocusedIndex = (groupFocusedIndex + 1) % groups.length;
+  updateGroupFocus();
+}
+
+export function selectFocusedGroup() {
+  if (groups.length === 0) return;
+  showGroupChannels(groups[groupFocusedIndex].name);
+}
+
+export function showGroupChannels(groupName) {
+  selectedGroup = groupName;
+  sidebarMode = 'channels';
+  focusedIndex = 0;
+  const groupList = document.getElementById('group-list');
+  const channelList = document.getElementById('channel-list');
+  if (groupList) groupList.classList.add('hidden');
+  if (channelList) channelList.classList.remove('hidden');
+  renderChannelList();
+  updateFocus();
+}
+
+export function showGroupList() {
+  sidebarMode = 'groups';
+  const groupList = document.getElementById('group-list');
+  const channelList = document.getElementById('channel-list');
+  if (channelList) channelList.classList.add('hidden');
+  if (groupList) groupList.classList.remove('hidden');
+  renderGroupList();
+}
+
 export function renderChannelList() {
   const container = document.getElementById('channel-list');
   if (!container) return;
 
+  const displayChannels = (selectedGroup && groups.length > 0)
+    ? channels.filter(ch => (ch.group || 'Ungrouped') === selectedGroup)
+    : channels;
+
   container.innerHTML = '';
 
-  channels.forEach((channel, index) => {
+  displayChannels.forEach((channel, displayIndex) => {
+    const originalIndex = channels.indexOf(channel);
     const item = document.createElement('div');
     item.className = 'channel-item';
-    item.dataset.index = index;
+    item.dataset.index = displayIndex;
 
     item.innerHTML =
-      '<span class="channel-number">' + (channel.channelNumber || index + 1) + '</span>' +
+      '<span class="channel-number">' + (channel.channelNumber || originalIndex + 1) + '</span>' +
       '<span class="channel-name">' + escapeHtml(channel.name) + '</span>' +
       (channel.useProxy ? '<span class="channel-proxy">Use Proxied</span>' : '');
 
     item.addEventListener('click', () => {
-      selectChannel(index);
+      selectChannel(originalIndex);
     });
 
     container.appendChild(item);
@@ -132,27 +242,42 @@ export function selectChannel(index, skipFullscreen) {
 }
 
 export function navigateUp() {
-  if (channels.length === 0) return;
-  focusedIndex = (focusedIndex - 1 + channels.length) % channels.length;
+  const displayChannels = (selectedGroup && groups.length > 0)
+    ? channels.filter(ch => (ch.group || 'Ungrouped') === selectedGroup)
+    : channels;
+  if (displayChannels.length === 0) return;
+  focusedIndex = (focusedIndex - 1 + displayChannels.length) % displayChannels.length;
   updateFocus();
   scrollToFocused();
 }
 
 export function navigateDown() {
-  if (channels.length === 0) return;
-  focusedIndex = (focusedIndex + 1) % channels.length;
+  const displayChannels = (selectedGroup && groups.length > 0)
+    ? channels.filter(ch => (ch.group || 'Ungrouped') === selectedGroup)
+    : channels;
+  if (displayChannels.length === 0) return;
+  focusedIndex = (focusedIndex + 1) % displayChannels.length;
   updateFocus();
   scrollToFocused();
 }
 
 export function selectFocused() {
-  selectChannel(focusedIndex);
+  const displayChannels = (selectedGroup && groups.length > 0)
+    ? channels.filter(ch => (ch.group || 'Ungrouped') === selectedGroup)
+    : channels;
+  const channel = displayChannels[focusedIndex];
+  if (channel) {
+    selectChannel(channels.indexOf(channel));
+  }
 }
 
 export function jumpToNumber(num, skipFullscreen) {
-  const index = channels.findIndex((ch) => ch.channelNumber === num);
-  if (index !== -1) {
-    selectChannel(index, skipFullscreen);
+  const displayChannels = (selectedGroup && groups.length > 0)
+    ? channels.filter(ch => (ch.group || 'Ungrouped') === selectedGroup)
+    : channels;
+  const channel = displayChannels.find(ch => ch.channelNumber === num);
+  if (channel) {
+    selectChannel(channels.indexOf(channel), skipFullscreen);
   }
 }
 
@@ -162,6 +287,15 @@ export function toggleSidebar() {
     applyRightSidebar();
   }
   sidebarOpen = !sidebarOpen;
+  if (sidebarOpen) {
+    if (groups.length > 0) {
+      showGroupList();
+    } else {
+      selectedGroup = null;
+      sidebarMode = 'channels';
+      renderChannelList();
+    }
+  }
   applySidebar();
 }
 
@@ -497,7 +631,25 @@ export function refreshChannelList(newChannels) {
   channels = newChannels;
   currentIndex = -1;
   focusedIndex = 0;
-  renderChannelList();
+  extractGroups(channels);
+  if (groups.length > 0) {
+    if (selectedGroup && !groups.find(g => g.name === selectedGroup)) {
+      selectedGroup = null;
+      sidebarMode = 'groups';
+    }
+  } else {
+    sidebarMode = 'channels';
+    selectedGroup = null;
+  }
+  if (sidebarMode === 'groups') {
+    showGroupList();
+  } else {
+    const groupList = document.getElementById('group-list');
+    if (groupList) groupList.classList.add('hidden');
+    const channelList = document.getElementById('channel-list');
+    if (channelList) channelList.classList.remove('hidden');
+    renderChannelList();
+  }
   updateFocus();
   updateActiveChannel();
   // Close right sidebar since channel list may have changed
@@ -526,12 +678,6 @@ function scrollToFocused() {
   if (items[focusedIndex]) {
     items[focusedIndex].scrollIntoView({ block: 'nearest' });
   }
-}
-
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
 }
 
 /* Buffering percentage indicator */

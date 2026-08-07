@@ -199,6 +199,51 @@ html, body {
   border-color: rgba(255, 255, 255, 0.4);
 }
 
+/* Group list */
+.group-list {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.group-list::-webkit-scrollbar { display: none; }
+
+.group-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 28px;
+  padding: clamp(10px, 1.5vw, 18px) clamp(16px, 3vw, 28px);
+  cursor: pointer;
+  border-bottom: 1px solid #1a1a1a;
+  transition: background 0.1s;
+}
+.group-item:hover,
+.group-item.focused {
+  background: #242424;
+  box-shadow: inset 4px 0 0 #4fc3f7, 0 0 12px rgba(79, 195, 247, 0.35);
+}
+.group-item.focused .group-name { color: #fff; font-weight: 600; }
+.group-item.active { background: #0d47a1; box-shadow: inset 4px 0 0 #4fc3f7; }
+
+.group-item .group-name {
+  flex: 1;
+  font-size: 21px;
+  font-size: clamp(14px, 2vw, 21px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.group-item .group-count {
+  font-size: 18px;
+  font-size: clamp(12px, 1.6vw, 18px);
+  color: #4fc3f7;
+  font-weight: 600;
+  margin-left: 10px;
+  flex-shrink: 0;
+}
+.group-item.focused .group-count { color: #fff; }
+.group-item.active .group-count { color: #fff; }
+
 /* Main */
 .main {
   width: 100%;

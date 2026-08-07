@@ -1,123 +1,88 @@
-# Tizen OS Build — IPTV Player
+# Tizen OS Build — EN IPTV Player
 
 > See the [main README](../../README.md) for the full project overview and quick start.
 
-Packages the IPTV web app into a `.wgt` package installable on your Samsung AU8000 (Tizen 6.0).
+Packages the IPTV web app into a `.wgt` package installable on Samsung Tizen TVs (5.0+).
 
 ## Prerequisites
 
 1. **Node.js** — Already have it (used for the main project)
-2. **Samsung Developer Mode app** — Install from Samsung Smart Hub on your TV
+2. **Python 3** — Required for the zip ordering helper
+3. **OpenSSL** — Used for code signing (bundled with Git for Windows, or install via `winget install OpenSSL.OpenSSL`)
+4. **Samsung Developer Mode app** — Install from Samsung Smart Hub on your TV
    - Go to **Apps** → Search **"Developer Mode"** → Install and enable it
    - Note the IP address shown on TV
-3. **A code signing certificate** — We generate a self-signed one below (no Tizen Studio needed)
 
-## Step 1 — Generate Developer Certificate
-
-Run this once to create your Tizen certificate files:
-
-```bash
-cd tizen
-node spec/generate-cert.mjs
-```
-
-This creates:
-- `tizen/author-cert.p12` — Your personal developer certificate
-- `tizen/distributor-cert.p12` — Distributor certificate
-- `tizen/profile.xml` — Signing profile
-
-**The certificate files are important — keep them safe, reuse for future builds.**
-
-## Step 2 — Build the Web App
+## Quick Start
 
 From the project root:
 
 ```bash
-npm run build
+npm run tizen
 ```
 
-This outputs the production build to `tv/dist/`.
+This runs `npm build` and packages/signs the `.wgt` in one step.
 
-## Step 3 — Package the Tizen .wgt
+## Step-by-Step
 
-```bash
-cd tizen
-node package.mjs
-```
-
-This does:
-1. Copies everything from `dist/` into `tizen/temp-wgt/`
-2. Adds `config.xml` and icons at the correct paths
-3. Signs it with your developer certificate
-4. Outputs: `tizen/IPTV-Player.wgt`
-
-## Step 4 — Install on TV
-
-### Option A — Via Samsung Developer Mode (simplest)
-
-1. On your TV, open **Developer Mode** app → Note the IP
-2. On your PC:
-   ```bash
-   cd tizen
-   node spec/install.mjs --ip <TV_IP_ADDRESS>
-   ```
-3. The app appears in **Apps** → **My Apps** on your TV
-
-### Option B — Via USB (no network)
-
-1. Copy `IPTV-Player.wgt` to a USB drive
-2. On TV: **Settings** → **Support** → **Device Care** → **Self Diagnosis** → **USB (wgt)**
-3. Select the `.wgt` file to install
-
-## Step 5 — Run on TV
-
-- Open **Apps** → **My Apps** → **IPTV Player**
-- First launch may take a few seconds
-- The app connects through the CORS proxy on your PC (same as the browser version)
-
----
-
-## Build Shortcut (Everything in One Command)
-
-From the project root, run the full build + package pipeline:
+### 1. Build the Web App
 
 ```bash
 npm run build
-cd tizen && node package.mjs && cd ..
 ```
 
----
+Outputs the production build to `packages/player/dist/`.
+
+### 2. Package the Tizen .wgt
+
+```bash
+node packages/tizen/package.mjs
+```
+
+This:
+1. Auto-generates a self-signed certificate (`author-key.pem` / `author-cert.pem`) if absent
+2. Copies `dist/` into a temp directory with `config.xml` and icons
+3. Signs it with your certificate
+4. Outputs to the repo root: `EN-IPTV_Player_{stable|beta}_{version}_{commit}.wgt`
+
+### 3. Install on TV
+
+```bash
+node packages/tizen/install.mjs --ip=<TV_IP_ADDRESS>
+```
+
+Make sure Developer Mode is running on your TV.
+
+## Build Output
+
+| Branch | Output Example |
+|---|---|
+| `main` | `EN-IPTV_Player_stable_0.8.0_abc1234.wgt` |
+| Any other | `EN-IPTV_Player_beta_0.8.0_abc1234.wgt` |
 
 ## File Structure
 
 ```
-tv/
-├── dist/                         # Vite build output (gitignored)
-├── tizen/
-│   ├── README.md                 # This file
-│   ├── config.xml                # Tizen web app manifest
-│   ├── icons/
-│   │   ├── icon_128.png          # App icon (128x128)
-│   │   └── icon_192.png          # App icon (192x192)
-│   ├── spec/
-│   │   ├── generate-cert.mjs     # One-time cert generation script
-│   │   └── install.mjs           # Install .wgt to TV via Developer Mode
-│   ├── package.mjs               # Build & sign the .wgt
-│   ├── profile.xml               # Signing profile (generated)
-│   ├── author-cert.p12           # Cert (generated, gitignored)
-│   ├── distributor-cert.p12      # Cert (generated, gitignored)
-│   └── IPTV-Player.wgt           # Output (generated, gitignored)
-├── src/
-├── vite.config.js
-└── package.json
+packages/tizen/
+├── README.md                 # This file
+├── config.xml                # Tizen web app manifest (reference)
+├── package.mjs               # Build & sign the .wgt
+├── install.mjs               # Install .wgt to TV via Developer Mode
+├── ziphelper.py              # Python helper for Tizen-compliant zip ordering
+├── icons/
+│   └── icon_128.png          # App icon (128x128)
+├── author-key.pem            # Private key (auto-generated, gitignored)
+├── author-cert.pem           # Certificate (auto-generated, gitignored)
+└── temp-wgt/                 # Temporary build directory (gitignored)
 ```
 
 ## Troubleshooting
 
 | Problem | Fix |
 |---|---|
-| TV says "Invalid certificate" | Delete `*.p12` and `profile.xml`, re-run `generate-cert.mjs` |
+| TV says "Invalid certificate" | Delete `author-key.pem` and `author-cert.pem`, re-run `package.mjs` to regenerate |
 | App doesn't appear after install | Restart TV, check **Apps** → **My Apps** again |
 | Video won't play | Make sure the CORS proxy (`npm run proxy`) is running on your PC |
 | Install fails | Ensure TV and PC are on the same network, Developer Mode is enabled |
-| .wgt file too large | Shaka Player is ~800KB, total is ~1MB — well under Tizen's 10MB limit |
+| OpenSSL not found | Install via `winget install OpenSSL.OpenSSL` or use Git for Windows which bundles it |
+| Python not found | Install Python 3 and ensure it's on your PATH |

@@ -7,7 +7,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..', '..');
 const DIST = join(ROOT, 'packages', 'player', 'dist');
 const TIZEN = __dirname;
-const TV_IP = '192.168.0.180';
 
 const PKG = 'IPTVPlayer'; // Must be EXACTLY 10 chars!
 
@@ -38,11 +37,9 @@ function findOpenSSL() {
 }
 
 function findSDB() {
-  const home = process.env.USERPROFILE;
   const candidates = [
     'TizenSdb_v1.1.0.exe',
     '"C:\\Program Files\\TizenSDB\\TizenSdb_v1.1.0.exe"',
-    `"${home}\\Downloads\\Compressed\\Apps2Samsung-v2.7.0-beta-win-x64\\Assets\\TizenSDB\\TizenSdb_v1.1.0.exe"`,
   ];
   for (const cmd of candidates) {
     try {
@@ -55,11 +52,6 @@ function findSDB() {
       } catch {}
     }
   }
-  try {
-    const alt = '"C:\\Users\\EftynurPc\\Downloads\\Compressed\\Apps2Samsung-v2.7.0-beta-win-x64\\Assets\\TizenSDB\\TizenSdb_v1.1.0.exe"';
-    execSync(`${alt} 2>nul`, { stdio: 'pipe' });
-    return alt;
-  } catch {}
   return null;
 }
 

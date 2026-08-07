@@ -1,5 +1,5 @@
 import shaka from 'shaka-player';
-import config from './config.js';
+import config, { getSettings } from './config.js';
 
 function logEvent(level, message) {
   try {
@@ -73,7 +73,12 @@ export async function initPlayer(videoEl) {
     });
   }
 
-  player.configure(config.player);
+  const settings = getSettings();
+  const playerConfig = { ...config.player };
+  if (settings.autoQuality === false) {
+    playerConfig.abr = { ...config.player.abr, enabled: false };
+  }
+  player.configure(playerConfig);
 
   player.addEventListener('error', (event) => {
     handlePlayerError(event.detail);
@@ -458,6 +463,11 @@ function stopMpdRefresh() {
 }
 
 // Force-reload the current channel (e.g. from R key or remote)
+export function setAutoQuality(enabled) {
+  if (!player) return;
+  player.configure({ abr: { enabled } });
+}
+
 export function reloadChannel() {
   if (!currentChannel) return;
   consecutiveErrors = 0;

@@ -1,9 +1,9 @@
 # EN IPTV Player
 
-[![License: MIT](https://img.shields.io/badge/License-Micense-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tizen](https://img.shields.io/badge/Tizen-5.0+-red?logo=samsung)](packages/tizen/)
 [![Node](https://img.shields.io/badge/Node-18+-green?logo=node.js)](package.json)
-[![Version](https://img.shields.io/badge/version-0.7.0-blue)](.)
+[![Version](https://img.shields.io/badge/version-0.8.0-blue)](.)
 [![Release](https://img.shields.io/github/v/release/Nur-allhi/EN_TvPlayer)](https://github.com/Nur-allhi/EN_TvPlayer/releases)
 
 **Open-source IPTV player for Samsung Tizen TVs and desktop browsers.** Powered by Shaka Player with a local CORS proxy.
@@ -14,7 +14,8 @@
 
 | Release | WGT | Date |
 |---|---|---|
-| **v0.7.0** | [EN-IPTV_Player_stable_0.7.0.wgt](https://github.com/Nur-allhi/EN_TvPlayer/releases/tag/v0.7.0) | 2026-08-05 |
+| **v0.8.0** | [EN-IPTV_Player_stable_0.8.0.wgt](https://github.com/Nur-allhi/EN_TvPlayer/releases/tag/v0.8.0) | 2026-08-07 |
+| v0.7.0 | [EN-IPTV_Player_stable_0.7.0.wgt](https://github.com/Nur-allhi/EN_TvPlayer/releases/tag/v0.7.0) | 2026-08-05 |
 | v0.6.0 | [EN-IPTV_Player_stable_0.6.0.wgt](https://github.com/Nur-allhi/EN_TvPlayer/releases/tag/v0.6.0) | 2026-07-30 |
 
 > **Note:** WGT files are Samsung Tizen TV application packages. See [Installation](#installation) below.
@@ -220,6 +221,14 @@ Ways to contribute:
 ---
 
 ## Changelog
+
+### v0.8.0 (2026-08-07)
+- **Code cleanup** — Extracted shared utilities (`parseM3u`, `processStreamUrl`, `fetchPlaylist`, `escapeHtml`) into `utils.js`
+- **Removed dead code** — Deleted stale test file targeting removed element IDs
+- **Documentation** — Updated Tizen build guide to match actual implementation
+- **Security** — Removed personal DRM keys from version control, added `channels.json` to `.gitignore`
+- **Hardcoded values cleanup** — Removed developer-machine-specific paths from Tizen packaging scripts
+- **Stale branches** — Removed 7 merged fix/* branches
 
 ### v0.7.0 (2026-08-05)
 - **Settings page redesign** — Two-panel layout with left nav + main content, matching Samsung Tizen design guidelines

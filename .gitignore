@@ -15,6 +15,9 @@ packages/tizen/icons/
 # Root WGT is the release artifact — do NOT ignore
 !*.wgt
 
+# User data (contains personal DRM keys — keep local)
+channels.json
+
 # Logs and debug
 logs/
 .playwright-mcp/
