@@ -100,11 +100,15 @@ export function extractGroups(channelList) {
     if (!groupMap[g]) groupMap[g] = [];
     groupMap[g].push(ch);
   }
-  groups = Object.keys(groupMap).sort().map(name => ({
+  const realGroups = Object.keys(groupMap).sort().map(name => ({
     name,
     count: groupMap[name].length,
     channels: groupMap[name],
   }));
+  groups = [
+    { name: 'All Channels', count: channelList.length, channels: channelList },
+    ...realGroups,
+  ];
 }
 
 export function getSidebarMode() {
@@ -162,7 +166,7 @@ export function selectFocusedGroup() {
 }
 
 export function showGroupChannels(groupName) {
-  selectedGroup = groupName;
+  selectedGroup = groupName === 'All Channels' ? 'all' : groupName;
   sidebarMode = 'channels';
   focusedIndex = 0;
   const groupList = document.getElementById('group-list');
@@ -186,9 +190,12 @@ export function renderChannelList() {
   const container = document.getElementById('channel-list');
   if (!container) return;
 
-  const displayChannels = (selectedGroup && groups.length > 0)
-    ? channels.filter(ch => (ch.group || 'Ungrouped') === selectedGroup)
-    : channels;
+  let displayChannels;
+  if (selectedGroup === 'all' || !selectedGroup) {
+    displayChannels = channels;
+  } else {
+    displayChannels = channels.filter(ch => (ch.group || 'Ungrouped') === selectedGroup);
+  }
 
   container.innerHTML = '';
 
@@ -242,9 +249,7 @@ export function selectChannel(index, skipFullscreen) {
 }
 
 export function navigateUp() {
-  const displayChannels = (selectedGroup && groups.length > 0)
-    ? channels.filter(ch => (ch.group || 'Ungrouped') === selectedGroup)
-    : channels;
+  const displayChannels = getDisplayChannels();
   if (displayChannels.length === 0) return;
   focusedIndex = (focusedIndex - 1 + displayChannels.length) % displayChannels.length;
   updateFocus();
@@ -252,9 +257,7 @@ export function navigateUp() {
 }
 
 export function navigateDown() {
-  const displayChannels = (selectedGroup && groups.length > 0)
-    ? channels.filter(ch => (ch.group || 'Ungrouped') === selectedGroup)
-    : channels;
+  const displayChannels = getDisplayChannels();
   if (displayChannels.length === 0) return;
   focusedIndex = (focusedIndex + 1) % displayChannels.length;
   updateFocus();
@@ -262,19 +265,22 @@ export function navigateDown() {
 }
 
 export function selectFocused() {
-  const displayChannels = (selectedGroup && groups.length > 0)
-    ? channels.filter(ch => (ch.group || 'Ungrouped') === selectedGroup)
-    : channels;
+  const displayChannels = getDisplayChannels();
   const channel = displayChannels[focusedIndex];
   if (channel) {
     selectChannel(channels.indexOf(channel));
   }
 }
 
+export function getDisplayChannels() {
+  if (selectedGroup === 'all' || !selectedGroup) {
+    return channels;
+  }
+  return channels.filter(ch => (ch.group || 'Ungrouped') === selectedGroup);
+}
+
 export function jumpToNumber(num, skipFullscreen) {
-  const displayChannels = (selectedGroup && groups.length > 0)
-    ? channels.filter(ch => (ch.group || 'Ungrouped') === selectedGroup)
-    : channels;
+  const displayChannels = getDisplayChannels();
   const channel = displayChannels.find(ch => ch.channelNumber === num);
   if (channel) {
     selectChannel(channels.indexOf(channel), skipFullscreen);
@@ -288,7 +294,16 @@ export function toggleSidebar() {
   }
   sidebarOpen = !sidebarOpen;
   if (sidebarOpen) {
-    if (groups.length > 0) {
+    if (groups.length > 0 && selectedGroup !== null) {
+      sidebarMode = 'channels';
+      focusedIndex = 0;
+      const groupList = document.getElementById('group-list');
+      const channelList = document.getElementById('channel-list');
+      if (groupList) groupList.classList.add('hidden');
+      if (channelList) channelList.classList.remove('hidden');
+      renderChannelList();
+      updateFocus();
+    } else if (groups.length > 0) {
       showGroupList();
     } else {
       selectedGroup = null;
@@ -632,12 +647,12 @@ export function refreshChannelList(newChannels) {
   currentIndex = -1;
   focusedIndex = 0;
   extractGroups(channels);
-  if (groups.length > 0) {
-    if (selectedGroup && !groups.find(g => g.name === selectedGroup)) {
-      selectedGroup = null;
-      sidebarMode = 'groups';
-    }
-  } else {
+  if (selectedGroup === 'all') {
+    sidebarMode = 'channels';
+  } else if (selectedGroup && !groups.find(g => g.name === selectedGroup)) {
+    selectedGroup = null;
+    sidebarMode = 'groups';
+  } else if (groups.length <= 1) {
     sidebarMode = 'channels';
     selectedGroup = null;
   }

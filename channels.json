@@ -16,7 +16,7 @@
     "group": "Sports"
   },
   {
-    "name": "News Channel",
+    "name": "BBC News",
     "url": "https://example.com/news.m3u8",
     "channelNumber": 3,
     "useProxy": false,
