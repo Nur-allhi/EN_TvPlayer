@@ -16,10 +16,21 @@ function getDisplayChannels() {
 
 function setupTVScaling() {
   const screenWidth = window.screen.width || window.innerWidth;
-  if (screenWidth > 2560) {
-    document.documentElement.style.zoom = '2';
-  } else if (screenWidth > 1920) {
-    document.documentElement.style.zoom = '1.5';
+  const dpr = window.devicePixelRatio || 1;
+  let scale = 1;
+  if (screenWidth >= 3000 || dpr >= 2) {
+    scale = 2;
+  } else if (screenWidth >= 2000 || dpr >= 1.5) {
+    scale = 1.5;
+  }
+  if (scale > 1) {
+    const app = document.getElementById('app');
+    if (app) {
+      app.style.transform = `scale(${scale})`;
+      app.style.transformOrigin = 'top left';
+      app.style.width = `${100 / scale}%`;
+      app.style.height = `${100 / scale}%`;
+    }
   }
 }
 
