@@ -4,7 +4,7 @@ import { escapeHtml } from './utils.js';
 let channels = [];
 let currentIndex = -1;
 let focusedIndex = 0;
-let sidebarOpen = true;
+let sidebarOpen = false;
 let isFullscreen = false;
 let onChannelSelect = null;
 let onProxyToggle = null;

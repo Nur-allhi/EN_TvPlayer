@@ -95,6 +95,8 @@ function startPlayer() {
 
   ui.init(channels, handleChannelSelect);
 
+  showPlayer();
+
   ui.setAutoCloseCallback(() => {
     if (settings.isVisible()) {
       settings.hide();
