@@ -95,10 +95,6 @@ function startPlayer() {
 
   ui.init(channels, handleChannelSelect);
 
-  requestAnimationFrame(() => {
-    showPlayer();
-  });
-
   ui.setAutoCloseCallback(() => {
     if (settings.isVisible()) {
       settings.hide();
