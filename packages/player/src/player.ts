@@ -1,4 +1,4 @@
-import shaka, { polyfill } from 'shaka-player';
+import shaka from 'shaka-player';
 import type { Channel } from './utils.ts';
 import config, { getSettings } from './config.ts';
 
@@ -45,14 +45,14 @@ export async function initPlayer(videoEl) {
     });
   } catch (e) {}
 
-  polyfill.installAll();
+  shaka.polyfill.installAll();
 
-  if (!shaka.isBrowserSupported()) {
+  if (!shaka.Player.isBrowserSupported()) {
     console.error('Shaka Player not supported in this browser');
     return false;
   }
 
-  player = new shaka();
+  player = new shaka.Player();
 
   const networkingEngine = player.getNetworkingEngine();
   if (networkingEngine) {
