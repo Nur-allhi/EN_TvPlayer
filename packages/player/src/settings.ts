@@ -364,7 +364,7 @@ function render(): void {
   let mainHtml = '';
   mainHtml += '<div class="page-title">';
   mainHtml += '<button class="back-btn" id="btn-back">\u2039</button>';
-  mainHtml += 'Settings';
+  mainHtml += '<span>Settings</span>';
   mainHtml += '</div>';
 
   if (activeSection === 'source') {
