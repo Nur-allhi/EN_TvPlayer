@@ -521,6 +521,34 @@ html, body {
 }
 .progress-toast > * + * { margin-left: 10px; }
 
+/* Proxy suggestion toast */
+.proxy-toast {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 16px 28px;
+  border-radius: 12px;
+  font-size: 22px;
+  font-weight: 500;
+  color: #fff;
+  z-index: 100;
+  pointer-events: none;
+  border: 1px solid rgba(237, 66, 31, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.proxy-toast-text {
+  color: #ED421F;
+  font-weight: 600;
+}
+
 .progress-spinner {
   width: 18px;
   height: 18px;

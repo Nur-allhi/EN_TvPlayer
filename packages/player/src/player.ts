@@ -141,6 +141,12 @@ export function onProxySuggestion(callback) {
   proxySuggestionCallback = callback;
 }
 
+let streamSuccessCallback: (() => void) | null = null;
+
+export function onStreamSuccess(callback: () => void): void {
+  streamSuccessCallback = callback;
+}
+
 export function getActiveTrack() {
   if (!player) return null;
   const tracks = player.getVariantTracks();
@@ -242,6 +248,7 @@ export async function loadChannel(channel) {
     consecutiveErrors = 0;
     startStallWatchdog();
     startMpdRefresh();
+    if (streamSuccessCallback) streamSuccessCallback();
     logEvent('INFO', 'Loaded: ' + (channel.name || channel.url.slice(0, 60)));
     return true;
   } catch (error) {

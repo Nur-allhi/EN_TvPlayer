@@ -195,6 +195,10 @@ function startPlayer() {
     ui.showProxyToast();
   });
 
+  player.onStreamSuccess(() => {
+    ui.hideProxyToast();
+  });
+
   ui.setProxyToggleCallback(() => {
     player.reloadChannel();
   });
