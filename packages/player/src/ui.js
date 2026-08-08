@@ -343,6 +343,11 @@ export function isSidebarOpen() {
   return sidebarOpen;
 }
 
+export function showSidebarWithContent() {
+  sidebarOpen = true;
+  applySidebar();
+}
+
 export function isFullscreenMode() {
   return isFullscreen;
 }

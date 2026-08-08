@@ -95,7 +95,9 @@ function startPlayer() {
 
   ui.init(channels, handleChannelSelect);
 
-  showPlayer();
+  requestAnimationFrame(() => {
+    showPlayer();
+  });
 
   ui.setAutoCloseCallback(() => {
     if (settings.isVisible()) {
@@ -237,10 +239,9 @@ function showPlayer() {
   document.body.style.overflow = '';
   const playerContainer = document.getElementById('player-container');
   const nowPlaying = document.getElementById('now-playing');
-  const sidebar = document.getElementById('sidebar');
   if (playerContainer) playerContainer.classList.remove('hidden');
   if (nowPlaying) nowPlaying.classList.remove('hidden');
-  if (sidebar) sidebar.classList.remove('closed');
+  ui.showSidebarWithContent();
 }
 
 function hidePlayer() {
