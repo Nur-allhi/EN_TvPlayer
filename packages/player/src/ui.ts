@@ -745,33 +745,42 @@ function setBufferingPercent(percent) {
 type ToastType = 'error' | 'warning' | 'info';
 
 export function showToast(message: string, type: ToastType = 'info', duration: number = 5000): void {
-  const container = document.getElementById('toast-container');
-  if (!container) {
-    console.warn('[Toast] Container not found');
-    return;
-  }
+  const show = () => {
+    const container = document.getElementById('toast-container');
+    if (!container) {
+      console.warn('[Toast] Container not found, retrying in 100ms');
+      setTimeout(show, 100);
+      return;
+    }
 
-  const toast = document.createElement('div');
-  toast.className = `toast toast-${type}`;
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
 
-  const iconMap: Record<ToastType, string> = {
-    error: '\u2718',
-    warning: '\u26A0',
-    info: '\u2139',
+    const iconMap: Record<ToastType, string> = {
+      error: '\u2718',
+      warning: '\u26A0',
+      info: '\u2139',
+    };
+
+    toast.innerHTML =
+      '<span class="toast-icon">' + iconMap[type] + '</span>' +
+      '<span class="toast-message">' + escapeHtml(message) + '</span>';
+
+    container.appendChild(toast);
+    console.log('[Toast] Shown:', message, 'Type:', type);
+
+    if (duration > 0) {
+      setTimeout(() => {
+        toast.style.animation = 'toastFadeOut 0.3s ease-in forwards';
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    }
   };
 
-  toast.innerHTML =
-    '<span class="toast-icon">' + iconMap[type] + '</span>' +
-    '<span class="toast-message">' + escapeHtml(message) + '</span>';
-
-  container.appendChild(toast);
-  console.log('[Toast] Shown:', message, 'Type:', type);
-
-  if (duration > 0) {
-    setTimeout(() => {
-      toast.style.animation = 'toastFadeOut 0.3s ease-in forwards';
-      setTimeout(() => toast.remove(), 300);
-    }, duration);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', show);
+  } else {
+    show();
   }
 }
 
