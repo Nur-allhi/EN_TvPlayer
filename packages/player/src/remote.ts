@@ -1,19 +1,19 @@
-let onKeyAction = null;
+let onKeyAction: ((action: string, value?: number) => void) | null = null;
 let numberBuffer = '';
 let numberTimeout = null;
 
-export function init(callback) {
+export function init(callback: (action: string, value?: number) => void): void {
   onKeyAction = callback;
 
   document.addEventListener('keydown', handleKeyDown, true);
 }
 
-export function destroy() {
+export function destroy(): void {
   document.removeEventListener('keydown', handleKeyDown, true);
   onKeyAction = null;
 }
 
-function handleKeyDown(e) {
+function handleKeyDown(e: KeyboardEvent): void {
   if (!onKeyAction) return;
 
   const key = e.key || e.keyCode;
@@ -183,7 +183,7 @@ function handleKeyDown(e) {
   }
 }
 
-function handleNumberInput(num) {
+function handleNumberInput(num: string): void {
   numberBuffer += num;
 
   // Clear previous timeout

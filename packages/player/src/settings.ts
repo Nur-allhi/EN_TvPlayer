@@ -9,7 +9,7 @@ let onRender = null;
 let editIndex = -1;
 let activeSection = 'source';
 let focusIdx = 0;
-let focusOrder = [];
+let focusOrder: HTMLElement[] = [];
 let addMode = false;
 let editMode = false;
 
@@ -288,7 +288,7 @@ export function selectFocused() {
   }
 }
 
-function buildFocusOrder() {
+function buildFocusOrder(): void {
   focusOrder = [];
   document.querySelectorAll('.nav-item').forEach(el => focusOrder.push(el));
   focusOrder.push(document.getElementById('btn-back'));
@@ -331,7 +331,7 @@ function clearFocus() {
   document.querySelectorAll('[data-focused]').forEach(el => el.removeAttribute('data-focused'));
 }
 
-function applyFocus() {
+function applyFocus(): void {
   clearFocus();
   buildFocusOrder();
   if (focusIdx >= 0 && focusIdx < focusOrder.length) {
@@ -351,7 +351,7 @@ function applyFocus() {
   }
 }
 
-function render() {
+function render(): void {
   const s = getSettings();
   const lastFetched = s.channelsFetched ? timeAgo(s.channelsFetched) : 'Never';
 
@@ -543,7 +543,7 @@ function render() {
   if (typeof onRender === 'function') onRender();
 }
 
-function renderSourceCard(s, lastFetched) {
+function renderSourceCard(s: Settings, lastFetched: string): string {
   let html = '';
   html += '<div class="setting-card">';
   html += '<div class="card-header"><h3><span class="card-icon">\u{1F4E1}</span> Channel Source</h3></div>';
@@ -632,7 +632,7 @@ function renderConnectionCard(s) {
   return html;
 }
 
-function renderPlaybackCard() {
+function renderPlaybackCard(): string {
   const s = getSettings();
   const autoQ = s.autoQuality !== false;
   let html = '';
@@ -647,7 +647,7 @@ function renderPlaybackCard() {
   return html;
 }
 
-function renderAboutCard() {
+function renderAboutCard(): string {
   let html = '';
   html += '<div class="setting-card">';
   html += '<div class="card-header"><h3><span class="card-icon">\u2139</span> About</h3></div>';
@@ -697,7 +697,7 @@ function handleProxySave() {
   setTimeout(() => statusEl.classList.add('hidden'), 2000);
 }
 
-function timeAgo(isoString) {
+function timeAgo(isoString: string): string {
   if (!isoString) return 'Never';
   const diff = Date.now() - new Date(isoString).getTime();
   const seconds = Math.floor(diff / 1000);

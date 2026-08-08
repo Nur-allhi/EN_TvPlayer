@@ -1,29 +1,29 @@
 import { setProxyOverride } from './config.ts';
-import { escapeHtml } from './utils.ts';
+import { escapeHtml, type Channel } from './utils.ts';
 
-let channels = [];
-let currentIndex = -1;
-let focusedIndex = 0;
-let sidebarOpen = false;
-let isFullscreen = false;
-let onChannelSelect = null;
-let onProxyToggle = null;
+let channels: Channel[] = [];
+let currentIndex: number = -1;
+let focusedIndex: number = 0;
+let sidebarOpen: boolean = false;
+let isFullscreen: boolean = false;
+let onChannelSelect: ((channel: Channel) => void) | null = null;
+let onProxyToggle: ((channel: Channel) => void) | null = null;
 
 /* Right sidebar state */
-let rightSidebarOpen = false;
-let rightResolutions = [];
-let rightFocus = 0;
-let rightSelectedResolution = 'auto';
-let rightResolutionCallback = null;
-let rightItems = [];
+let rightSidebarOpen: boolean = false;
+let rightResolutions: string[] = [];
+let rightFocus: number = 0;
+let rightSelectedResolution: string = 'auto';
+let rightResolutionCallback: ((height: number) => void) | null = null;
+let rightItems: Array<{ type: string; element: HTMLElement; id?: string }> = [];
 
 /* Group sidebar state */
-let sidebarMode = 'channels';
-let groups = [];
-let selectedGroup = null;
-let groupFocusedIndex = 0;
+let sidebarMode: 'channels' | 'groups' = 'channels';
+let groups: Array<{ name: string; count: number; channels: Channel[] }> = [];
+let selectedGroup: string | null = null;
+let groupFocusedIndex: number = 0;
 
-export function init(channelList, callback) {
+export function init(channelList: Channel[], callback: (channel: Channel) => void): void {
   channels = channelList;
   onChannelSelect = callback;
   currentIndex = -1;
@@ -93,7 +93,7 @@ export function init(channelList, callback) {
   }
 }
 
-export function extractGroups(channelList) {
+export function extractGroups(channelList: Channel[]): void {
   const groupMap = {};
   for (const ch of channelList) {
     const g = ch.group || 'Ungrouped';
@@ -111,23 +111,23 @@ export function extractGroups(channelList) {
   ];
 }
 
-export function getSidebarMode() {
+export function getSidebarMode(): 'channels' | 'groups' {
   return sidebarMode;
 }
 
-export function getGroups() {
+export function getGroups(): typeof groups {
   return groups;
 }
 
-export function getSelectedGroup() {
+export function getSelectedGroup(): string | null {
   return selectedGroup;
 }
 
-export function getCurrentIndex() {
+export function getCurrentIndex(): number {
   return currentIndex;
 }
 
-export function renderGroupList() {
+export function renderGroupList(): void {
   const container = document.getElementById('group-list');
   if (!container) return;
   container.innerHTML = '';
@@ -146,7 +146,7 @@ export function renderGroupList() {
   updateGroupFocus();
 }
 
-export function updateGroupFocus() {
+export function updateGroupFocus(): void {
   const items = document.querySelectorAll('#group-list .group-item');
   items.forEach((item, idx) => {
     item.classList.toggle('focused', idx === groupFocusedIndex);
@@ -156,24 +156,24 @@ export function updateGroupFocus() {
   }
 }
 
-export function navigateGroupUp() {
+export function navigateGroupUp(): void {
   if (groups.length === 0) return;
   groupFocusedIndex = (groupFocusedIndex - 1 + groups.length) % groups.length;
   updateGroupFocus();
 }
 
-export function navigateGroupDown() {
+export function navigateGroupDown(): void {
   if (groups.length === 0) return;
   groupFocusedIndex = (groupFocusedIndex + 1) % groups.length;
   updateGroupFocus();
 }
 
-export function selectFocusedGroup() {
+export function selectFocusedGroup(): void {
   if (groups.length === 0) return;
   showGroupChannels(groups[groupFocusedIndex].name);
 }
 
-export function showGroupChannels(groupName) {
+export function showGroupChannels(groupName: string): void {
   selectedGroup = groupName === 'All Channels' ? 'all' : groupName;
   sidebarMode = 'channels';
   focusedIndex = 0;
@@ -185,7 +185,7 @@ export function showGroupChannels(groupName) {
   updateFocus();
 }
 
-export function showGroupList() {
+export function showGroupList(): void {
   sidebarMode = 'groups';
   const groupList = document.getElementById('group-list');
   const channelList = document.getElementById('channel-list');
@@ -258,7 +258,7 @@ export function selectChannel(index, skipFullscreen) {
   updateProxyButtonText();
 }
 
-export function navigateUp() {
+export function navigateUp(): void {
   const displayChannels = getDisplayChannels();
   if (displayChannels.length === 0) return;
   focusedIndex = (focusedIndex - 1 + displayChannels.length) % displayChannels.length;
@@ -266,7 +266,7 @@ export function navigateUp() {
   scrollToFocused();
 }
 
-export function navigateDown() {
+export function navigateDown(): void {
   const displayChannels = getDisplayChannels();
   if (displayChannels.length === 0) return;
   focusedIndex = (focusedIndex + 1) % displayChannels.length;
@@ -538,7 +538,7 @@ export function setSelectedResolution(value) {
   renderRightResolutionList();
 }
 
-function renderRightResolutionList() {
+function renderRightResolutionList(): void {
   const list = document.getElementById('resolution-list-right');
   if (!list) return;
   list.innerHTML = '';
@@ -558,7 +558,7 @@ function renderRightResolutionList() {
   });
 }
 
-function buildRightItems() {
+function buildRightItems(): void {
   rightItems = [];
   // Resolution items (indices 0 .. N-1)
   const list = document.getElementById('resolution-list-right');
@@ -602,7 +602,7 @@ export function rightSidebarSelect() {
   }
 }
 
-function doRightSelect() {
+function doRightSelect(): void {
   const items = document.querySelectorAll('.resolution-item-right');
   const idx = rightFocus;
   if (idx < 0 || idx >= items.length) {
@@ -693,7 +693,7 @@ export function refreshChannelList(newChannels) {
   }
 }
 
-function updateActiveChannel() {
+function updateActiveChannel(): void {
   const items = document.querySelectorAll('.channel-item');
   const displayChannels = getDisplayChannels();
   const playingDisplayIdx = displayChannels.indexOf(channels[currentIndex]);
@@ -702,14 +702,14 @@ function updateActiveChannel() {
   });
 }
 
-function updateFocus() {
+function updateFocus(): void {
   const items = document.querySelectorAll('.channel-item');
   items.forEach((item, index) => {
     item.classList.toggle('focused', index === focusedIndex);
   });
 }
 
-function scrollToFocused() {
+function scrollToFocused(): void {
   const items = document.querySelectorAll('.channel-item');
   if (items[focusedIndex]) {
     items[focusedIndex].scrollIntoView({ block: 'nearest' });
@@ -717,21 +717,21 @@ function scrollToFocused() {
 }
 
 /* Buffering percentage indicator */
-export function showBuffering(percent) {
+export function showBuffering(percent: number): void {
   const el = document.getElementById('buffering-indicator');
   if (!el) return;
   el.classList.remove('hidden');
   setBufferingPercent(percent);
 }
 
-export function updateBuffering(percent) {
+export function updateBuffering(percent: number): void {
   const el = document.getElementById('buffering-indicator');
   if (el && !el.classList.contains('hidden')) {
     setBufferingPercent(percent);
   }
 }
 
-export function hideBuffering() {
+export function hideBuffering(): void {
   const el = document.getElementById('buffering-indicator');
   if (el) el.classList.add('hidden');
 }
@@ -742,12 +742,12 @@ function setBufferingPercent(percent) {
 }
 
 /* Proxy suggestion toast */
-export function showProxyToast() {
+export function showProxyToast(): void {
   const el = document.getElementById('proxy-toast');
   if (el) el.classList.remove('hidden');
 }
 
-export function hideProxyToast() {
+export function hideProxyToast(): void {
   const el = document.getElementById('proxy-toast');
   if (el) el.classList.add('hidden');
 }
