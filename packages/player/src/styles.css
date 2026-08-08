@@ -796,7 +796,7 @@ html, body {
   display: flex;
   align-items: center;
 }
-.page-title > * + * { margin-left: 13px; }
+.page-title > * + * { margin-left: 20px; }
 
 .page-title .back-btn {
   width: 46px;
