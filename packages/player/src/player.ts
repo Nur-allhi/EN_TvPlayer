@@ -564,6 +564,7 @@ function showPlayState(paused) {
 }
 
 function showError(message: string): void {
+  console.log('[Player] showError called:', message);
   showToast(simplifyErrorMessage(message), 'error', 6000);
 }
 

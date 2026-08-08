@@ -744,9 +744,12 @@ function setBufferingPercent(percent) {
 /* Unified Toast System */
 type ToastType = 'error' | 'warning' | 'info';
 
-export function showToast(message: string, type: ToastType = 'info', duration = 5000): void {
+export function showToast(message: string, type: ToastType = 'info', duration: number = 5000): void {
   const container = document.getElementById('toast-container');
-  if (!container) return;
+  if (!container) {
+    console.warn('[Toast] Container not found');
+    return;
+  }
 
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
@@ -762,6 +765,7 @@ export function showToast(message: string, type: ToastType = 'info', duration = 
     '<span class="toast-message">' + escapeHtml(message) + '</span>';
 
   container.appendChild(toast);
+  console.log('[Toast] Shown:', message, 'Type:', type);
 
   if (duration > 0) {
     setTimeout(() => {
