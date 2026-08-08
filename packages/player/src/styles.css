@@ -529,24 +529,31 @@ html, body {
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  background: rgba(0, 0, 0, 0.85);
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.9);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  padding: 16px 28px;
+  padding: 18px 28px;
   border-radius: 12px;
   font-size: 22px;
   font-weight: 500;
   color: #fff;
-  z-index: 100;
+  z-index: 110;
   pointer-events: none;
-  border: 1px solid rgba(237, 66, 31, 0.4);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(237, 66, 31, 0.5);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(237, 66, 31, 0.2);
   white-space: nowrap;
 }
 
-.proxy-toast-text {
+.proxy-toast::before {
+  content: '\u26A0';
+  font-size: 24px;
   color: #ED421F;
-  font-weight: 600;
+}
+
+.proxy-toast-text {
+  color: #fff;
+  font-weight: 500;
 }
 
 .progress-spinner {
@@ -575,16 +582,19 @@ html, body {
 /* Error */
 .error {
   position: absolute;
-  bottom: 80px;
+  top: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: #d32f2f;
+  background: rgba(211, 47, 47, 0.9);
   color: #fff;
-  padding: 16px 28px;
+  padding: 10px 20px;
   border-radius: 8px;
   font-size: 18px;
-  max-width: 80%;
+  max-width: 60%;
   text-align: center;
+  z-index: 50;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* Now Playing Bar */
