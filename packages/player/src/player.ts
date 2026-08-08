@@ -1,4 +1,4 @@
-import shaka from 'shaka-player';
+import shaka, { polyfill } from 'shaka-player';
 import type { Channel } from './utils.ts';
 import config, { getSettings } from './config.ts';
 
@@ -45,14 +45,14 @@ export async function initPlayer(videoEl) {
     });
   } catch (e) {}
 
-  shaka.polyfill.installAll();
+  polyfill.installAll();
 
-  if (!shaka.Player.isBrowserSupported()) {
+  if (!shaka.isBrowserSupported()) {
     console.error('Shaka Player not supported in this browser');
     return false;
   }
 
-  player = new shaka.Player();
+  player = new shaka();
 
   const networkingEngine = player.getNetworkingEngine();
   if (networkingEngine) {
@@ -281,7 +281,7 @@ export async function loadChannel(channel) {
   }
 }
 
-async function destroyPlayer(keepElement) {
+async function destroyPlayer(keepElement?: boolean): Promise<void> {
   stopStallWatchdog();
   stopMpdRefresh();
   clearTimeout(reconnectTimer);
@@ -517,8 +517,8 @@ export function getResolutions() {
   if (!player) return [];
   const tracks = player.getVariantTracks();
   const heights = [...new Set(tracks.map((t) => t.height))]
-    .filter(Boolean)
-    .sort((a, b) => a - b);
+    .filter((h): h is number => h !== null)
+    .sort((a: number, b: number) => a - b);
   return heights;
 }
 

@@ -164,8 +164,8 @@ function handleKeyDown(e: KeyboardEvent): void {
   }
 
   // Number keys (0-9)
-  if (/^[0-9]$/.test(key)) {
-    handleNumberInput(key);
+  if (/^[0-9]$/.test(String(key))) {
+    handleNumberInput(String(key));
     return;
   }
 

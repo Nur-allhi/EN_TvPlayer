@@ -6,7 +6,7 @@ export interface Channel {
   userAgent: string | null;
   customHeaders: Record<string, string> | null;
   group: string | null;
-  useProxy: boolean;
+  useProxy?: boolean;
   proxyUrl?: string;
 }
 

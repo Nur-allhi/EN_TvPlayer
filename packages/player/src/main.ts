@@ -302,7 +302,7 @@ function formatBandwidth(bps) {
   return ' \u2022 ' + mbps + ' Mbps';
 }
 
-function updateResolutionBadge(height, bandwidth) {
+function updateResolutionBadge(height: number | undefined, bandwidth?: number): void {
   const el = document.getElementById('resolution-badge');
   if (!el) return;
   const label = getResolutionLabel(height);

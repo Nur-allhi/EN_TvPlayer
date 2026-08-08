@@ -85,7 +85,7 @@ export function init(channelList: Channel[], callback: (channel: Channel) => voi
   if (rightSidebarEl) {
     rightSidebarEl.addEventListener('mouseleave', (e) => {
       if (!isFullscreen) return;
-      const to = e.relatedTarget;
+      const to = e.relatedTarget as Node | null;
       if (to && rightZone && rightZone.contains(to)) return;
       rightSidebarOpen = false;
       applyRightSidebar();
@@ -134,7 +134,7 @@ export function renderGroupList(): void {
   groups.forEach((group, index) => {
     const item = document.createElement('div');
     item.className = 'group-item';
-    item.dataset.index = index;
+    item.dataset.index = String(index);
     item.innerHTML =
       '<span class="group-name">' + escapeHtml(group.name) + '</span>' +
       '<span class="group-count">(' + group.count + ')</span>';
@@ -211,7 +211,7 @@ export function renderChannelList() {
     const originalIndex = channels.indexOf(channel);
     const item = document.createElement('div');
     item.className = 'channel-item';
-    item.dataset.index = displayIndex;
+    item.dataset.index = String(displayIndex);
 
     item.innerHTML =
       '<span class="channel-number">' + (displayIndex + 1) + '</span>' +
@@ -226,7 +226,7 @@ export function renderChannelList() {
   });
 }
 
-export function selectChannel(index, skipFullscreen) {
+export function selectChannel(index: number, skipFullscreen?: boolean): void {
   if (index < 0 || index >= channels.length) return;
 
   currentIndex = index;
@@ -289,7 +289,7 @@ export function getDisplayChannels() {
   return channels.filter(ch => (ch.group || 'Ungrouped') === selectedGroup);
 }
 
-export function jumpToNumber(num, skipFullscreen) {
+export function jumpToNumber(num: number, skipFullscreen?: boolean): void {
   const displayChannels = getDisplayChannels();
   const channel = displayChannels[num - 1];
   if (channel) {
@@ -548,7 +548,7 @@ function renderRightResolutionList(): void {
     if (res === rightSelectedResolution) {
       item.classList.add('active');
     }
-    item.dataset.index = index;
+    item.dataset.index = String(index);
     item.textContent = res === 'auto' ? 'Auto' : res + 'p';
     item.addEventListener('click', () => {
       rightFocus = index;
@@ -565,7 +565,7 @@ function buildRightItems(): void {
   if (list) {
     const resItems = list.querySelectorAll('.resolution-item-right');
     resItems.forEach((item) => {
-      rightItems.push({ type: 'resolution', element: item });
+      rightItems.push({ type: 'resolution', element: item as HTMLElement });
     });
   }
   // Button IDs
@@ -613,7 +613,7 @@ function doRightSelect(): void {
   rightSelectedResolution = value;
   renderRightResolutionList();
   if (rightResolutionCallback) {
-    rightResolutionCallback(value === 'auto' ? null : value);
+    rightResolutionCallback(value === 'auto' ? null : Number(value));
   }
   rightSidebarOpen = false;
   applyRightSidebar();

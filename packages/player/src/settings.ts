@@ -1,4 +1,4 @@
-import { getSettings, saveSettings, getActivePlaylist, APP_VERSION } from './config.ts';
+import { getSettings, saveSettings, getActivePlaylist, APP_VERSION, type Settings } from './config.ts';
 import { processStreamUrl, parseM3u, fetchPlaylist, escapeHtml } from './utils.ts';
 import * as player from './player.ts';
 
@@ -52,8 +52,8 @@ export function navigate(dir) {
   if (total === 0) return;
 
   const navCount = document.querySelectorAll('.nav-item').length;
-  const cur = document.querySelector('[data-focused]');
-  const curIdx = focusOrder.indexOf(cur);
+  const cur = document.querySelector('[data-focused]') as HTMLElement | null;
+  const curIdx = focusOrder.indexOf(cur as HTMLElement);
   const inNavZone = curIdx >= 0 && curIdx < navCount;
   const onBackButton = curIdx === navCount;
   const contentStart = navCount + 1; // +1 for back button
@@ -101,21 +101,21 @@ export function navigateNav(dir) {
 
   buildFocusOrder();
   const navCount = document.querySelectorAll('.nav-item').length;
-  const curIdx = focusOrder.indexOf(cur);
+  const curIdx = focusOrder.indexOf(cur as HTMLElement);
   const inNavZone = curIdx >= 0 && curIdx < navCount;
   const contentStart = navCount + 1;
 
-  const btnGroup = cur.closest('.btn-group');
+  const btnGroup = (cur as HTMLElement)?.closest('.btn-group');
   if (btnGroup) {
     const buttons = Array.from(btnGroup.querySelectorAll('.btn'));
-    const btnIdx = buttons.indexOf(cur);
+    const btnIdx = buttons.indexOf(cur as HTMLElement);
     if (btnIdx >= 0) {
       if (dir > 0 && btnIdx < buttons.length - 1) {
-        const newIdx = focusOrder.indexOf(buttons[btnIdx + 1]);
+        const newIdx = focusOrder.indexOf(buttons[btnIdx + 1] as HTMLElement);
         if (newIdx >= 0) { focusIdx = newIdx; applyFocus(); }
         return;
       } else if (dir < 0 && btnIdx > 0) {
-        const newIdx = focusOrder.indexOf(buttons[btnIdx - 1]);
+        const newIdx = focusOrder.indexOf(buttons[btnIdx - 1] as HTMLElement);
         if (newIdx >= 0) { focusIdx = newIdx; applyFocus(); }
         return;
       }
@@ -154,7 +154,7 @@ export function selectFocused() {
   if (el.classList.contains('nav-item')) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     el.classList.add('active');
-    activeSection = el.dataset.section;
+    activeSection = (el as HTMLElement).dataset.section as string;
     focusIdx = 0;
     render();
     applyFocus();
@@ -178,7 +178,7 @@ export function selectFocused() {
   }
 
   if (el.tagName === 'INPUT') {
-    el.focus();
+    (el as HTMLElement).focus();
     return;
   }
 
@@ -211,10 +211,10 @@ export function selectFocused() {
   }
 
   if (el.id === 'pl-add-save') {
-    const nameEl = document.getElementById('pl-add-name');
-    const urlEl = document.getElementById('pl-add-url');
-    const name = nameEl ? nameEl.value.trim() : '';
-    const url = urlEl ? urlEl.value.trim() : '';
+    const nameEl = document.getElementById('pl-add-name') as HTMLInputElement | null;
+    const urlEl = document.getElementById('pl-add-url') as HTMLInputElement | null;
+    const name = nameEl ? (nameEl as HTMLInputElement).value.trim() : '';
+    const url = urlEl ? (urlEl as HTMLInputElement).value.trim() : '';
     if (url) {
       const playlists = getSettings().playlists;
       playlists.push({ name: name || 'Unnamed', url });
@@ -223,7 +223,7 @@ export function selectFocused() {
       render();
       const activeEl = document.activeElement;
       if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
-        activeEl.blur();
+        (activeEl as HTMLElement).blur();
       }
       document.body.focus();
       focusIdx = 0;
@@ -237,7 +237,7 @@ export function selectFocused() {
     render();
     const activeEl = document.activeElement;
     if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
-      activeEl.blur();
+      (activeEl as HTMLElement).blur();
     }
     document.body.focus();
     focusIdx = 0;
@@ -246,10 +246,10 @@ export function selectFocused() {
   }
 
   if (el.id === 'pl-edit-save') {
-    const nameEl = document.getElementById('pl-edit-name');
-    const urlEl = document.getElementById('pl-edit-url');
-    const name = nameEl ? nameEl.value.trim() : '';
-    const url = urlEl ? urlEl.value.trim() : '';
+    const nameEl = document.getElementById('pl-edit-name') as HTMLInputElement | null;
+    const urlEl = document.getElementById('pl-edit-url') as HTMLInputElement | null;
+    const name = nameEl ? (nameEl as HTMLInputElement).value.trim() : '';
+    const url = urlEl ? (urlEl as HTMLInputElement).value.trim() : '';
     if (url && editIndex >= 0) {
       const playlists = getSettings().playlists;
       playlists[editIndex] = { name: name || 'Unnamed', url };
@@ -259,7 +259,7 @@ export function selectFocused() {
       render();
       const activeEl = document.activeElement;
       if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
-        activeEl.blur();
+        (activeEl as HTMLElement).blur();
       }
       document.body.focus();
       focusIdx = 0;
@@ -274,7 +274,7 @@ export function selectFocused() {
     render();
     const activeEl = document.activeElement;
     if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
-      activeEl.blur();
+      (activeEl as HTMLElement).blur();
     }
     document.body.focus();
     focusIdx = 0;
@@ -283,14 +283,14 @@ export function selectFocused() {
   }
 
   if (el.classList.contains('btn') || el.classList.contains('playlist-entry')) {
-    el.click();
+    (el as HTMLElement).click();
     return;
   }
 }
 
 function buildFocusOrder(): void {
   focusOrder = [];
-  document.querySelectorAll('.nav-item').forEach(el => focusOrder.push(el));
+  document.querySelectorAll('.nav-item').forEach(el => focusOrder.push(el as HTMLElement));
   focusOrder.push(document.getElementById('btn-back'));
 
   if (activeSection === 'source') {
@@ -322,7 +322,7 @@ function buildFocusOrder(): void {
     focusOrder.push(document.getElementById('settings-proxy-url'));
     focusOrder.push(document.getElementById('settings-proxy-save-btn'));
   } else if (activeSection === 'playback') {
-    document.querySelectorAll('.select-opt').forEach(el => focusOrder.push(el));
+    document.querySelectorAll('.select-opt').forEach(el => focusOrder.push(el as HTMLElement));
     focusOrder.push(document.getElementById('toggle-autoq'));
   }
 }
@@ -340,11 +340,11 @@ function applyFocus(): void {
       el.setAttribute('data-focused', '');
       el.scrollIntoView({ block: 'nearest' });
       if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-        el.focus();
+        (el as HTMLElement).focus();
       } else {
         const activeEl = document.activeElement;
         if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
-          activeEl.blur();
+          (activeEl as HTMLElement).blur();
         }
       }
     }
@@ -414,7 +414,7 @@ function render(): void {
     item.addEventListener('click', () => {
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       item.classList.add('active');
-      activeSection = item.dataset.section;
+      activeSection = (item as HTMLElement).dataset.section as string;
       focusIdx = 0;
       render();
       applyFocus();
@@ -468,8 +468,8 @@ function render(): void {
       saveBtn.addEventListener('click', () => {
         const nameEl = document.getElementById('pl-add-name');
         const urlEl = document.getElementById('pl-add-url');
-        const name = nameEl ? nameEl.value.trim() : '';
-        const url = urlEl ? urlEl.value.trim() : '';
+        const name = nameEl ? (nameEl as HTMLInputElement).value.trim() : '';
+        const url = urlEl ? (urlEl as HTMLInputElement).value.trim() : '';
         if (url) {
           const playlists = getSettings().playlists;
           playlists.push({ name: name || 'Unnamed', url });
@@ -493,8 +493,8 @@ function render(): void {
       editSaveBtn.addEventListener('click', () => {
         const nameEl = document.getElementById('pl-edit-name');
         const urlEl = document.getElementById('pl-edit-url');
-        const name = nameEl ? nameEl.value.trim() : '';
-        const url = urlEl ? urlEl.value.trim() : '';
+        const name = nameEl ? (nameEl as HTMLInputElement).value.trim() : '';
+        const url = urlEl ? (urlEl as HTMLInputElement).value.trim() : '';
         if (url && editIndex >= 0) {
           const playlists = getSettings().playlists;
           playlists[editIndex] = { name: name || 'Unnamed', url };
@@ -686,7 +686,7 @@ async function handleFetch() {
 }
 
 function handleProxySave() {
-  const proxyInput = document.getElementById('settings-proxy-url');
+  const proxyInput = document.getElementById('settings-proxy-url') as HTMLInputElement | null;
   const statusEl = document.getElementById('settings-proxy-status');
   if (!proxyInput || !statusEl) return;
   const url = proxyInput.value.trim();
