@@ -1,6 +1,7 @@
 import shaka from 'shaka-player';
 import type { Channel } from './utils.ts';
 import config, { getSettings } from './config.ts';
+import { showToast, hideAllToasts } from './ui.ts';
 
 function logEvent(level, message) {
   try {
@@ -562,19 +563,18 @@ function showPlayState(paused) {
   }
 }
 
-function showError(message) {
-  const el = document.getElementById('error');
-  if (el) {
-    el.textContent = message;
-    el.classList.remove('hidden');
-  }
+function showError(message: string): void {
+  showToast(simplifyErrorMessage(message), 'error', 6000);
 }
 
-function hideError() {
-  const el = document.getElementById('error');
-  if (el) {
-    el.classList.add('hidden');
-  }
+function hideError(): void {
+  hideAllToasts();
+}
+
+function simplifyErrorMessage(message: string): string {
+  if (!message) return 'Unknown error';
+  if (message.length > 80) return message.substring(0, 77) + '...';
+  return message;
 }
 
 function getErrorMessage(error) {

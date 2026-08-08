@@ -741,13 +741,46 @@ function setBufferingPercent(percent) {
   if (p) p.textContent = (typeof percent === 'number' ? percent : 0) + '%';
 }
 
-/* Proxy suggestion toast */
+/* Unified Toast System */
+type ToastType = 'error' | 'warning' | 'info';
+
+export function showToast(message: string, type: ToastType = 'info', duration = 5000): void {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+
+  const iconMap: Record<ToastType, string> = {
+    error: '\u2718',
+    warning: '\u26A0',
+    info: '\u2139',
+  };
+
+  toast.innerHTML =
+    '<span class="toast-icon">' + iconMap[type] + '</span>' +
+    '<span class="toast-message">' + escapeHtml(message) + '</span>';
+
+  container.appendChild(toast);
+
+  if (duration > 0) {
+    setTimeout(() => {
+      toast.style.animation = 'toastFadeOut 0.3s ease-in forwards';
+      setTimeout(() => toast.remove(), 300);
+    }, duration);
+  }
+}
+
+export function hideAllToasts(): void {
+  const container = document.getElementById('toast-container');
+  if (container) container.innerHTML = '';
+}
+
+/* Legacy compatibility */
 export function showProxyToast(): void {
-  const el = document.getElementById('proxy-toast');
-  if (el) el.classList.remove('hidden');
+  showToast('Stream not loading — try enabling Proxy in the right menu', 'warning', 8000);
 }
 
 export function hideProxyToast(): void {
-  const el = document.getElementById('proxy-toast');
-  if (el) el.classList.add('hidden');
+  hideAllToasts();
 }

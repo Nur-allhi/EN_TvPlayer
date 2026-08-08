@@ -521,39 +521,9 @@ html, body {
 }
 .progress-toast > * + * { margin-left: 10px; }
 
-/* Proxy suggestion toast */
+/* Proxy toast - legacy, now using .toast-container */
 .proxy-toast {
-  position: absolute;
-  bottom: 100px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: rgba(0, 0, 0, 0.9);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  padding: 18px 28px;
-  border-radius: 12px;
-  font-size: 22px;
-  font-weight: 500;
-  color: #fff;
-  z-index: 110;
-  pointer-events: none;
-  border: 2px solid rgba(237, 66, 31, 0.5);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(237, 66, 31, 0.2);
-  white-space: nowrap;
-}
-
-.proxy-toast::before {
-  content: '\u26A0';
-  font-size: 24px;
-  color: #ED421F;
-}
-
-.proxy-toast-text {
-  color: #fff;
-  font-weight: 500;
+  display: none;
 }
 
 .progress-spinner {
@@ -579,22 +549,85 @@ html, body {
   pointer-events: none;
 }
 
-/* Error */
-.error {
-  position: absolute;
-  top: 20px;
+/* Unified Toast System */
+.toast-container {
+  position: fixed;
+  bottom: 90px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(211, 47, 47, 0.9);
+  z-index: 200;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+  align-items: center;
+  pointer-events: none;
+  max-width: 90%;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  border-radius: 10px;
+  font-size: 20px;
+  font-weight: 500;
   color: #fff;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 18px;
-  max-width: 60%;
-  text-align: center;
-  z-index: 50;
+  background: rgba(20, 20, 20, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  animation: toastSlideUp 0.3s ease-out;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toast-error {
+  border-left: 4px solid #d32f2f;
+}
+
+.toast-warning {
+  border-left: 4px solid #ED421F;
+}
+
+.toast-info {
+  border-left: 4px solid #4fc3f7;
+}
+
+.toast-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.toast-message {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toastFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 }
 
 /* Now Playing Bar */
