@@ -1,11 +1,28 @@
-export function processStreamUrl(rawUrl) {
+export interface Channel {
+  name: string;
+  url: string;
+  channelNumber: number;
+  drm: { keyId: string; key: string } | null;
+  userAgent: string | null;
+  customHeaders: Record<string, string> | null;
+  group: string | null;
+  useProxy: boolean;
+  proxyUrl?: string;
+}
+
+export interface PlaylistData {
+  proxyUrl?: string;
+  channels: Channel[];
+}
+
+export function processStreamUrl(rawUrl: string): { url: string; extraHeaders: Record<string, string> | null } {
   const pipeIdx = rawUrl.indexOf('|');
   if (pipeIdx === -1) return { url: rawUrl, extraHeaders: null };
 
   const baseUrl = rawUrl.slice(0, pipeIdx);
   const suffix = rawUrl.slice(pipeIdx + 1);
-  const extraHeaders = {};
-  const extraParams = [];
+  const extraHeaders: Record<string, string> = {};
+  const extraParams: string[] = [];
 
   for (const part of suffix.split('&')) {
     const eqIdx = part.indexOf('=');
@@ -27,7 +44,7 @@ export function processStreamUrl(rawUrl) {
   return { url: finalUrl, extraHeaders: Object.keys(extraHeaders).length > 0 ? extraHeaders : null };
 }
 
-function findNameSeparator(line) {
+function findNameSeparator(line: string): number {
   let inQuotes = false;
   for (let i = 0; i < line.length; i++) {
     if (line[i] === '"') {
@@ -39,9 +56,9 @@ function findNameSeparator(line) {
   return -1;
 }
 
-export function parseM3u(text) {
+export function parseM3u(text: string): Channel[] {
   const lines = text.split('\n');
-  const result = [];
+  const result: Channel[] = [];
   let index = 0;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -51,9 +68,9 @@ export function parseM3u(text) {
       const attrPart = sepIdx >= 0 ? line.slice(0, sepIdx) : line;
       const proxyMatch = attrPart.match(/\bproxy="([^"]*)"/);
       const groupMatch = attrPart.match(/\bgroup-title="([^"]*)"/);
-      let drm = null;
-      let userAgent = null;
-      let customHeaders = null;
+      let drm: Channel['drm'] = null;
+      let userAgent: string | null = null;
+      let customHeaders: Channel['customHeaders'] = null;
       let urlIdx = i + 1;
       while (urlIdx < lines.length) {
         const next = lines[urlIdx].trim();
@@ -98,7 +115,7 @@ export function parseM3u(text) {
         if (extraHeaders) {
           customHeaders = { ...(customHeaders || {}), ...extraHeaders };
         }
-        const ch = { name, url, channelNumber: index + 1, drm, userAgent, customHeaders, group: groupMatch ? groupMatch[1] : null };
+        const ch: Channel = { name, url, channelNumber: index + 1, drm, userAgent, customHeaders, group: groupMatch ? groupMatch[1] : null };
         if (proxyMatch) {
           const pv = proxyMatch[1];
           if (pv === 'false' || pv === 'no' || pv === '0') {
@@ -121,22 +138,23 @@ export function parseM3u(text) {
   return result;
 }
 
-export async function fetchPlaylist(url) {
+export async function fetchPlaylist(url: string): Promise<Channel[]> {
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('HTTP ' + resp.status);
   const contentType = resp.headers.get('content-type') || '';
   const text = await resp.text();
   if (contentType.includes('json') || text.trim().startsWith('[') || text.trim().startsWith('{')) {
-    const data = JSON.parse(text);
-    if (Array.isArray(data)) return data;
-    if (data && Array.isArray(data.channels)) {
-      const topProxy = data.proxyUrl;
+    const data: unknown = JSON.parse(text);
+    if (Array.isArray(data)) return data as Channel[];
+    if (data && typeof data === 'object' && 'channels' in data) {
+      const playlistData = data as PlaylistData;
+      const topProxy = playlistData.proxyUrl;
       if (topProxy) {
-        for (const ch of data.channels) {
+        for (const ch of playlistData.channels) {
           if (ch.useProxy === true && !ch.proxyUrl) ch.proxyUrl = topProxy;
         }
       }
-      return data.channels;
+      return playlistData.channels;
     }
     throw new Error('Invalid JSON format');
   }
@@ -146,7 +164,7 @@ export async function fetchPlaylist(url) {
   throw new Error('Unknown playlist format');
 }
 
-export function escapeHtml(text) {
+export function escapeHtml(text: string): string {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;

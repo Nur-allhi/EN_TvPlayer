@@ -1,5 +1,5 @@
-import { setProxyOverride } from './config.js';
-import { escapeHtml } from './utils.js';
+import { setProxyOverride } from './config.ts';
+import { escapeHtml } from './utils.ts';
 
 let channels = [];
 let currentIndex = -1;

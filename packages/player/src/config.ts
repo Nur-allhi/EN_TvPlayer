@@ -1,9 +1,65 @@
+import type { Channel } from './utils.ts';
+
 const SETTINGS_KEY = 'en_settings';
 const PROXY_OVERRIDES_KEY = 'en_proxy_overrides';
 
-export const APP_VERSION = __APP_VERSION__;
+export const APP_VERSION: string = __APP_VERSION__;
 
-const settingsDefaults = {
+export interface Playlist {
+  name: string;
+  url: string;
+}
+
+export interface Settings {
+  playlists: Playlist[];
+  activePlaylistIndex: number;
+  proxyUrl: string;
+  channels: Channel[];
+  channelsFetched: string | null;
+  autoQuality: boolean;
+  playlistUrl?: string;
+}
+
+interface PlayerConfig {
+  useProxy: boolean;
+  player: {
+    streaming: {
+      bufferingGoal: number;
+      rebufferingGoal: number;
+      bufferBehind: number;
+      segmentPrefetchLimit: number;
+      startAtSegmentBoundary: boolean;
+      retryParameters: {
+        maxAttempts: number;
+        baseDelay: number;
+        backoffFactor: number;
+        fuzzFactor: number;
+        timeout: number;
+      };
+    };
+    abr: {
+      enabled: boolean;
+      switchInterval: number;
+      bandwidthUpgradeTarget: number;
+      bandwidthDowngradeTarget: number;
+      defaultBandwidthEstimate: number;
+    };
+    manifest: {
+      retryParameters: {
+        maxAttempts: number;
+        baseDelay: number;
+        backoffFactor: number;
+        fuzzFactor: number;
+        timeout: number;
+      };
+      hls: {
+        ignoreManifestProgramDateTime: boolean;
+      };
+    };
+  };
+}
+
+const settingsDefaults: Settings = {
   playlists: [],
   activePlaylistIndex: -1,
   proxyUrl: 'http://localhost:5000/proxy/',
@@ -12,11 +68,11 @@ const settingsDefaults = {
   autoQuality: true,
 };
 
-export function getSettings() {
+export function getSettings(): Settings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    const defaults = { ...settingsDefaults, playlists: [] };
-    const s = raw ? { ...defaults, ...JSON.parse(raw) } : { ...defaults };
+    const defaults: Settings = { ...settingsDefaults, playlists: [] };
+    const s: Settings = raw ? { ...defaults, ...JSON.parse(raw) } : { ...defaults };
     // Migration from legacy single playlistUrl
     if ((!s.playlists || s.playlists.length === 0) && s.playlistUrl) {
       s.playlists = [{ name: 'Playlist 1', url: s.playlistUrl }];
@@ -30,7 +86,7 @@ export function getSettings() {
   }
 }
 
-export function getActivePlaylist() {
+export function getActivePlaylist(): Playlist | null {
   const s = getSettings();
   if (s.activePlaylistIndex >= 0 && s.activePlaylistIndex < s.playlists.length) {
     return s.playlists[s.activePlaylistIndex];
@@ -38,7 +94,7 @@ export function getActivePlaylist() {
   return null;
 }
 
-export function saveSettings(partial) {
+export function saveSettings(partial: Partial<Settings>): Settings {
   const current = getSettings();
   const merged = { ...current, ...partial };
   try {
@@ -49,7 +105,7 @@ export function saveSettings(partial) {
   return merged;
 }
 
-export function getProxyOverrides() {
+export function getProxyOverrides(): Record<string, boolean> {
   try {
     const raw = localStorage.getItem(PROXY_OVERRIDES_KEY);
     return raw ? JSON.parse(raw) : {};
@@ -58,7 +114,7 @@ export function getProxyOverrides() {
   }
 }
 
-export function setProxyOverride(url, enabled) {
+export function setProxyOverride(url: string, enabled: boolean): Record<string, boolean> {
   const overrides = getProxyOverrides();
   overrides[url] = enabled;
   try {
@@ -69,7 +125,7 @@ export function setProxyOverride(url, enabled) {
   return overrides;
 }
 
-export default {
+const config: PlayerConfig = {
   useProxy: true,
   player: {
     streaming: {
@@ -107,3 +163,5 @@ export default {
     },
   },
 };
+
+export default config;

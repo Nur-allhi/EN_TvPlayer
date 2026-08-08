@@ -1,6 +1,6 @@
-import { getSettings, saveSettings, getActivePlaylist, APP_VERSION } from './config.js';
-import { processStreamUrl, parseM3u, fetchPlaylist, escapeHtml } from './utils.js';
-import * as player from './player.js';
+import { getSettings, saveSettings, getActivePlaylist, APP_VERSION } from './config.ts';
+import { processStreamUrl, parseM3u, fetchPlaylist, escapeHtml } from './utils.ts';
+import * as player from './player.ts';
 
 let container = null;
 let onPlaylistFetched = null;

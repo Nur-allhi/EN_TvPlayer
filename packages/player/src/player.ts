@@ -1,5 +1,6 @@
 import shaka from 'shaka-player';
-import config, { getSettings } from './config.js';
+import type { Channel } from './utils.ts';
+import config, { getSettings } from './config.ts';
 
 function logEvent(level, message) {
   try {

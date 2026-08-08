@@ -1,15 +1,16 @@
-import { getSettings, saveSettings, getProxyOverrides, getActivePlaylist } from './config.js';
-import * as player from './player.js';
-import * as ui from './ui.js';
-import * as remote from './remote.js';
-import * as settings from './settings.js';
-import { processStreamUrl, parseM3u, fetchPlaylist as fetchFromPlaylistUrl } from './utils.js';
+import { getSettings, saveSettings, getProxyOverrides, getActivePlaylist } from './config.ts';
+import * as player from './player.ts';
+import * as ui from './ui.ts';
+import * as remote from './remote.ts';
+import * as settings from './settings.ts';
+import { processStreamUrl, parseM3u, fetchPlaylist as fetchFromPlaylistUrl } from './utils.ts';
+import type { Channel } from './utils.ts';
 
-let currentIndex = 0;
-let channels;
-let selectedGroup = null;
+let currentIndex: number = 0;
+let channels: Channel[] = [];
+let selectedGroup: string | null = null;
 
-function getDisplayChannels() {
+function getDisplayChannels(): Channel[] {
   if (selectedGroup === 'all' || !selectedGroup) return channels;
   return channels.filter(ch => (ch.group || 'Ungrouped') === selectedGroup);
 }
@@ -27,8 +28,9 @@ async function init() {
 
   remote.init(handleRemoteAction);
 
-  document.addEventListener('tizenhwkey', (e) => {
-    if (e.keyName === 'back') {
+  document.addEventListener('tizenhwkey', (e: Event) => {
+    const evt = e as unknown as { keyName: string };
+    if (evt.keyName === 'back') {
       if (settings.isVisible()) {
         settings.hide();
         showPlayer();
