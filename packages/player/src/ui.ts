@@ -748,7 +748,6 @@ export function showToast(message: string, type: ToastType = 'info', duration: n
   const show = () => {
     const container = document.getElementById('toast-container');
     if (!container) {
-      console.warn('[Toast] Container not found, retrying in 100ms');
       setTimeout(show, 100);
       return;
     }
@@ -767,7 +766,6 @@ export function showToast(message: string, type: ToastType = 'info', duration: n
       '<span class="toast-message">' + escapeHtml(message) + '</span>';
 
     container.appendChild(toast);
-    console.log('[Toast] Shown:', message, 'Type:', type);
 
     if (duration > 0) {
       setTimeout(() => {
